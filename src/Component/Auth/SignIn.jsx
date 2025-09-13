@@ -54,7 +54,7 @@ if (roles.includes("INSURANCE_MANAGER")) {
   window.location.href = "/DoctorDashboard";
 } else if (roles.includes("PHARMACIST")) {
   window.location.href = "/PharmacistDashboard";
-} else if (roles.includes("LAB_EMPLOYEE")) {
+} else if (roles.includes("LAB_TECH")) {
   window.location.href = "/LabDashboard";
 } else {
   window.location.href = "/ClientDashboard";

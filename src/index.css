@@ -1,0 +1,6 @@
+/* ✅ إصلاح مشكلة التمرير */
+html, body, #root {
+  height: auto !important;
+  min-height: 100vh !important;
+  overflow-y: auto !important;
+}

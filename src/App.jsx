@@ -22,50 +22,78 @@ import EmergencyProfile from "./Component/EmergencyManager/EmergencyProfile";
 import EmergencyNotifications from "./Component/EmergencyManager/EmergencyNotifications";
 import ResetPassword from "./Component/Auth/ResetPassword";
 import About from "./About"; 
-
-
-
-
+import ClientDashboard from "./Component/Client/ClientDashboard";
+import DoctorDashboard from "./Component/Doctor/DoctorDashboard";
+import PharmacistDashboard from "./Component/Pharmacist/PharmacistDashboard";
+import LabDashboard from "./Component/Lab/LabDashboard";
 
 function App() {
   return (
-    <Routes>
-      {/* الصفحات المفتوحة */}
-      <Route path="/LandingPage" element={<LandingPage />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/About" element={<About />} />
+    <>
 
-      {/* الصفحات المحمية */}
-      <Route
-        element={<PrivateRoute />}
-      >
-        <Route path="/ManagerDashboard" element={<ManagerDashboard />} />
-        <Route path="/PendingRequests" element={<PendingRequests />} />
-        <Route path="/ClientList" element={<ClientList />} />
-        <Route path="/PolicyList" element={<PolicyList />} />
-        <Route path="/ClaimsList" element={<ClaimsList />} />
-        <Route path="/ClaimsManage" element={<ClaimsManage />} />
-        <Route path="/ManageNotifications" element={<ManageNotifications />} />
-        <Route path="/ClaimsReport" element={<ClaimsReport />} />
-        <Route path="/FinancialReport" element={<FinancialReport />} />
-        <Route path="/PoliciesReport" element={<PoliciesReport />} />
-        <Route path="/ProvidersReport" element={<ProvidersReport />} />
-        <Route path="/MembersActivityReport" element={<MembersActivityReport />} />
-        <Route path="/UsageReport" element={<UsageReport />} />
-        <Route path="/PendingEmergencyRequests" element={<PendingEmergencyRequests />} />
-        <Route path="/Profile" element={<Profile />} />
-         <Route path="/EmergencyDashboard" element={<EmergencyDashboard />} />
+      <Routes>
+        {/* الصفحات المفتوحة */}
+        <Route path="/LandingPage" element={<LandingPage />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/About" element={<About />} />
+
+        {/* الصفحات المحمية (Manager + Emergency) */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/ManagerDashboard" element={<ManagerDashboard />} />
+          <Route path="/PendingRequests" element={<PendingRequests />} />
+          <Route path="/ClientList" element={<ClientList />} />
+          <Route path="/PolicyList" element={<PolicyList />} />
+          <Route path="/ClaimsList" element={<ClaimsList />} />
+          <Route path="/ClaimsManage" element={<ClaimsManage />} />
+          <Route path="/ManageNotifications" element={<ManageNotifications />} />
+          <Route path="/ClaimsReport" element={<ClaimsReport />} />
+          <Route path="/UsageReport" element={<UsageReport />} />
+          <Route path="/PoliciesReport" element={<PoliciesReport />} />
+          <Route path="/ProvidersReport" element={<ProvidersReport />} />
+          <Route path="/MembersActivityReport" element={<MembersActivityReport />} />
+          <Route path="/FinancialReport" element={<FinancialReport />} />
+          <Route path="/PendingEmergencyRequests" element={<PendingEmergencyRequests />} />
+          <Route path="/Profile" element={<Profile />} />
+          <Route path="/EmergencyDashboard" element={<EmergencyDashboard />} />
           <Route path="/EmergencyProfile" element={<EmergencyProfile />} />
           <Route path="/EmergencyNotifications" element={<EmergencyNotifications />} />
+        </Route>
 
-
-
-
-
-
-
-      </Route>
-    </Routes>
+        {/* الصفحات المحمية (Client, Doctor, Pharmacist, Lab) */}
+        <Route
+          path="/ClientDashboard"
+          element={
+            <PrivateRoute role="INSURANCE_CLIENT">
+              <ClientDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/DoctorDashboard"
+          element={
+            <PrivateRoute role="DOCTOR">
+              <DoctorDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/PharmacistDashboard"
+          element={
+            <PrivateRoute role="PHARMACIST">
+              <PharmacistDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/LabDashboard"
+          element={
+            <PrivateRoute role="LAB_TECH">
+              <LabDashboard />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </>
   );
 }
 
