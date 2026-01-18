@@ -15,9 +15,13 @@ import ScienceIcon from "@mui/icons-material/Science";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import DescriptionIcon from "@mui/icons-material/Description";
 import { motion } from "framer-motion";
-import axios from "axios";
+import { api } from "../../../utils/apiService";
+import { API_ENDPOINTS } from "../../../config/api";
+import { useLanguage } from "../../../context/LanguageContext";
+import { t } from "../../../config/translations";
 
 const MembersActivityReport = () => {
+  const { language, isRTL } = useLanguage();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,14 +29,8 @@ const MembersActivityReport = () => {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(
-          "http://localhost:8080/api/reports/members-activity",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setReport(res.data);
+        const res = await api.get(API_ENDPOINTS.REPORTS.MEMBERS_ACTIVITY);
+        setReport(res || {});
       } catch (err) {
         console.error(
           "❌ Failed to load members activity report:",
@@ -53,7 +51,7 @@ const MembersActivityReport = () => {
         <Box
           sx={{
             flexGrow: 1,
-            background: "#f4f6f9",
+            background: "#FAF8F5",
             minHeight: "100vh",
             marginLeft: "240px",
             display: "flex",
@@ -61,7 +59,7 @@ const MembersActivityReport = () => {
             justifyContent: "center",
           }}
         >
-          <CircularProgress />
+          <CircularProgress sx={{ color: "#556B2F" }} />
         </Box>
       </Box>
     );
@@ -74,7 +72,7 @@ const MembersActivityReport = () => {
         <Box
           sx={{
             flexGrow: 1,
-            background: "#f4f6f9",
+            background: "#FAF8F5",
             minHeight: "100vh",
             marginLeft: "240px",
             display: "flex",
@@ -83,50 +81,50 @@ const MembersActivityReport = () => {
           }}
         >
           <Typography color="error">
-            ⚠️ Failed to load members activity report.
+            {t("failedToLoadMembersReport", language)}
           </Typography>
         </Box>
       </Box>
     );
   }
 
-  // 🟢 الكروت
+  // Olive-themed cards
   const cards = [
     {
-      title: "Total Members",
+      title: t("totalMembers", language),
       value: report.totalMembers,
       icon: <PeopleIcon />,
-      color: "linear-gradient(135deg, #00c6ff, #0072ff)",
+      color: "linear-gradient(135deg, #556B2F, #7B8B5E)",
     },
     {
-      title: "Members with Claims",
+      title: t("membersWithClaims", language),
       value: report.membersWithClaims,
       icon: <AssignmentIcon />,
-      color: "linear-gradient(135deg, #56ab2f, #a8e063)",
+      color: "linear-gradient(135deg, #8B9A46, #A8B56B)",
     },
     {
-      title: "Members with Prescriptions",
+      title: t("membersWithPrescriptions", language),
       value: report.membersWithPrescriptions,
       icon: <LocalPharmacyIcon />,
-      color: "linear-gradient(135deg, #ff512f, #dd2476)",
+      color: "linear-gradient(135deg, #3D4F23, #556B2F)",
     },
     {
-      title: "Members with Lab Requests",
+      title: t("membersWithLabRequests", language),
       value: report.membersWithLabRequests,
       icon: <ScienceIcon />,
-      color: "linear-gradient(135deg, #2193b0, #6dd5ed)",
+      color: "linear-gradient(135deg, #7B8B5E, #8B9A46)",
     },
     {
-      title: "Members with Emergency Requests",
+      title: t("membersWithEmergencyRequests", language),
       value: report.membersWithEmergencyRequests,
       icon: <LocalHospitalIcon />,
-      color: "linear-gradient(135deg, #ff9966, #ff5e62)",
+      color: "linear-gradient(135deg, #556B2F, #8B9A46)",
     },
     {
-      title: "Members with Medical Records",
+      title: t("membersWithMedicalRecords", language),
       value: report.membersWithMedicalRecords,
       icon: <DescriptionIcon />,
-      color: "linear-gradient(135deg, #8e2de2, #4a00e0)",
+      color: "linear-gradient(135deg, #A8B56B, #7B8B5E)",
     },
   ];
 
@@ -136,25 +134,25 @@ const MembersActivityReport = () => {
       <Box
         sx={{
           flexGrow: 1,
-          background: "linear-gradient(to bottom, #f9f9f9, #eef2f7)",
+          background: "linear-gradient(to bottom, #FAF8F5, #E8EDE0)",
           minHeight: "100vh",
           marginLeft: "240px",
         }}
       >
         <Header />
-        <Box sx={{ p: 3 }}>
-          {/* العنوان */}
+        <Box sx={{ p: 3 }} dir={isRTL ? "rtl" : "ltr"}>
+          {/* Title */}
           <Typography
             variant="h4"
             fontWeight="bold"
             sx={{
-              color: "#120460",
+              color: "#3D4F23",
               display: "flex",
               alignItems: "center",
               mb: 3,
             }}
           >
-            Members Activity Report
+            {t("membersActivityReport", language)}
           </Typography>
 
           {/* البطاقات */}

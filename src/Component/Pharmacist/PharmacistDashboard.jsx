@@ -1,328 +1,1112 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import "./PharmacistDashboard.module.css";
+// src/Component/Pharmacist/PharmacistDashboard.jsx
+import React, { useState, useEffect, useCallback } from "react";
+import { api, getToken, clearAuthData } from "../../utils/apiService";
+import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { ROLES } from "../../config/roles";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
+import PharmacistSidebar from "./PharmacistSidebar";
+import PharmacistHeader from "./PharmacistHeader";
 import PrescriptionList from "./PrescriptionList";
 import PharmacistProfile from "../Profile/PharmacistProfile";
-import NotificationsList from "../Notification/NotificationsList"; // ✅ استدعاء
+import NotificationsList from "../Notification/NotificationsList";
+import LogoutDialog from "../Auth/LogoutDialog";
+import AddSearchProfilePharmacist from "./AddSearchProfilePharmacist";
+import PharmacistProfiles from "./PharmacistProfiles";
+import HealthcareProviderMyClaims from "../Shared/HealthcareProviderMyClaims";
+import ConsultationPrices from "../Shared/ConsultationPrices";
+
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+} from "@mui/material";
+
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import WarningIcon from "@mui/icons-material/Warning";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import LocalPharmacyIcon from "@mui/icons-material/LocalPharmacy";
 
 const PharmacistDashboard = () => {
-  const [activeView, setActiveView] = useState("dashboard");
+  const { language, isRTL } = useLanguage();
+  const token = getToken();
 
-  const [user, setUser] = useState(null);
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [stats, setStats] = useState({});
-  const [unreadCount, setUnreadCount] = useState(0); // ✅ عداد الإشعارات
-
-  const token = localStorage.getItem("token");
-
-  // ✅ الوصفات
-  const fetchPrescriptions = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:8080/api/prescriptions/pending",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setPrescriptions(res.data);
-    } catch (err) {
-      console.error("❌ Error fetching prescriptions", err);
-    }
-  };
-
-  // ✅ الإحصائيات
-  const fetchStats = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:8080/api/prescriptions/pharmacist/stats",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setStats(res.data);
-    } catch (err) {
-      console.error("❌ Error fetching stats", err);
-    }
-  };
-
-  // ✅ عدد الإشعارات غير المقروءة
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:8080/api/notifications/unread-count",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setUnreadCount(res.data);
-    } catch (err) {
-      console.error("❌ Error fetching unread count", err);
-    }
-  };
-
+  // Active view
+  const [activeView, setActiveView] = useState(
+    localStorage.getItem("pharmacistActiveView") || "dashboard"
+  );
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    localStorage.setItem("pharmacistActiveView", activeView);
+  }, [activeView]);
 
-    fetchPrescriptions();
-    fetchStats();
-    fetchUnreadCount();
+  // Safe JSON parse helper
+  const safeJsonParse = (str, fallback) => {
+    try {
+      if (!str || str === "undefined" || str === "null") return fallback;
+      return JSON.parse(str);
+    } catch {
+      return fallback;
+    }
+  };
 
-    // ✅ Polling كل 3 ثواني
-    const interval = setInterval(() => {
-      fetchPrescriptions();
-      fetchStats();
-      fetchUnreadCount();
-    }, 3000);
+  // User
+  const [user, setUser] = useState(() => {
+    return safeJsonParse(localStorage.getItem("pharmacistUser"), {
+      fullName: "Pharmacist",
+      roles: ["PHARMACIST"],
+      status: "ACTIVE",
+    });
+  });
+  const [profileImage, setProfileImage] = useState(
+    localStorage.getItem("pharmacistProfileImage") || null
+  );
 
-    return () => clearInterval(interval);
+  // Data
+  const [prescriptions, setPrescriptions] = useState(() => {
+    return safeJsonParse(localStorage.getItem("pharmacistPrescriptions"), []);
+  });
+  const [stats, setStats] = useState(() => {
+    return safeJsonParse(localStorage.getItem("pharmacistStats"), {
+      pending: 0,
+      verified: 0,
+      rejected: 0,
+      total: 0,
+    });
+  });
+  const [unreadCount, setUnreadCount] = useState(
+    Number(localStorage.getItem("pharmacistUnreadCount")) || 0
+  );
+
+
+  // Menu
+  const [openLogout, setOpenLogout] = useState(false);
+
+  // ✅ Fast refresh for notification counter only
+  const refreshUnreadCount = useCallback(async () => {
+    try {
+      const notifRes = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
+      // api.get() returns data directly
+      const count = typeof notifRes === 'number' ? notifRes : parseInt(notifRes) || 0;
+      setUnreadCount(count);
+      localStorage.setItem("pharmacistUnreadCount", count);
+    } catch (err) {
+      console.error("Error fetching unread count:", err);
+    }
   }, []);
 
-  // ✅ Verify Prescription
-  const handleVerify = async (id) => {
+
+  // ✅ Fetch data
+  const fetchData = useCallback(async () => {
     try {
-      await axios.patch(
-        `http://localhost:8080/api/prescriptions/${id}/verify`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      await fetchPrescriptions();
-      await fetchStats();
+      // User - api.get() returns data directly
+      const userData = await api.get(API_ENDPOINTS.AUTH.ME);
+      if (userData) {
+        setUser(userData);
+        localStorage.setItem("pharmacistUser", JSON.stringify(userData));
+
+        // Handle both single image and array format
+        let imgPath = userData.universityCardImage || "";
+        if (!imgPath && userData.universityCardImages && userData.universityCardImages.length > 0) {
+          imgPath = userData.universityCardImages[userData.universityCardImages.length - 1];
+        }
+
+        if (imgPath) {
+          const fullPath = imgPath.startsWith("http")
+            ? imgPath
+            : `${API_BASE_URL}${imgPath}`;
+          const withTimestamp = `${fullPath}?t=${Date.now()}`;
+          setProfileImage(withTimestamp);
+          localStorage.setItem("pharmacistProfileImage", withTimestamp);
+        } else {
+          setProfileImage(null);
+        }
+      }
+
+      // Stats ✅ - api.get() returns data directly
+      const statsData = await api.get("/api/prescriptions/pharmacist/stats");
+      if (statsData) {
+        setStats(statsData);
+        localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
+      }
+
+      // Notifications - api.get() returns data directly
+      const notifRes = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
+      const count = typeof notifRes === 'number' ? notifRes : parseInt(notifRes) || 0;
+      setUnreadCount(count);
+      localStorage.setItem("pharmacistUnreadCount", count);
     } catch (err) {
-      console.error("❌ Error verifying prescription:", err);
+      console.error("Error fetching pharmacist data:", err);
+    }
+  }, []);
+
+  // ✅ Fetch prescriptions based on activeView
+  const fetchPrescriptions = useCallback(async () => {
+    try {
+      // جيب الوصفات المعلقة (PENDING) و كل الوصفات اللي تعامل معها
+      // api.get() returns data directly
+      const [pendingData, allData] = await Promise.all([
+        api.get("/api/prescriptions/pending"),
+        api.get("/api/prescriptions/all")
+      ]);
+
+      // دمج: المعلقة + اللي تعامل معها (verified/rejected/billed) - جميع الحالات
+      const pendingPrescriptions = pendingData || [];
+      const myPrescriptions = allData || []; // Include all prescriptions including BILLED
+
+      // إزالة التكرار (في حال pending موجودة في all)
+      const allUnique = myPrescriptions.filter(
+        p => !pendingPrescriptions.some(pending => pending.id === p.id)
+      );
+
+      const combined = [...pendingPrescriptions, ...allUnique];
+
+      setPrescriptions(combined);
+      localStorage.setItem(
+        "pharmacistPrescriptions",
+        JSON.stringify(combined)
+      );
+    } catch (err) {
+      console.error("Error fetching prescriptions:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchData();
+  }, [token]);
+
+  // ✅ Periodic refresh of unread notification count (every 5 seconds for fast updates)
+  useEffect(() => {
+    if (!token) return;
+    refreshUnreadCount();
+    const interval = setInterval(() => {
+      refreshUnreadCount();
+    }, 5000); // 5 seconds for fast notification updates
+    return () => clearInterval(interval);
+  }, [token]);
+
+  // ✅ Fetch prescriptions when activeView changes
+  useEffect(() => {
+    if (!token) return;
+    fetchPrescriptions();
+  }, [activeView, token]);
+
+  // ✅ تحديث الصورة عند أي تغيير في user
+  useEffect(() => {
+    // Handle both single image and array format
+    let imagePath = user?.universityCardImage || "";
+    if (!imagePath && user?.universityCardImages && user.universityCardImages.length > 0) {
+      imagePath = user.universityCardImages[user.universityCardImages.length - 1];
+    }
+
+    if (imagePath) {
+      const imgPath = imagePath.startsWith("http")
+        ? imagePath
+        : `${API_BASE_URL}${imagePath}`;
+      const cleanPath = imgPath.split('?')[0];
+      const withTimestamp = `${cleanPath}?t=${new Date().getTime()}`;
+      setProfileImage(withTimestamp);
+      localStorage.setItem("pharmacistProfileImage", withTimestamp);
+    } else {
+      setProfileImage(null);
+    }
+  }, [user]);
+
+  // Store claim data for document submission
+  const [currentClaimData, setCurrentClaimData] = useState(null);
+  const [claimsRefreshTrigger, setClaimsRefreshTrigger] = useState(0);
+
+  // ✅ Verify (مع تحديث stats محليًا + إنشاء claim تلقائي)
+  const handleVerify = async (id, itemsWithPrices, prescriptionData) => {
+    try {
+      // 1️⃣ التحقق من الوصفة والحصول على الوصفة المحدثة مع finalPrice
+      const verifyResponse = await api.patch(
+        `/api/prescriptions/${id}/verify`,
+        itemsWithPrices
+      );
+
+      // 2️⃣ استخدام البيانات المرسلة من الـ prescription
+      const prescription = prescriptionData || {};
+      
+      // 3️⃣ استخدام totalPrice من الوصفة المحفوظة (التي تم حسابها في الـ backend مع المقارنة)
+      // Use totalPrice from saved prescription (calculated in backend with comparison)
+      // api.patch() returns data directly
+      const verifiedPrescription = verifyResponse || {};
+      const totalPrice = verifiedPrescription.totalPrice || 0;
+      
+      console.log("💰 [VERIFY] Using totalPrice from backend:", totalPrice);
+      console.log("📋 [VERIFY] Prescription data:", {
+        memberId: prescription.memberId,
+        memberName: prescription.memberName,
+        fullPrescription: prescription
+      });
+      console.log("📋 [VERIFY] Verified prescription data:", {
+        memberId: verifiedPrescription.memberId,
+        memberName: verifiedPrescription.memberName,
+        isFamilyMember: verifiedPrescription.isFamilyMember,
+        familyMemberName: verifiedPrescription.familyMemberName,
+        familyMemberAge: verifiedPrescription.familyMemberAge,
+        familyMemberGender: verifiedPrescription.familyMemberGender,
+        isChronic: verifiedPrescription.isChronic, // ✅ Log isChronic from verified prescription
+        "isChronic type": typeof verifiedPrescription.isChronic,
+        "isChronic === true": verifiedPrescription.isChronic === true
+      });
+      console.log("📋 [VERIFY] Original prescription.isChronic:", prescription.isChronic, "type:", typeof prescription.isChronic);
+
+      // 4️⃣ إنشاء claim تلقائي (Healthcare Provider Claim) - بدون إرسال الآن
+      // Use memberId from verifiedPrescription if available, otherwise use prescription.memberId
+      const memberIdToUse = verifiedPrescription.memberId || prescription.memberId;
+      const memberNameToUse = verifiedPrescription.memberName || prescription.memberName;
+      
+      console.log("🔍 [VERIFY] Using memberId for claim:", memberIdToUse);
+      console.log("🔍 [VERIFY] Using memberName for claim:", memberNameToUse);
+      
+      const claimData = {
+        clientId: memberIdToUse, // ID المريض من الوصفة (يمكن أن يكون family member ID أو main client ID)
+        memberName: memberNameToUse || "", // ✅ إضافة memberName مثل الدكتور
+        description: `Pharmacy verification for prescription - ${prescription.items?.length || 0} items verified`,
+        amount: totalPrice,
+        serviceDate: new Date().toISOString().split('T')[0],
+        diagnosis: prescription.diagnosis || "", // ⭐ إضافة diagnosis من الوصفة
+        treatmentDetails: prescription.treatment || "", // ⭐ إضافة treatment من الوصفة
+        roleSpecificData: JSON.stringify({
+          prescriptionId: id,
+          patientName: prescription.memberName,
+          doctorName: prescription.doctorName,
+          diagnosis: prescription.diagnosis || "",
+          treatment: prescription.treatment || "",
+          isChronic: (verifiedPrescription.isChronic === true || verifiedPrescription.isChronic === "true") 
+                     ? true 
+                     : (prescription.isChronic === true || prescription.isChronic === "true") 
+                       ? true 
+                       : false, // ✅ استخدام isChronic من verifiedPrescription أولاً مع التحقق الصحيح
+          itemsCount: verifiedPrescription.items?.length || prescription.items?.length || 0,
+          items: (verifiedPrescription.items || prescription.items || []).map(item => {
+            const isChronic = verifiedPrescription.isChronic || prescription.isChronic || false;
+            // ✅ للوصفات المزمنة: لا نرسل dosage و timesPerDay
+            if (isChronic) {
+              return {
+                name: item.medicineName,
+                price: item.finalPrice || 0,
+                calculatedQuantity: item.calculatedQuantity || null,
+                form: item.form || null,
+                // لا نرسل dosage و timesPerDay للوصفات المزمنة
+              };
+            } else {
+              return {
+                name: item.medicineName,
+                price: item.finalPrice || 0,
+                dosage: item.dosage || null,
+                calculatedQuantity: item.calculatedQuantity || null,
+                form: item.form || null,
+                timesPerDay: item.timesPerDay || null,
+                duration: item.duration || null
+              };
+            }
+          }),
+          notes: `Verified and dispensed by ${user?.fullName || "Pharmacist"}`
+        })
+      };
+      
+      setCurrentClaimData(claimData);
+      console.log("📤 Claim data prepared:", claimData);
+
+      // Refresh prescriptions (جميع الوصفات) و stats
+      // api.get() returns data directly
+      const [pendingData, allData, statsData] = await Promise.all([
+        api.get("/api/prescriptions/pending"),
+        api.get("/api/prescriptions/all"),
+        api.get("/api/prescriptions/pharmacist/stats"),
+      ]);
+
+      // دمج: المعلقة + اللي تعامل معها (verified/rejected/billed) - جميع الحالات
+      const pendingPrescriptions = pendingData || [];
+      const myPrescriptions = allData || []; // Include all prescriptions including BILLED
+      const allUnique = myPrescriptions.filter(
+        p => !pendingPrescriptions.some(pending => pending.id === p.id)
+      );
+      const combined = [...pendingPrescriptions, ...allUnique];
+
+      setPrescriptions(combined);
+      if (statsData) setStats(statsData);
+      localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
+      if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
+    } catch (err) {
+      console.error("Error verifying prescription:", err);
+      console.error("Error details:", err.response?.data);
+      alert(t("failedToVerifyPrescription", language));
+      throw err;
     }
   };
 
-  // ❌ Reject Prescription
+  // ❌ Reject (مع تحديث stats محليًا)
   const handleReject = async (id) => {
     try {
-      await axios.patch(
-        `http://localhost:8080/api/prescriptions/${id}/reject`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+      await api.patch(`/api/prescriptions/${id}/reject`, {});
+
+      // Refresh prescriptions (جميع الوصفات) و stats
+      // api.get() returns data directly
+      const [pendingData, allData, statsData] = await Promise.all([
+        api.get("/api/prescriptions/pending"),
+        api.get("/api/prescriptions/all"),
+        api.get("/api/prescriptions/pharmacist/stats"),
+      ]);
+
+      // دمج: المعلقة + اللي تعامل معها (verified/rejected)
+      const pendingPrescriptions = pendingData || [];
+      const myPrescriptions = allData || [];
+      const allUnique = myPrescriptions.filter(
+        p => !pendingPrescriptions.some(pending => pending.id === p.id)
       );
-      await fetchPrescriptions();
-      await fetchStats();
+      const combined = [...pendingPrescriptions, ...allUnique];
+
+      setPrescriptions(combined);
+      if (statsData) setStats(statsData);
+      localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
+      if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
     } catch (err) {
-      console.error("❌ Error rejecting prescription:", err);
+      console.error("Error rejecting prescription:", err);
+      alert(t("failedToRejectPrescription", language));
+      throw err;
     }
   };
 
-  const handlePrint = (id) => console.log("🖨 Print prescription:", id);
+  // 💰 Mark as Billed (مع تحديث stats محليًا)
+  const handleBill = async (id) => {
+    try {
+      await api.patch(`/api/prescriptions/${id}/bill`, {});
 
-  const handleDetails = (id) => {
-    axios
-      .get(`http://localhost:8080/api/prescriptions/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => alert(JSON.stringify(res.data, null, 2)))
-      .catch((err) => console.error("Error fetching prescription details", err));
+      // Refresh prescriptions (جميع الوصفات) و stats
+      // api.get() returns data directly
+      const [pendingData, allData, statsData] = await Promise.all([
+        api.get("/api/prescriptions/pending"),
+        api.get("/api/prescriptions/all"),
+        api.get("/api/prescriptions/pharmacist/stats"),
+      ]);
+
+      // دمج: المعلقة + اللي تعامل معها (verified/rejected/billed) - جميع الحالات
+      const pendingPrescriptions = pendingData || [];
+      const myPrescriptions = allData || []; // Include all prescriptions including BILLED
+      const allUnique = myPrescriptions.filter(
+        p => !pendingPrescriptions.some(pending => pending.id === p.id)
+      );
+      const combined = [...pendingPrescriptions, ...allUnique];
+
+      setPrescriptions(combined);
+      if (statsData) setStats(statsData);
+      localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
+      if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
+    } catch (err) {
+      console.error("Error marking prescription as billed:", err);
+      alert(t("failedToMarkAsBilled", language));
+      throw err;
+    }
   };
 
-  // 📊 إحصائيات
-  const statistics = [
-    { id: 1, title: "Pending Prescriptions", value: stats.pending || 0, icon: "📋", color: "#F59E0B", bgColor: "#FEF3C7" },
-    { id: 2, title: "Verified", value: stats.verified || 0, icon: "✅", color: "#059669", bgColor: "#F0FDF4" },
-    { id: 3, title: "Rejected", value: stats.rejected || 0, icon: "❌", color: "#DC2626", bgColor: "#FEF2F2" },
-    { id: 4, title: "Total Processed", value: stats.total || 0, icon: "📊", color: "#7C3AED", bgColor: "#F3E8FF" },
-  ];
+  // ✅ Submit Claim with Document
+  const handleSubmitClaim = async (claimSubmission) => {
+    
+    
+    if (!currentClaimData) {
+      throw new Error("❌ Claim data not available. Please verify the prescription again.");
+    }
 
- 
+    // 🔄 Use entered description if provided, otherwise use automatic one
+    const updatedClaimData = {
+      ...currentClaimData,
+      description: claimSubmission.description || currentClaimData.description
+    };
+
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(updatedClaimData));
+    
+    if (claimSubmission.document) {
+      formData.append("document", claimSubmission.document);
+     
+    }
+
+    
+
+    await api.post(
+      API_ENDPOINTS.HEALTHCARE_CLAIMS.SUBMIT,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+
+    setCurrentClaimData(null); // Reset
+    // ✅ Refresh claims list immediately after creating a new claim
+    setClaimsRefreshTrigger(prev => prev + 1);
+  };
 
   return (
-    <div className="pharmacist-dashboard" dir="ltr">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <h2>Pharmacy System</h2>
-        </div>
-        <nav className="sidebar-nav">
-          <div className="nav-sections">
-            <div className="nav-section">
-              <h3>🏠 Dashboard</h3>
-              <ul>
-                <li>
-                  <a
-                    href="#dashboard"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("dashboard");
-                    }}
-                  >
-                    📊 Main Dashboard
-                  </a>
-                </li>
-              </ul>
-            </div>
+    <Box
+      dir={isRTL ? "rtl" : "ltr"}
+      sx={{
+        display: "flex",
+        height: "100vh",
+        backgroundColor: "#FAF8F5",
+        overflow: "hidden",
+      }}
+    >
+      <PharmacistSidebar activeView={activeView} setActiveView={setActiveView} />
 
-            <div className="nav-section">
-              <h3>💊 Prescriptions</h3>
-              <ul>
-                <li>
-                  <a
-                    href="#prescriptions"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("prescriptions");
-                    }}
-                  >
-                    📄 Prescription List
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="nav-bottom">
-              <hr className="sidebar-divider" />
-              <div className="nav-section">
-                <h3>👤 Account</h3>
-                <ul>
-                  <li>
-                    <a
-                      href="#profile"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setActiveView("profile");
-                      }}
-                    >
-                      👤 Profile
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#logout"
-                      style={{ color: "#FF6B6B" }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                      }}
-                    >
-                      🚪 Logout
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </nav>
-      </aside>
-
-      {/* Main Content */}
-      <main className="main-content">
-        <header className="top-nav">
-          <div className="nav-left">
-            <div className="logo">
-              <h1>Birzeit Insurance</h1>
-            </div>
-          </div>
-          <div className="nav-right" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            {/* ✅ زر الجرس */}
-            <div
-              style={{ position: "relative", cursor: "pointer" }}
-              onClick={() => setActiveView("notifications")}
-            >
-                 <button
-              className="notification-btn"
-              onClick={() => setActiveView("notifications")}
-            >
-              🔔
-              {unreadCount > 0 && (
-                <span className="notification-badge">{unreadCount}</span>
-              )}
-            </button>
-              {unreadCount > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "-5px",
-                    right: "-5px",
-                    background: "#EF4444",
-                    color: "white",
-                    borderRadius: "50%",
-                    padding: "2px 6px",
-                    fontSize: "0.8rem",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {unreadCount}
-                </span>
-              )}
-            </div>
-
-            <div className="user-info">
-              <div className="user-avatar">
-                <img
-                  src={
-                    user?.universityCardImage
-                      ? user.universityCardImage.startsWith("http")
-                        ? user.universityCardImage
-                        : `http://localhost:8080${user.universityCardImage}`
-                      : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                  }
-                  alt="User Avatar"
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                  }}
-                />
-              </div>
-              <div className="user-details">
-                <span className="user-name">{user?.fullName || "Pharmacist"}</span>
-                <span className="user-role">{user?.roles?.[0] || "PHARMACIST"}</span>
-              </div>
-            </div>
-          </div>
-        </header>
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          backgroundColor: "#FAF8F5",
+          height: "100vh",
+          marginLeft: "240px",
+          transition: "margin-left 0.3s ease",
+          "@media (max-width: 600px)": {
+            marginLeft: "75px",
+          },
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "#f1f1f1",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#888",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            background: "#555",
+          },
+        }}
+      >
+        {/* Header */}
+        <PharmacistHeader
+          userInfo={user}
+          profileImage={profileImage}
+          unreadCount={unreadCount}
+          onNotificationsClick={() => setActiveView("notifications")}
+          onProfileClick={() => setActiveView("profile")}
+          onLogoClick={() => setActiveView("dashboard")}
+          onLogoutClick={() => setOpenLogout(true)}
+        />
 
         {/* Dashboard */}
         {activeView === "dashboard" && (
-          <>
-            <div className="page-header">
-              <h1>Pharmacist Dashboard</h1>
-              <p>Manage prescriptions and medicines</p>
-            </div>
-            <div className="stats-grid">
-              {statistics.map((stat) => (
-                <div key={stat.id} className="stat-card">
-                  <div className="stat-icon" style={{ backgroundColor: stat.bgColor, color: stat.color }}>
-                    {stat.icon}
-                  </div>
-                  <div className="stat-content">
-                    <h3>{stat.value}</h3>
-                    <p>{stat.title}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
+          <Box sx={{ px: { xs: 2, md: 4 }, py: 4, minHeight: "100vh", background: "linear-gradient(to bottom, #FAF8F5 0%, #ffffff 100%)" }}>
+            {/* Welcome Section - Enhanced */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 3, md: 5 },
+                mb: 4,
+                borderRadius: 4,
+                background: "linear-gradient(135deg, #556B2F 0%, #7B8B5E 50%, #8B9A46 100%)",
+                color: "white",
+                position: "relative",
+                overflow: "hidden",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  width: "200px",
+                  height: "200px",
+                  background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
+                  borderRadius: "50%",
+                },
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 3, position: "relative", zIndex: 1 }}>
+                <Box
+                  sx={{
+                    bgcolor: "rgba(255, 255, 255, 0.2)",
+                    borderRadius: "50%",
+                    p: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <LocalPharmacyIcon sx={{ fontSize: { xs: 40, md: 56 }, color: "white" }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography 
+                    variant="h4" 
+                    fontWeight="bold" 
+                    gutterBottom
+                    sx={{ 
+                      fontSize: { xs: "1.75rem", md: "2.125rem" },
+                      textShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    {t("welcome", language)}, {user?.fullName || t("pharmacist", language)}!
+                  </Typography>
+                  <Typography 
+                    variant="body1" 
+                    sx={{ 
+                      opacity: 0.95,
+                      fontSize: { xs: "0.95rem", md: "1.1rem" },
+                      mt: 1,
+                    }}
+                  >
+                    {t("prescriptionList", language)}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+
+            {/* Stats Cards - Enhanced */}
+            <Grid container spacing={3} sx={{ mb: 5 }} justifyContent="center">
+              {/* Pending Card */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: { xs: 3, md: 4 },
+                    borderRadius: 4,
+                    textAlign: "center",
+                    background: "linear-gradient(135deg, #556B2F 0%, #7B8B5E 100%)",
+                    color: "#fff",
+                    boxShadow: "0 4px 20px rgba(85, 107, 47, 0.3), 0 8px 30px rgba(85, 107, 47, 0.2)",
+                    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: "pointer",
+                    position: "relative",
+                    overflow: "hidden",
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      top: "-50%",
+                      right: "-50%",
+                      width: "200%",
+                      height: "200%",
+                      background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
+                      transition: "all 0.4s ease",
+                    },
+                    "&:hover": {
+                      transform: "translateY(-12px) scale(1.02)",
+                      boxShadow: "0 8px 30px rgba(85, 107, 47, 0.4), 0 12px 40px rgba(85, 107, 47, 0.3)",
+                      "&::before": {
+                        transform: "rotate(45deg)",
+                      },
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      mb: 2,
+                      bgcolor: "rgba(255, 255, 255, 0.25)",
+                      borderRadius: "50%",
+                      width: { xs: 70, md: 90 },
+                      height: { xs: 70, md: 90 },
+                      mx: "auto",
+                      alignItems: "center",
+                      boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <AssignmentIcon sx={{ fontSize: { xs: 35, md: 50 } }} />
+                  </Box>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      mb: 1.5, 
+                      fontWeight: 600,
+                      fontSize: { xs: "1rem", md: "1.25rem" },
+                    }}
+                  >
+                    {t("pending", language)}
+                  </Typography>
+                  <Typography 
+                    variant="h2" 
+                    fontWeight="bold"
+                    sx={{
+                      fontSize: { xs: "2rem", md: "3rem" },
+                      textShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    {stats.pending || 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+
+              {/* Verified Card */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: { xs: 3, md: 4 },
+                    borderRadius: 4,
+                    textAlign: "center",
+                    background: "linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)",
+                    color: "#fff",
+                    boxShadow: "0 4px 20px rgba(76, 175, 80, 0.3), 0 8px 30px rgba(76, 175, 80, 0.2)",
+                    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: "pointer",
+                    position: "relative",
+                    overflow: "hidden",
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      top: "-50%",
+                      right: "-50%",
+                      width: "200%",
+                      height: "200%",
+                      background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
+                      transition: "all 0.4s ease",
+                    },
+                    "&:hover": {
+                      transform: "translateY(-12px) scale(1.02)",
+                      boxShadow: "0 8px 30px rgba(76, 175, 80, 0.4), 0 12px 40px rgba(76, 175, 80, 0.3)",
+                      "&::before": {
+                        transform: "rotate(45deg)",
+                      },
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      mb: 2,
+                      bgcolor: "rgba(255, 255, 255, 0.25)",
+                      borderRadius: "50%",
+                      width: { xs: 70, md: 90 },
+                      height: { xs: 70, md: 90 },
+                      mx: "auto",
+                      alignItems: "center",
+                      boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <CheckCircleIcon sx={{ fontSize: { xs: 35, md: 50 } }} />
+                  </Box>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      mb: 1.5, 
+                      fontWeight: 600,
+                      fontSize: { xs: "1rem", md: "1.25rem" },
+                    }}
+                  >
+                    {t("verified", language)}
+                  </Typography>
+                  <Typography 
+                    variant="h2" 
+                    fontWeight="bold"
+                    sx={{
+                      fontSize: { xs: "2rem", md: "3rem" },
+                      textShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    {stats.verified || 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+
+              {/* Rejected Card */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: { xs: 3, md: 4 },
+                    borderRadius: 4,
+                    textAlign: "center",
+                    background: "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)",
+                    color: "#fff",
+                    boxShadow: "0 4px 20px rgba(220, 38, 38, 0.3), 0 8px 30px rgba(220, 38, 38, 0.2)",
+                    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: "pointer",
+                    position: "relative",
+                    overflow: "hidden",
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      top: "-50%",
+                      right: "-50%",
+                      width: "200%",
+                      height: "200%",
+                      background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
+                      transition: "all 0.4s ease",
+                    },
+                    "&:hover": {
+                      transform: "translateY(-12px) scale(1.02)",
+                      boxShadow: "0 8px 30px rgba(220, 38, 38, 0.4), 0 12px 40px rgba(220, 38, 38, 0.3)",
+                      "&::before": {
+                        transform: "rotate(45deg)",
+                      },
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      mb: 2,
+                      bgcolor: "rgba(255, 255, 255, 0.25)",
+                      borderRadius: "50%",
+                      width: { xs: 70, md: 90 },
+                      height: { xs: 70, md: 90 },
+                      mx: "auto",
+                      alignItems: "center",
+                      boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <WarningIcon sx={{ fontSize: { xs: 35, md: 50 } }} />
+                  </Box>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      mb: 1.5, 
+                      fontWeight: 600,
+                      fontSize: { xs: "1rem", md: "1.25rem" },
+                    }}
+                  >
+                    {t("rejected", language)}
+                  </Typography>
+                  <Typography 
+                    variant="h2" 
+                    fontWeight="bold"
+                    sx={{
+                      fontSize: { xs: "2rem", md: "3rem" },
+                      textShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    {stats.rejected || 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+
+              {/* Total Card */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: { xs: 3, md: 4 },
+                    borderRadius: 4,
+                    textAlign: "center",
+                    background: "linear-gradient(135deg, #C9A646 0%, #DDB85C 100%)",
+                    color: "#fff",
+                    boxShadow: "0 4px 20px rgba(201, 166, 70, 0.3), 0 8px 30px rgba(201, 166, 70, 0.2)",
+                    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: "pointer",
+                    position: "relative",
+                    overflow: "hidden",
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      top: "-50%",
+                      right: "-50%",
+                      width: "200%",
+                      height: "200%",
+                      background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
+                      transition: "all 0.4s ease",
+                    },
+                    "&:hover": {
+                      transform: "translateY(-12px) scale(1.02)",
+                      boxShadow: "0 8px 30px rgba(201, 166, 70, 0.4), 0 12px 40px rgba(201, 166, 70, 0.3)",
+                      "&::before": {
+                        transform: "rotate(45deg)",
+                      },
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      mb: 2,
+                      bgcolor: "rgba(255, 255, 255, 0.25)",
+                      borderRadius: "50%",
+                      width: { xs: 70, md: 90 },
+                      height: { xs: 70, md: 90 },
+                      mx: "auto",
+                      alignItems: "center",
+                      boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <BarChartIcon sx={{ fontSize: { xs: 35, md: 50 } }} />
+                  </Box>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      mb: 1.5, 
+                      fontWeight: 600,
+                      fontSize: { xs: "1rem", md: "1.25rem" },
+                    }}
+                  >
+                    {t("total", language)}
+                  </Typography>
+                  <Typography 
+                    variant="h2" 
+                    fontWeight="bold"
+                    sx={{
+                      fontSize: { xs: "2rem", md: "3rem" },
+                      textShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    {stats.total || 0}
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+
+            {/* Quick Actions - Enhanced */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 3, md: 4 },
+                borderRadius: 4,
+                bgcolor: "#fff",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.08), 0 4px 20px rgba(0,0,0,0.04)",
+                border: "1px solid rgba(0,0,0,0.05)",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+                <Box
+                  sx={{
+                    bgcolor: "#556B2F",
+                    borderRadius: "50%",
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <AssignmentIcon sx={{ color: "white", fontSize: 28 }} />
+                </Box>
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  sx={{ color: "#2E3B2D" }}
+                >
+                  {t("quickActions", language)}
+                </Typography>
+              </Box>
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box
+                    onClick={() => setActiveView("prescriptions")}
+                    sx={{
+                      p: 3,
+                      borderRadius: 3,
+                      border: "2px solid #E8EBE0",
+                      bgcolor: "#F5F7F0",
+                      cursor: "pointer",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      position: "relative",
+                      overflow: "hidden",
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        top: 0,
+                        left: "-100%",
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(90deg, transparent, rgba(85, 107, 47, 0.1), transparent)",
+                        transition: "left 0.5s ease",
+                      },
+                      "&:hover": {
+                        borderColor: "#556B2F",
+                        bgcolor: "#E8EBE0",
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 8px 24px rgba(85, 107, 47, 0.15)",
+                        "&::before": {
+                          left: "100%",
+                        },
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Box
+                        sx={{
+                          bgcolor: "#556B2F",
+                          borderRadius: 2,
+                          p: 1.5,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <AssignmentIcon sx={{ color: "white", fontSize: 28 }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#2E3B2D", mb: 0.5 }}>
+                          {t("prescriptions", language)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {t("prescriptionList", language)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box
+                    onClick={() => setActiveView("addProfile")}
+                    sx={{
+                      p: 3,
+                      borderRadius: 3,
+                      border: "2px solid #E8EBE0",
+                      bgcolor: "#F5F7F0",
+                      cursor: "pointer",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      position: "relative",
+                      overflow: "hidden",
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        top: 0,
+                        left: "-100%",
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(90deg, transparent, rgba(85, 107, 47, 0.1), transparent)",
+                        transition: "left 0.5s ease",
+                      },
+                      "&:hover": {
+                        borderColor: "#556B2F",
+                        bgcolor: "#E8EBE0",
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 8px 24px rgba(85, 107, 47, 0.15)",
+                        "&::before": {
+                          left: "100%",
+                        },
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Box
+                        sx={{
+                          bgcolor: "#556B2F",
+                          borderRadius: 2,
+                          p: 1.5,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <LocalPharmacyIcon sx={{ color: "white", fontSize: 28 }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#2E3B2D", mb: 0.5 }}>
+                          {t("addProfile", language)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {t("registerYourProfile", language)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box
+                    onClick={() => setActiveView("my-claims")}
+                    sx={{
+                      p: 3,
+                      borderRadius: 3,
+                      border: "2px solid #E8EBE0",
+                      bgcolor: "#F5F7F0",
+                      cursor: "pointer",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      position: "relative",
+                      overflow: "hidden",
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        top: 0,
+                        left: "-100%",
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(90deg, transparent, rgba(85, 107, 47, 0.1), transparent)",
+                        transition: "left 0.5s ease",
+                      },
+                      "&:hover": {
+                        borderColor: "#556B2F",
+                        bgcolor: "#E8EBE0",
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 8px 24px rgba(85, 107, 47, 0.15)",
+                        "&::before": {
+                          left: "100%",
+                        },
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Box
+                        sx={{
+                          bgcolor: "#556B2F",
+                          borderRadius: 2,
+                          p: 1.5,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <BarChartIcon sx={{ color: "white", fontSize: 28 }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#2E3B2D", mb: 0.5 }}>
+                          {t("myClaims", language)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {t("viewSubmittedClaims", language)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Box>
         )}
 
-        {/* Prescription List */}
         {activeView === "prescriptions" && (
-          <>
-            <div className="page-header">
-              <h1>Prescription List</h1>
-              <p>Manage and review all prescriptions</p>
-            </div>
-            <PrescriptionList
-              prescriptions={prescriptions}
-              onVerify={handleVerify}
-              onReject={handleReject}
-              onPrint={handlePrint}
-              onDetails={handleDetails}
-            />
-          </>
+          <PrescriptionList
+            prescriptions={prescriptions}
+            onVerify={handleVerify}
+            onReject={handleReject}
+            onSubmitClaim={handleSubmitClaim}
+            onBill={handleBill}
+            onPrint={(id) => console.log("🖨 Print", id)}
+            onDetails={(id) => console.log("ℹ️ Details", id)}
+          />
         )}
 
-        {/* Notifications */}
         {activeView === "notifications" && (
-          <NotificationsList refreshUnread={fetchUnreadCount} />
+          <NotificationsList refresh={refreshUnreadCount} />
         )}
+        {activeView === "addProfile" && (
+          <AddSearchProfilePharmacist refresh={fetchData} />
+        )}
+        {activeView === "pharmacistProfiles" && <PharmacistProfiles />}
+        {activeView === "my-claims" && (
+          <HealthcareProviderMyClaims userRole={ROLES.PHARMACIST} refreshTrigger={claimsRefreshTrigger} />
+        )}
+        {activeView === "consultation-prices" && <ConsultationPrices />}
 
-        {/* Profile */}
         {activeView === "profile" && (
           <PharmacistProfile userInfo={user} setUser={setUser} />
         )}
-      </main>
+      </Box>
 
-    
-    </div>
+      <LogoutDialog
+        open={openLogout}
+        onClose={() => setOpenLogout(false)}
+        onConfirm={() => {
+          clearAuthData();
+          window.location.href = "/LandingPage";
+        }}
+      />
+    </Box>
   );
 };
 

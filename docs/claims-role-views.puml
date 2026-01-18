@@ -1,0 +1,82 @@
+@startuml Claims - Role-Based Views
+
+!theme cerulean
+skinparam backgroundColor #FEFEFE
+skinparam roundcorner 15
+skinparam defaultFontSize 10
+skinparam titleFontSize 16
+skinparam packageStyle rectangle
+
+title **What Each Role Sees & Can Do with Claims**
+
+' ==================== CLAIM TYPES ====================
+package "📋 CLAIM TYPES" as ClaimTypes #E8F5E9 {
+  rectangle "🩺 Doctor Claims" as DoctorClaim #C8E6C9 {
+    note as N1
+      • Consultations
+      • Follow-up visits (₪0 if <14 days)
+      • Emergency services
+      • Medical procedures
+    end note
+  }
+
+  rectangle "💊 Pharmacist Claims" as PharmacyClaim #BBDEFB {
+    note as N2
+      • Prescription fulfillment
+      • Medication dispensing
+      • Price: min(pharmacist, union)
+    end note
+  }
+
+  rectangle "🔬 Lab Tech Claims" as LabClaim #FFF9C4 {
+    note as N3
+      • Blood tests
+      • Urinalysis
+      • Pathology tests
+    end note
+  }
+
+  rectangle "📷 Radiologist Claims" as RadiologyClaim #FFCCBC {
+    note as N4
+      • X-Ray
+      • MRI/CT Scan
+      • Ultrasound
+    end note
+  }
+
+  rectangle "👤 Client Claims" as ClientClaim #E1BEE7 {
+    note as N5
+      • Out-of-network providers
+      • Self-submitted
+      • Requires invoice upload
+    end note
+  }
+}
+
+' ==================== STATUSES ====================
+package "📊 CLAIM STATUSES" as Statuses #FFF3E0 {
+  rectangle "🆕 PENDING_MEDICAL" as S1 #FFE0B2
+  rectangle "✅ APPROVED_BY_MEDICAL" as S2 #C8E6C9
+  rectangle "📋 AWAITING_COORDINATION" as S3 #BBDEFB
+  rectangle "🔙 RETURNED_FOR_REVIEW" as S4 #FFE082
+  rectangle "↩️ RETURNED_TO_PROVIDER" as S5 #FFAB91
+  rectangle "✅ APPROVED_FINAL" as S6 #A5D6A7
+  rectangle "❌ REJECTED_FINAL" as S7 #EF9A9A
+  rectangle "⏳ PAYMENT_PENDING" as S8 #B3E5FC
+  rectangle "💳 PAID" as S9 #81C784
+
+  S1 --> S2 : Medical Approves
+  S1 --> S7 : Medical Rejects
+  S2 --> S3
+  S3 --> S6 : Coord Approves
+  S3 --> S7 : Coord Rejects
+  S3 --> S4 : Return to Medical
+  S3 --> S5 : Return to Provider
+  S4 --> S2 : Re-approved
+  S4 --> S7 : Re-rejected
+  S5 --> S1 : Resubmitted
+  S6 --> S8
+  S8 --> S9 : Mark Paid
+}
+
+@enduml

@@ -26,11 +26,15 @@ import {
   Legend,
 } from "recharts";
 import { motion } from "framer-motion";
-import axios from "axios";
+import { api } from "../../../utils/apiService";
+import { API_ENDPOINTS } from "../../../config/api";
+import { useLanguage } from "../../../context/LanguageContext";
+import { t } from "../../../config/translations";
 
-const COLORS = ["#4CAF50", "#FF5252"];
+const COLORS = ["#556B2F", "#7B8B5E"];
 
 const PoliciesReport = () => {
+  const { language, isRTL } = useLanguage();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,11 +42,8 @@ const PoliciesReport = () => {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:8080/api/reports/policies", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setReport(res.data);
+        const res = await api.get(API_ENDPOINTS.REPORTS.POLICIES);
+        setReport(res || {});
       } catch (err) {
         console.error("❌ Failed to load policies report:", err.response?.data || err.message);
       } finally {
@@ -60,7 +61,7 @@ const PoliciesReport = () => {
         <Box
           sx={{
             flexGrow: 1,
-            background: "linear-gradient(to bottom, #f9f9f9, #eef2f7)",
+            background: "linear-gradient(to bottom, #FAF8F5, #E8EDE0)",
             minHeight: "100vh",
             marginLeft: "240px",
             display: "flex",
@@ -68,7 +69,7 @@ const PoliciesReport = () => {
             justifyContent: "center",
           }}
         >
-          <CircularProgress />
+          <CircularProgress sx={{ color: "#556B2F" }} />
         </Box>
       </Box>
     );
@@ -81,7 +82,7 @@ const PoliciesReport = () => {
         <Box
           sx={{
             flexGrow: 1,
-            background: "linear-gradient(to bottom, #f9f9f9, #eef2f7)",
+            background: "linear-gradient(to bottom, #FAF8F5, #E8EDE0)",
             minHeight: "100vh",
             marginLeft: "240px",
             display: "flex",
@@ -89,7 +90,7 @@ const PoliciesReport = () => {
             justifyContent: "center",
           }}
         >
-          <Typography color="error">⚠️ Failed to load policies report.</Typography>
+          <Typography color="error">{t("failedToLoadPoliciesReport", language)}</Typography>
         </Box>
       </Box>
     );
@@ -97,8 +98,8 @@ const PoliciesReport = () => {
 
   // Pie chart data
   const pieData = [
-    { name: "Active Members", value: report.activeMembers },
-    { name: "Inactive Members", value: report.inactiveMembers },
+    { name: t("activeMembers", language), value: report.activeMembers },
+    { name: t("inactiveMembers", language), value: report.inactiveMembers },
   ];
 
   // Bar chart data
@@ -115,54 +116,54 @@ const PoliciesReport = () => {
       <Box
         sx={{
           flexGrow: 1,
-          background: "linear-gradient(to bottom, #f9f9f9, #eef2f7)",
+          background: "linear-gradient(to bottom, #FAF8F5, #E8EDE0)",
           minHeight: "100vh",
           marginLeft: "240px",
         }}
       >
         <Header />
-        <Box sx={{ p: 3 }}>
-          {/* عنوان */}
+        <Box sx={{ p: 3 }} dir={isRTL ? "rtl" : "ltr"}>
+          {/* Title */}
           <Typography
             variant="h4"
             fontWeight="bold"
             sx={{
-              color: "#120460",
+              color: "#3D4F23",
               display: "flex",
               alignItems: "center",
               mb: 3,
             }}
           >
-            <DescriptionIcon sx={{ mr: 1, fontSize: 40, color: "#1E8EAB" }} />
-            Policies Report
+            <DescriptionIcon sx={{ mr: 1, fontSize: 40, color: "#556B2F" }} />
+            {t("policiesReportTitle", language)}
           </Typography>
 
-          {/* البطاقات الرئيسية */}
+          {/* Main Cards */}
           <Grid container spacing={3}>
             {[
               {
-                title: "Total Members",
+                title: t("totalMembers", language),
                 value: report.totalMembers,
                 icon: <PeopleIcon />,
-                color: "linear-gradient(135deg,#00c6ff,#0072ff)",
+                color: "linear-gradient(135deg,#556B2F,#7B8B5E)",
               },
               {
-                title: "Active Members",
+                title: t("activeMembers", language),
                 value: report.activeMembers,
                 icon: <CheckCircleIcon />,
-                color: "linear-gradient(135deg,#56ab2f,#a8e063)",
+                color: "linear-gradient(135deg,#8B9A46,#A8B56B)",
               },
               {
-                title: "Inactive Members",
+                title: t("inactiveMembers", language),
                 value: report.inactiveMembers,
                 icon: <CancelIcon />,
-                color: "linear-gradient(135deg,#ff512f,#dd2476)",
+                color: "linear-gradient(135deg,#3D4F23,#556B2F)",
               },
               {
-                title: "Active Policies",
+                title: t("activePolicies", language),
                 value: report.activePolicies,
                 icon: <PolicyIcon />,
-                color: "linear-gradient(135deg,#2193b0,#6dd5ed)",
+                color: "linear-gradient(135deg,#7B8B5E,#8B9A46)",
               },
             ].map((card, index) => (
               <Grid item xs={12} md={3} key={index}>
@@ -210,13 +211,13 @@ const PoliciesReport = () => {
           <Grid container spacing={4} sx={{ mt: 5 }}>
             {/* Pie Chart */}
             <Grid item xs={12} md={6}>
-              <Paper sx={{ p: 3, borderRadius: 3, height: 350 }}>
+              <Paper sx={{ p: 3, borderRadius: 3, height: 350, backgroundColor: "#F5F5DC" }}>
                 <Typography
                   variant="h6"
                   fontWeight="bold"
-                  sx={{ mb: 2, color: "#120460" }}
+                  sx={{ mb: 2, color: "#3D4F23" }}
                 >
-                  Active vs Inactive Members
+                  {t("activeVsInactiveMembers", language)}
                 </Typography>
                 <ResponsiveContainer width="100%" height="85%">
                   <PieChart>
@@ -243,13 +244,13 @@ const PoliciesReport = () => {
 
             {/* Bar Chart */}
             <Grid item xs={12} md={6}>
-              <Paper sx={{ p: 3, borderRadius: 3, height: 350 }}>
+              <Paper sx={{ p: 3, borderRadius: 3, height: 350, backgroundColor: "#F5F5DC" }}>
                 <Typography
                   variant="h6"
                   fontWeight="bold"
-                  sx={{ mb: 2, color: "#120460" }}
+                  sx={{ mb: 2, color: "#3D4F23" }}
                 >
-                  Members per Policy
+                  {t("membersPerPolicy", language)}
                 </Typography>
                 <ResponsiveContainer width="100%" height="85%">
                   <BarChart data={barData}>
@@ -257,7 +258,7 @@ const PoliciesReport = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="members" fill="#1E8EAB" />
+                    <Bar dataKey="members" fill="#556B2F" />
                   </BarChart>
                 </ResponsiveContainer>
               </Paper>

@@ -1,0 +1,183 @@
+@startuml Insurance Claims - Complete Lifecycle Diagram
+
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam roundcorner 10
+skinparam defaultFontSize 11
+skinparam titleFontSize 20
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+title **Insurance System - Complete Claims Lifecycle**\nAll Roles, Claim Types, Statuses & Permissions
+
+' ==================== ACTORS ====================
+actor "👤 Insurance Client\n(Patient)" as Client #E1BEE7
+actor "🩺 Doctor" as Doctor #C8E6C9
+actor "💊 Pharmacist" as Pharmacist #BBDEFB
+actor "🔬 Lab Technician" as LabTech #FFF9C4
+actor "📷 Radiologist" as Radiologist #FFCCBC
+actor "🏥 Medical Admin" as MedicalAdmin #B2DFDB
+actor "📋 Coordination Admin" as CoordAdmin #FFE082
+actor "👔 Insurance Manager" as Manager #B39DDB
+
+' ==================== CLAIM SUBMISSION ====================
+package "📥 CLAIM SUBMISSION" as Submission #E8F5E9 {
+
+  rectangle "**Doctor Claim**\n━━━━━━━━━━━━━━\n• Search patient\n• Select patient/family\n• Enter diagnosis\n• Enter treatment\n• Set amount (₪)\n• Upload invoice" as DoctorSubmit #C8E6C9
+
+  rectangle "**Pharmacist Claim**\n━━━━━━━━━━━━━━\n• Search patient\n• Link to prescription\n• Enter medications\n• Set amount (₪)\n• Upload invoice" as PharmSubmit #BBDEFB
+
+  rectangle "**Lab Tech Claim**\n━━━━━━━━━━━━━━\n• Search patient\n• Link to lab request\n• Enter test details\n• Set amount (₪)\n• Upload results" as LabSubmit #FFF9C4
+
+  rectangle "**Radiologist Claim**\n━━━━━━━━━━━━━━\n• Search patient\n• Link to radiology req\n• Enter service type\n• Set amount (₪)\n• Upload images" as RadioSubmit #FFCCBC
+
+  rectangle "**Client Self-Claim**\n━━━━━━━━━━━━━━\n• Out-of-network\n• Enter provider name\n• Enter doctor name\n• Set amount (₪)\n• Upload invoice\n  (REQUIRED)" as ClientSubmit #E1BEE7
+}
+
+Doctor --> DoctorSubmit
+Pharmacist --> PharmSubmit
+LabTech --> LabSubmit
+Radiologist --> RadioSubmit
+Client --> ClientSubmit
+
+' ==================== STATUSES ====================
+package "📊 CLAIM STATUS FLOW" as StatusFlow #FFFDE7 {
+
+  rectangle "**🆕 PENDING_MEDICAL**\n━━━━━━━━━━━━━━━━━━\nNew claim submitted\nAwaiting medical review" as PENDING #FFE0B2
+
+  rectangle "**✅ APPROVED_BY_MEDICAL**\n━━━━━━━━━━━━━━━━━━\nMedical approved\nCoverage verified" as APPROVED_MED #C8E6C9
+
+  rectangle "**📋 AWAITING_COORDINATION**\n━━━━━━━━━━━━━━━━━━\nMedical approved\nAwaiting final decision" as AWAITING_COORD #BBDEFB
+
+  rectangle "**🔙 RETURNED_FOR_REVIEW**\n━━━━━━━━━━━━━━━━━━\nReturned to Medical Admin\nNeeds re-review" as RETURNED_MED #FFE082
+
+  rectangle "**↩️ RETURNED_TO_PROVIDER**\n━━━━━━━━━━━━━━━━━━\nReturned to submitter\nCorrections needed" as RETURNED_PROV #FFAB91
+
+  rectangle "**✅ APPROVED_FINAL**\n━━━━━━━━━━━━━━━━━━\nFully approved\nReady for payment" as APPROVED_FINAL #A5D6A7
+
+  rectangle "**❌ REJECTED_FINAL**\n━━━━━━━━━━━━━━━━━━\n**TERMINAL STATE**\nCannot be changed" as REJECTED #EF9A9A
+
+  rectangle "**⏳ PAYMENT_PENDING**\n━━━━━━━━━━━━━━━━━━\nApproved\nAwaiting payment" as PAYMENT_PEND #B3E5FC
+
+  rectangle "**💳 PAID**\n━━━━━━━━━━━━━━━━━━\n**TERMINAL STATE**\nPayment complete" as PAID #81C784
+
+  ' Status transitions
+  DoctorSubmit -down-> PENDING
+  PharmSubmit -down-> PENDING
+  LabSubmit -down-> PENDING
+  RadioSubmit -down-> PENDING
+  ClientSubmit -down-> PENDING
+
+  PENDING -right-> APPROVED_MED : Medical\nApproves
+  PENDING -down-> REJECTED : Medical\nRejects
+
+  APPROVED_MED -right-> AWAITING_COORD
+
+  AWAITING_COORD -right-> APPROVED_FINAL : Coord\nApproves
+  AWAITING_COORD -down-> REJECTED : Coord\nRejects
+  AWAITING_COORD -left-> RETURNED_MED : Return to\nMedical
+  AWAITING_COORD -up-> RETURNED_PROV : Return to\nProvider
+
+  RETURNED_MED -up-> APPROVED_MED : Re-approve
+  RETURNED_MED -down-> REJECTED : Re-reject
+
+  RETURNED_PROV -up-> PENDING : Resubmit
+
+  APPROVED_FINAL -right-> PAYMENT_PEND
+  PAYMENT_PEND -right-> PAID : Mark\nPaid
+}
+
+' ==================== MEDICAL ADMIN VIEW ====================
+package "🏥 MEDICAL ADMIN VIEW" as MedicalView #B2DFDB {
+  rectangle "**Can See:**\n• Claims in PENDING_MEDICAL\n• Claims in RETURNED_FOR_REVIEW\n• Provider details\n• Patient/family info\n• Service & diagnosis\n• Amount requested\n• Invoice documents\n• Coverage eligibility" as MedSee
+
+  rectangle "**Can Do:**\n✅ Approve Medical\n❌ Reject Medical (with reason)\n📊 View coverage check results\n📋 Add medical notes" as MedDo
+
+  rectangle "**Coverage Check:**\n• Service covered?\n• Age/Gender valid?\n• Deductible met?\n• Within limits?\n• Emergency eligible?" as MedCoverage
+}
+
+MedicalAdmin --> MedicalView
+
+' ==================== COORDINATION ADMIN VIEW ====================
+package "📋 COORDINATION ADMIN VIEW" as CoordView #FFE082 {
+  rectangle "**Can See:**\n• Claims in AWAITING_COORDINATION\n• All medical review info\n• Medical reviewer details\n• Coverage calculations\n• Insurance vs Client amounts\n• Full claim history" as CoordSee
+
+  rectangle "**Can Do:**\n✅ Approve Final\n❌ Reject Final (with reason)\n🔙 Return to Medical (with reason)\n↩️ Return to Provider (with reason)\n💳 Mark as Paid\n📝 Create direct claims" as CoordDo
+
+  rectangle "**Payment Info:**\n• Insurance Covered: ₪___\n• Client Pays: ₪___\n• Coverage %: ___%\n• Max limit applied?" as CoordPayment
+}
+
+CoordAdmin --> CoordView
+
+' ==================== INSURANCE MANAGER VIEW ====================
+package "👔 INSURANCE MANAGER VIEW (GOD MODE)" as ManagerView #B39DDB {
+  rectangle "**Can See EVERYTHING:**\n• ALL claims (any status)\n• ALL provider types\n• ALL patients\n• Full audit trail\n• All financial data\n• System-wide reports" as MgrSee
+
+  rectangle "**Can Do EVERYTHING:**\n✅ Medical Approve/Reject\n✅ Coordination Approve/Reject\n🔙 Return to Medical/Provider\n💳 Mark as Paid\n📝 Create claims for clients\n📊 Generate PDF/Excel reports\n🔍 Advanced search & filter\n📦 Batch operations" as MgrDo
+}
+
+Manager --> ManagerView
+
+' ==================== HEALTHCARE PROVIDER VIEW ====================
+package "🩺💊🔬📷 HEALTHCARE PROVIDER VIEW" as ProviderView #C5CAE9 {
+  rectangle "**Can See:**\n• Own submitted claims\n• Claim status & history\n• Approval/Rejection reasons\n• Payment status\n• Return reasons (if any)" as ProvSee
+
+  rectangle "**Can Do:**\n📝 Submit new claims\n👁️ View claim status\n✏️ Resubmit if returned\n📎 Upload additional docs" as ProvDo
+
+  rectangle "**Cannot Do:**\n❌ Approve/Reject claims\n❌ See other providers' claims\n❌ Modify submitted claims" as ProvCannot
+}
+
+Doctor --> ProviderView
+Pharmacist --> ProviderView
+LabTech --> ProviderView
+Radiologist --> ProviderView
+
+' ==================== CLIENT VIEW ====================
+package "👤 CLIENT/PATIENT VIEW" as ClientView #E1BEE7 {
+  rectangle "**Can See:**\n• Own claims (all types)\n• Family member claims\n• Claim status\n• Insurance covered amount\n• Client pay amount\n• Rejection reasons" as ClientSee
+
+  rectangle "**Can Do:**\n📝 Submit self-claims\n   (out-of-network)\n👁️ Track claim status\n📎 Upload invoices" as ClientDo
+
+  rectangle "**Cannot Do:**\n❌ Approve/Reject\n❌ See other patients\n❌ See provider details" as ClientCannot
+}
+
+Client --> ClientView
+
+' ==================== NOTIFICATIONS ====================
+note bottom of StatusFlow
+  **🔔 NOTIFICATIONS SENT:**
+  ━━━━━━━━━━━━━━━━━━━━━━━━
+  **On Submit:** → Medical Admins
+  **On Medical Approve:** → Provider, Patient, Coord Admins
+  **On Medical Reject:** → Provider, Patient
+  **On Coord Approve:** → Provider, Patient
+  **On Coord Reject:** → Provider, Patient
+  **On Return to Medical:** → Medical Admin
+  **On Return to Provider:** → Provider
+  **On Payment:** → Provider, Patient
+end note
+
+' ==================== SPECIAL RULES ====================
+note right of DoctorSubmit
+  **⚕️ FOLLOW-UP RULE:**
+  If same patient + same specialization
+  within 14 days of previous visit:
+  • Amount = ₪0
+  • isFollowUp = true
+  • Patient pays original fee
+  • Insurance covers only meds/tests
+end note
+
+note right of APPROVED_FINAL
+  **💰 COVERAGE CALCULATION:**
+  Insurance Pay = Amount × (Coverage% / 100)
+  If Insurance Pay > Max Limit:
+    Insurance Pay = Max Limit
+  Client Pay = Amount - Insurance Pay
+
+  **🚨 EMERGENCY BYPASS:**
+  If emergency = true AND service eligible:
+    Coverage = 100%
+end note
+
+@enduml

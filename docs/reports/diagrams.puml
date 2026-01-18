@@ -1,0 +1,1314 @@
+' ============================================================================
+' Birzeit University Insurance System - PlantUML Diagrams
+' ============================================================================
+' To generate images, use: https://www.plantuml.com/plantuml/uml/
+' Or VS Code PlantUML extension
+' ============================================================================
+
+' ============================================================================
+' 1. USE CASE DIAGRAM
+' ============================================================================
+@startuml UseCase_Diagram
+
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecaseBackgroundColor #E8F5E9
+skinparam actorBackgroundColor #C8E6C9
+
+title Birzeit University Insurance System - Use Case Diagram
+
+left to right direction
+
+' Actors
+actor "Insurance Manager" as Manager #darkgreen
+actor "Medical Admin" as MedAdmin #green
+actor "Coordination Admin" as CoordAdmin #green
+actor "Emergency Manager" as EmergencyMgr #orange
+actor "Client" as Client #blue
+actor "Doctor" as Doctor #purple
+actor "Pharmacist" as Pharmacist #teal
+actor "Lab Technician" as LabTech #cyan
+actor "Radiologist" as Radiologist #indigo
+
+' System boundary
+rectangle "Birzeit University Insurance System" {
+
+    ' Authentication Use Cases
+    package "Authentication" {
+        usecase "Sign In" as UC_SignIn
+        usecase "Sign Up" as UC_SignUp
+        usecase "Reset Password" as UC_ResetPwd
+        usecase "Logout" as UC_Logout
+    }
+
+    ' Claims Management Use Cases
+    package "Claims Management" {
+        usecase "Submit Claim" as UC_SubmitClaim
+        usecase "View My Claims" as UC_ViewMyClaims
+        usecase "Review Claim\n(Medical)" as UC_ReviewMedical
+        usecase "Review Claim\n(Coordination)" as UC_ReviewCoord
+        usecase "Approve/Reject\nClaim" as UC_ApproveClaim
+        usecase "View All Claims" as UC_ViewAllClaims
+    }
+
+    ' Medical Requests Use Cases
+    package "Medical Requests" {
+        usecase "Create Prescription" as UC_CreateRx
+        usecase "View Prescriptions" as UC_ViewRx
+        usecase "Fulfill Prescription" as UC_FulfillRx
+        usecase "Create Lab Request" as UC_CreateLab
+        usecase "Process Lab Request" as UC_ProcessLab
+        usecase "Create Radiology\nRequest" as UC_CreateRad
+        usecase "Process Radiology\nRequest" as UC_ProcessRad
+        usecase "Create Emergency\nRequest" as UC_CreateEmergency
+        usecase "Manage Emergency\nRequests" as UC_ManageEmergency
+    }
+
+    ' User Management Use Cases
+    package "User Management" {
+        usecase "Manage Users" as UC_ManageUsers
+        usecase "Approve Client\nRegistration" as UC_ApproveClient
+        usecase "Manage Profile" as UC_ManageProfile
+        usecase "Manage Family\nMembers" as UC_ManageFamily
+    }
+
+    ' Healthcare Provider Use Cases
+    package "Healthcare Providers" {
+        usecase "Search Providers" as UC_SearchProviders
+        usecase "View Provider Map" as UC_ViewMap
+        usecase "Register Provider\nProfile" as UC_RegisterProvider
+        usecase "Approve Provider" as UC_ApproveProvider
+    }
+
+    ' Reporting Use Cases
+    package "Reporting & Analytics" {
+        usecase "View Dashboard" as UC_ViewDashboard
+        usecase "Generate Reports" as UC_GenReports
+        usecase "View Notifications" as UC_ViewNotifications
+    }
+}
+
+' Manager connections (has all permissions)
+Manager --> UC_SignIn
+Manager --> UC_ManageUsers
+Manager --> UC_ApproveClient
+Manager --> UC_ViewAllClaims
+Manager --> UC_ApproveClaim
+Manager --> UC_ApproveProvider
+Manager --> UC_GenReports
+Manager --> UC_ViewDashboard
+
+' Medical Admin connections
+MedAdmin --> UC_SignIn
+MedAdmin --> UC_ReviewMedical
+MedAdmin --> UC_ViewAllClaims
+MedAdmin --> UC_ViewDashboard
+MedAdmin --> UC_ManageEmergency
+
+' Coordination Admin connections
+CoordAdmin --> UC_SignIn
+CoordAdmin --> UC_ReviewCoord
+CoordAdmin --> UC_ViewAllClaims
+CoordAdmin --> UC_ViewDashboard
+
+' Emergency Manager connections
+EmergencyMgr --> UC_SignIn
+EmergencyMgr --> UC_ManageEmergency
+EmergencyMgr --> UC_ViewDashboard
+
+' Client connections
+Client --> UC_SignIn
+Client --> UC_SignUp
+Client --> UC_SubmitClaim
+Client --> UC_ViewMyClaims
+Client --> UC_ViewRx
+Client --> UC_ManageProfile
+Client --> UC_ManageFamily
+Client --> UC_SearchProviders
+Client --> UC_ViewMap
+Client --> UC_ViewNotifications
+
+' Doctor connections
+Doctor --> UC_SignIn
+Doctor --> UC_CreateRx
+Doctor --> UC_CreateLab
+Doctor --> UC_CreateRad
+Doctor --> UC_CreateEmergency
+Doctor --> UC_SubmitClaim
+Doctor --> UC_RegisterProvider
+Doctor --> UC_ViewDashboard
+
+' Pharmacist connections
+Pharmacist --> UC_SignIn
+Pharmacist --> UC_ViewRx
+Pharmacist --> UC_FulfillRx
+Pharmacist --> UC_SubmitClaim
+Pharmacist --> UC_RegisterProvider
+
+' Lab Technician connections
+LabTech --> UC_SignIn
+LabTech --> UC_ProcessLab
+LabTech --> UC_SubmitClaim
+LabTech --> UC_RegisterProvider
+
+' Radiologist connections
+Radiologist --> UC_SignIn
+Radiologist --> UC_ProcessRad
+Radiologist --> UC_SubmitClaim
+Radiologist --> UC_RegisterProvider
+
+@enduml
+
+
+' ============================================================================
+' 2. CLASS DIAGRAM
+' ============================================================================
+@startuml Class_Diagram
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classBackgroundColor #E8F5E9
+skinparam classBorderColor #2E7D32
+
+title Birzeit University Insurance System - Class Diagram
+
+' User and Authentication
+class User {
+    -id: String
+    -email: String
+    -password: String
+    -firstName: String
+    -lastName: String
+    -phone: String
+    -nationalId: String
+    -role: Role
+    -isActive: Boolean
+    -createdAt: Date
+    +login()
+    +logout()
+    +updateProfile()
+}
+
+enum Role {
+    INSURANCE_MANAGER
+    MEDICAL_ADMIN
+    COORDINATION_ADMIN
+    EMERGENCY_MANAGER
+    CLIENT
+    DOCTOR
+    PHARMACIST
+    LAB_TECHNICIAN
+    RADIOLOGIST
+}
+
+class Client {
+    -policyNumber: String
+    -chronicDiseases: List<String>
+    -familyMembers: List<FamilyMember>
+    +submitClaim()
+    +viewClaims()
+    +viewPrescriptions()
+}
+
+class HealthcareProvider {
+    -licenseNumber: String
+    -specialization: String
+    -facility: String
+    -location: Location
+    -isApproved: Boolean
+    +submitClaim()
+    +registerProfile()
+}
+
+class Doctor {
+    -medicalLicense: String
+    +createPrescription()
+    +createLabRequest()
+    +createRadiologyRequest()
+    +createEmergency()
+}
+
+class Pharmacist {
+    -pharmacyName: String
+    +viewPrescriptions()
+    +fulfillPrescription()
+}
+
+class LabTechnician {
+    -labName: String
+    +processLabRequest()
+    +enterResults()
+}
+
+class Radiologist {
+    -facilityName: String
+    +processRadiologyRequest()
+    +enterResults()
+}
+
+' Claims
+class Claim {
+    -id: String
+    -claimNumber: String
+    -clientId: String
+    -providerId: String
+    -amount: Decimal
+    -description: String
+    -status: ClaimStatus
+    -documents: List<Document>
+    -submittedAt: Date
+    -reviewedAt: Date
+    +submit()
+    +reviewMedical()
+    +reviewCoordination()
+    +approve()
+    +reject()
+}
+
+enum ClaimStatus {
+    PENDING
+    MEDICAL_REVIEW
+    COORDINATION_REVIEW
+    APPROVED
+    REJECTED
+}
+
+' Medical Requests
+class Prescription {
+    -id: String
+    -doctorId: String
+    -clientId: String
+    -diagnosis: String
+    -medications: List<Medication>
+    -status: RequestStatus
+    -createdAt: Date
+    +create()
+    +fulfill()
+}
+
+class LabRequest {
+    -id: String
+    -doctorId: String
+    -clientId: String
+    -tests: List<String>
+    -results: String
+    -status: RequestStatus
+    +create()
+    +process()
+    +enterResults()
+}
+
+class RadiologyRequest {
+    -id: String
+    -doctorId: String
+    -clientId: String
+    -imagingType: String
+    -results: String
+    -status: RequestStatus
+    +create()
+    +process()
+    +enterResults()
+}
+
+class EmergencyRequest {
+    -id: String
+    -doctorId: String
+    -clientId: String
+    -description: String
+    -priority: Priority
+    -status: RequestStatus
+    +create()
+    +approve()
+    +reject()
+}
+
+enum RequestStatus {
+    PENDING
+    IN_PROGRESS
+    COMPLETED
+    CANCELLED
+}
+
+enum Priority {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+}
+
+' Supporting classes
+class Location {
+    -latitude: Double
+    -longitude: Double
+    -address: String
+}
+
+class FamilyMember {
+    -id: String
+    -name: String
+    -relationship: String
+    -nationalId: String
+}
+
+class Medication {
+    -name: String
+    -dosage: String
+    -frequency: String
+    -duration: String
+}
+
+class Policy {
+    -id: String
+    -name: String
+    -coverage: Decimal
+    -deductible: Decimal
+    -benefits: List<String>
+}
+
+class Notification {
+    -id: String
+    -userId: String
+    -title: String
+    -message: String
+    -isRead: Boolean
+    -createdAt: Date
+}
+
+' Relationships
+User <|-- Client
+User <|-- HealthcareProvider
+HealthcareProvider <|-- Doctor
+HealthcareProvider <|-- Pharmacist
+HealthcareProvider <|-- LabTechnician
+HealthcareProvider <|-- Radiologist
+
+User "1" --> "1" Role
+Client "1" --> "*" FamilyMember
+Client "1" --> "*" Claim
+Client "1" --> "1" Policy
+HealthcareProvider "1" --> "*" Claim
+HealthcareProvider "1" --> "1" Location
+
+Doctor "1" --> "*" Prescription
+Doctor "1" --> "*" LabRequest
+Doctor "1" --> "*" RadiologyRequest
+Doctor "1" --> "*" EmergencyRequest
+
+Pharmacist "1" --> "*" Prescription
+LabTechnician "1" --> "*" LabRequest
+Radiologist "1" --> "*" RadiologyRequest
+
+Prescription "1" --> "*" Medication
+Claim "1" --> "1" ClaimStatus
+User "1" --> "*" Notification
+
+@enduml
+
+
+' ============================================================================
+' 3. SEQUENCE DIAGRAM - Claims Workflow
+' ============================================================================
+@startuml Sequence_Claims_Workflow
+
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBackgroundColor #E8F5E9
+skinparam sequenceLifeLineBorderColor #2E7D32
+
+title Claims Processing Workflow - Sequence Diagram
+
+actor Client as C
+participant "Client\nDashboard" as CD
+participant "API\nService" as API
+participant "Claims\nService" as CS
+database "Database" as DB
+actor "Medical\nAdmin" as MA
+actor "Coordination\nAdmin" as CA
+
+== Claim Submission ==
+C -> CD: Navigate to Add Claim
+CD -> CD: Display claim form
+C -> CD: Fill claim details\n(amount, description, documents)
+CD -> API: POST /claims
+API -> CS: createClaim(claimData)
+CS -> DB: INSERT claim
+DB --> CS: claimId
+CS -> DB: INSERT notification\n(for admins)
+CS --> API: claim created
+API --> CD: Success response
+CD --> C: Show confirmation
+
+== Medical Review ==
+MA -> API: GET /claims/pending-medical
+API -> CS: getPendingMedicalClaims()
+CS -> DB: SELECT claims WHERE status='PENDING'
+DB --> CS: claims list
+CS --> API: claims
+API --> MA: Display pending claims
+
+MA -> API: GET /claims/{id}
+API -> CS: getClaimDetails(id)
+CS -> DB: SELECT claim details
+DB --> CS: claim data
+CS --> API: claim details
+API --> MA: Display claim details
+
+MA -> API: PUT /claims/{id}/medical-review
+note right: Decision: APPROVE or REJECT
+API -> CS: reviewMedical(id, decision)
+CS -> DB: UPDATE claim status
+CS -> DB: INSERT notification\n(for client & coord admin)
+DB --> CS: updated
+CS --> API: review completed
+API --> MA: Show confirmation
+
+== Coordination Review (if approved medically) ==
+CA -> API: GET /claims/pending-coordination
+API -> CS: getPendingCoordinationClaims()
+CS -> DB: SELECT claims WHERE\nstatus='MEDICAL_APPROVED'
+DB --> CS: claims list
+CS --> API: claims
+API --> CA: Display pending claims
+
+CA -> API: PUT /claims/{id}/coordination-review
+note right: Final Decision: APPROVE or REJECT
+API -> CS: reviewCoordination(id, decision)
+CS -> DB: UPDATE claim status\nto APPROVED or REJECTED
+CS -> DB: INSERT notification\n(for client)
+DB --> CS: updated
+CS --> API: review completed
+API --> CA: Show confirmation
+
+== Client Views Result ==
+C -> CD: Check claim status
+CD -> API: GET /claims/my-claims
+API -> CS: getClientClaims(clientId)
+CS -> DB: SELECT client claims
+DB --> CS: claims with statuses
+CS --> API: claims list
+API --> CD: Display claims
+CD --> C: Show claim status\n(APPROVED/REJECTED)
+
+@enduml
+
+
+' ============================================================================
+' 4. SEQUENCE DIAGRAM - Prescription Workflow
+' ============================================================================
+@startuml Sequence_Prescription_Workflow
+
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBackgroundColor #E8F5E9
+
+title Prescription Workflow - Sequence Diagram
+
+actor Doctor as D
+participant "Doctor\nDashboard" as DD
+participant "API\nService" as API
+database "Database" as DB
+actor Client as C
+participant "Client\nDashboard" as CD
+actor Pharmacist as P
+participant "Pharmacist\nDashboard" as PD
+
+== Prescription Creation ==
+D -> DD: Navigate to Create Prescription
+DD -> API: GET /clients/search?q={name}
+API -> DB: Search clients
+DB --> API: matching clients
+API --> DD: Display client results
+D -> DD: Select patient
+D -> DD: Enter diagnosis & medications
+DD -> API: POST /prescriptions
+API -> DB: INSERT prescription
+DB --> API: prescriptionId
+API -> DB: INSERT notification\n(for client & pharmacies)
+API --> DD: Success
+DD --> D: Show confirmation
+
+== Client Views Prescription ==
+C -> CD: View My Prescriptions
+CD -> API: GET /prescriptions/my
+API -> DB: SELECT client prescriptions
+DB --> API: prescriptions list
+API --> CD: Display prescriptions
+CD --> C: Show prescription details
+
+== Pharmacist Fulfills Prescription ==
+P -> PD: View Pending Prescriptions
+PD -> API: GET /prescriptions/pending
+API -> DB: SELECT pending prescriptions
+DB --> API: prescriptions list
+API --> PD: Display prescriptions
+PD --> P: Show prescription list
+
+P -> PD: Select prescription
+PD -> API: GET /prescriptions/{id}
+API -> DB: SELECT prescription details
+DB --> API: prescription data
+API --> PD: Display details
+PD --> P: Show medications & patient info
+
+P -> PD: Mark as Fulfilled
+PD -> API: PUT /prescriptions/{id}/fulfill
+API -> DB: UPDATE prescription\nstatus='FULFILLED'
+API -> DB: INSERT notification\n(for client)
+DB --> API: updated
+API --> PD: Success
+PD --> P: Show confirmation
+
+== Pharmacist Submits Claim ==
+P -> PD: Submit Claim for Prescription
+PD -> API: POST /claims/provider
+API -> DB: INSERT claim with\nprescription reference
+DB --> API: claimId
+API --> PD: Claim submitted
+PD --> P: Show confirmation
+
+@enduml
+
+
+' ============================================================================
+' 5. ACTIVITY DIAGRAM - User Registration
+' ============================================================================
+@startuml Activity_User_Registration
+
+skinparam activityBackgroundColor #E8F5E9
+skinparam activityBorderColor #2E7D32
+
+title User Registration - Activity Diagram
+
+start
+
+:User navigates to Sign Up page;
+
+:Select user role;
+
+if (Role is Client?) then (yes)
+    :Enter personal information\n(name, email, phone, national ID);
+    :Enter password;
+    :Select chronic diseases (if any);
+    :Add family members (optional);
+else (Healthcare Provider)
+    :Enter personal information;
+    :Enter password;
+    :Enter license number;
+    :Enter facility/specialization;
+    :Enter location on map;
+endif
+
+:Submit registration form;
+
+:System validates input;
+
+if (Validation passed?) then (yes)
+    :Create user account;
+    :Send verification email;
+
+    if (Role is Client?) then (yes)
+        :Set status to PENDING_APPROVAL;
+        :Notify Insurance Manager;
+
+        :Manager reviews application;
+
+        if (Approved?) then (yes)
+            :Activate account;
+            :Notify client;
+        else (rejected)
+            :Reject registration;
+            :Notify client with reason;
+            stop
+        endif
+    else (Healthcare Provider)
+        :Set status to PENDING_APPROVAL;
+        :Notify Insurance Manager;
+
+        :Manager verifies credentials;
+
+        if (Approved?) then (yes)
+            :Activate provider account;
+            :Add to provider network;
+            :Notify provider;
+        else (rejected)
+            :Reject registration;
+            :Notify provider with reason;
+            stop
+        endif
+    endif
+
+    :User can now login;
+else (failed)
+    :Display validation errors;
+    :User corrects input;
+    note right: Return to form
+endif
+
+stop
+
+@enduml
+
+
+' ============================================================================
+' 6. ACTIVITY DIAGRAM - Claims Processing
+' ============================================================================
+@startuml Activity_Claims_Processing
+
+skinparam activityBackgroundColor #E8F5E9
+skinparam activityBorderColor #2E7D32
+
+title Claims Processing - Activity Diagram
+
+start
+
+fork
+    :Client submits claim;
+fork again
+    :Provider submits claim;
+end fork
+
+:Claim created with\nstatus PENDING;
+
+:Notify Medical Admin;
+
+:Medical Admin reviews claim;
+
+if (Medical criteria met?) then (yes)
+    :Update status to\nMEDICAL_APPROVED;
+    :Notify Coordination Admin;
+
+    :Coordination Admin reviews claim;
+
+    if (Policy compliance met?) then (yes)
+        :Update status to APPROVED;
+        :Calculate reimbursement amount;
+        :Notify Client/Provider;
+
+        :Process payment;
+
+        :Claim completed;
+    else (no)
+        :Update status to REJECTED;
+        :Add rejection reason\n(Policy violation);
+        :Notify Client/Provider;
+
+        :Claim rejected;
+    endif
+else (no)
+    :Update status to REJECTED;
+    :Add rejection reason\n(Medical criteria not met);
+    :Notify Client/Provider;
+
+    :Claim rejected;
+endif
+
+stop
+
+@enduml
+
+
+' ============================================================================
+' 7. STATE CHART - Claim Status
+' ============================================================================
+@startuml StateChart_Claim
+
+skinparam stateBackgroundColor #E8F5E9
+skinparam stateBorderColor #2E7D32
+
+title Claim State Chart
+
+[*] --> Draft : Create
+
+Draft --> Pending : Submit
+
+Pending --> MedicalReview : Assign to\nMedical Admin
+
+MedicalReview --> MedicalApproved : Approve\n(medical)
+MedicalReview --> Rejected : Reject\n(medical reasons)
+
+MedicalApproved --> CoordinationReview : Assign to\nCoordination Admin
+
+CoordinationReview --> Approved : Approve\n(final)
+CoordinationReview --> Rejected : Reject\n(policy violation)
+
+Approved --> [*]
+Rejected --> [*]
+
+state Draft {
+    [*] --> Editing
+    Editing --> Editing : Edit
+    Editing --> [*] : Save
+}
+
+state MedicalReview {
+    [*] --> UnderReview
+    UnderReview --> Reviewing : Open
+    Reviewing --> Decision : Review complete
+    Decision --> [*]
+}
+
+state CoordinationReview {
+    [*] --> PolicyCheck
+    PolicyCheck --> AmountVerification : Verify policy
+    AmountVerification --> FinalDecision : Verify amount
+    FinalDecision --> [*]
+}
+
+@enduml
+
+
+' ============================================================================
+' 8. STATE CHART - Prescription Status
+' ============================================================================
+@startuml StateChart_Prescription
+
+skinparam stateBackgroundColor #E8F5E9
+skinparam stateBorderColor #2E7D32
+
+title Prescription State Chart
+
+[*] --> Created : Doctor creates
+
+Created --> Pending : Submit
+
+Pending --> Assigned : Pharmacist accepts
+
+Assigned --> InProgress : Start fulfillment
+
+InProgress --> Fulfilled : Complete\nfulfillment
+
+InProgress --> PartiallyFulfilled : Partial\nfulfillment
+
+PartiallyFulfilled --> Fulfilled : Complete\nremaining
+
+Pending --> Cancelled : Cancel\n(by doctor)
+Assigned --> Cancelled : Cancel\n(by pharmacist)
+
+Fulfilled --> ClaimSubmitted : Submit claim
+
+Fulfilled --> [*]
+Cancelled --> [*]
+ClaimSubmitted --> [*]
+
+@enduml
+
+
+' ============================================================================
+' 9. COMPONENT DIAGRAM
+' ============================================================================
+@startuml Component_Diagram
+
+skinparam componentBackgroundColor #E8F5E9
+skinparam componentBorderColor #2E7D32
+skinparam packageBackgroundColor #F1F8E9
+
+title Birzeit University Insurance System - Component Diagram
+
+package "Frontend (React Application)" {
+
+    package "Presentation Layer" {
+        [Landing Page] as LP
+        [Authentication\nComponents] as Auth
+        [Manager\nDashboard] as ManagerUI
+        [Client\nDashboard] as ClientUI
+        [Doctor\nDashboard] as DoctorUI
+        [Pharmacist\nDashboard] as PharmacistUI
+        [Lab\nDashboard] as LabUI
+        [Radiology\nDashboard] as RadiologyUI
+        [Shared\nComponents] as SharedUI
+    }
+
+    package "State Management Layer" {
+        [React Query\nClient] as RQ
+        [Language\nContext] as LangCtx
+        [Theme\nContext] as ThemeCtx
+        [Auth\nContext] as AuthCtx
+    }
+
+    package "Service Layer" {
+        [API Service\n(Axios)] as APIService
+        [Error Handler] as ErrorHandler
+        [Token Manager] as TokenMgr
+        [Validation\nUtils] as Validation
+        [Sanitization\nUtils] as Sanitize
+    }
+
+    package "Configuration" {
+        [Roles &\nPermissions] as RolesConfig
+        [API\nEndpoints] as APIConfig
+        [Translations\n(i18n)] as TransConfig
+    }
+}
+
+package "External Libraries" {
+    [Material-UI] as MUI
+    [React Router] as Router
+    [Leaflet Maps] as Leaflet
+    [Framer Motion] as Framer
+    [Recharts] as Charts
+}
+
+package "Backend API" {
+    [REST API] as API
+    [Authentication\nService] as AuthService
+    [Claims\nService] as ClaimsService
+    [Medical\nService] as MedicalService
+}
+
+' Connections within frontend
+Auth --> APIService
+ManagerUI --> APIService
+ClientUI --> APIService
+DoctorUI --> APIService
+PharmacistUI --> APIService
+LabUI --> APIService
+RadiologyUI --> APIService
+
+APIService --> TokenMgr
+APIService --> ErrorHandler
+APIService --> Sanitize
+APIService --> APIConfig
+
+Auth --> AuthCtx
+ManagerUI --> RQ
+ClientUI --> RQ
+DoctorUI --> RQ
+
+SharedUI --> Leaflet
+SharedUI --> MUI
+ManagerUI --> Charts
+
+LP --> Router
+Auth --> Router
+
+' External connections
+APIService --> API
+API --> AuthService
+API --> ClaimsService
+API --> MedicalService
+
+@enduml
+
+
+' ============================================================================
+' 10. DEPLOYMENT DIAGRAM
+' ============================================================================
+@startuml Deployment_Diagram
+
+skinparam nodeBackgroundColor #E8F5E9
+skinparam nodeBorderColor #2E7D32
+
+title Birzeit University Insurance System - Deployment Diagram
+
+node "Client Devices" {
+    node "Web Browser" as Browser {
+        artifact "React SPA" as ReactApp
+        artifact "Local Storage\n(JWT Token)" as LocalStorage
+    }
+}
+
+node "CDN / Static Hosting" as CDN {
+    artifact "index.html" as HTML
+    artifact "JavaScript\nBundles" as JSBundle
+    artifact "CSS\nAssets" as CSS
+    artifact "Images &\nFonts" as Assets
+}
+
+node "Application Server" as AppServer {
+    node "Node.js Runtime" as NodeJS {
+        artifact "Express.js\nAPI" as ExpressAPI
+        artifact "Authentication\nMiddleware" as AuthMiddleware
+        artifact "Business Logic\nServices" as Services
+    }
+}
+
+node "Database Server" as DBServer {
+    database "MySQL\nDatabase" as MySQL {
+        artifact "Users Table" as UsersTable
+        artifact "Claims Table" as ClaimsTable
+        artifact "Prescriptions Table" as RxTable
+        artifact "Notifications Table" as NotifTable
+    }
+}
+
+node "External Services" as External {
+    cloud "Email Service" as Email
+    cloud "Map Tiles\n(OpenStreetMap)" as MapTiles
+}
+
+' Connections
+Browser --> CDN : HTTPS\n(Static Assets)
+ReactApp --> ExpressAPI : HTTPS\n(REST API)
+ReactApp --> MapTiles : HTTPS\n(Map Data)
+
+ExpressAPI --> MySQL : TCP/IP\n(SQL Queries)
+ExpressAPI --> Email : SMTP\n(Notifications)
+
+LocalStorage <.. ReactApp : Read/Write\nJWT Token
+
+@enduml
+
+
+' ============================================================================
+' 11. PACKAGE DIAGRAM - Frontend Structure
+' ============================================================================
+@startuml Package_Diagram
+
+skinparam packageBackgroundColor #E8F5E9
+skinparam packageBorderColor #2E7D32
+
+title Frontend Package Structure
+
+package "src" {
+
+    package "Component" {
+        package "Auth" {
+            [SignIn]
+            [SignUp]
+            [ForgotPassword]
+            [ResetPassword]
+            [LandingPage]
+        }
+
+        package "Manager" {
+            [ManagerDashboard]
+            [Sidebar]
+            package "Claims" {
+                [ClaimsList]
+                [ClaimsManage]
+            }
+            package "Reports" {
+                [ClaimsReport]
+                [FinancialReport]
+            }
+        }
+
+        package "Client" {
+            [ClientDashboard]
+            [AddClaim]
+            [MyClaims]
+            [MyPrescriptions]
+        }
+
+        package "Doctor" {
+            [DoctorDashboard]
+            [AddPrescription]
+            [AddLabRequest]
+            [AddRadiologyRequest]
+        }
+
+        package "Pharmacist" {
+            [PharmacistDashboard]
+            [PrescriptionList]
+        }
+
+        package "Lab" {
+            [LabDashboard]
+            [LabRequestList]
+        }
+
+        package "Radiology" {
+            [RadiologyDashboard]
+            [RadiologyRequestList]
+        }
+
+        package "Shared" {
+            [HealthcareProvidersMap]
+            [NotificationsList]
+            [LanguageToggle]
+        }
+    }
+
+    package "config" {
+        [roles.js]
+        [api.js]
+        [translations.js]
+        [queryClient.js]
+    }
+
+    package "utils" {
+        [apiService.js]
+        [sanitize.js]
+        [validation.js]
+        [errorHandler.js]
+    }
+
+    [App.jsx]
+    [main.jsx]
+    [theme.js]
+}
+
+@enduml
+
+
+' ============================================================================
+' 12. ER DIAGRAM (Conceptual)
+' ============================================================================
+@startuml ER_Diagram
+
+skinparam entityBackgroundColor #E8F5E9
+skinparam entityBorderColor #2E7D32
+
+title Entity Relationship Diagram
+
+entity "User" as User {
+    * id : UUID <<PK>>
+    --
+    * email : VARCHAR(255)
+    * password_hash : VARCHAR(255)
+    * first_name : VARCHAR(100)
+    * last_name : VARCHAR(100)
+    phone : VARCHAR(20)
+    national_id : VARCHAR(20)
+    * role : ENUM
+    * is_active : BOOLEAN
+    * created_at : TIMESTAMP
+}
+
+entity "Client" as Client {
+    * id : UUID <<PK>>
+    --
+    * user_id : UUID <<FK>>
+    policy_number : VARCHAR(50)
+    chronic_diseases : JSON
+}
+
+entity "HealthcareProvider" as Provider {
+    * id : UUID <<PK>>
+    --
+    * user_id : UUID <<FK>>
+    * license_number : VARCHAR(50)
+    * provider_type : ENUM
+    specialization : VARCHAR(100)
+    facility_name : VARCHAR(200)
+    * is_approved : BOOLEAN
+}
+
+entity "Location" as Location {
+    * id : UUID <<PK>>
+    --
+    * provider_id : UUID <<FK>>
+    * latitude : DECIMAL
+    * longitude : DECIMAL
+    address : VARCHAR(500)
+}
+
+entity "FamilyMember" as Family {
+    * id : UUID <<PK>>
+    --
+    * client_id : UUID <<FK>>
+    * name : VARCHAR(200)
+    * relationship : ENUM
+    national_id : VARCHAR(20)
+}
+
+entity "Policy" as Policy {
+    * id : UUID <<PK>>
+    --
+    * name : VARCHAR(200)
+    * coverage_amount : DECIMAL
+    deductible : DECIMAL
+    benefits : JSON
+}
+
+entity "Claim" as Claim {
+    * id : UUID <<PK>>
+    --
+    * claim_number : VARCHAR(50)
+    * client_id : UUID <<FK>>
+    provider_id : UUID <<FK>>
+    * amount : DECIMAL
+    description : TEXT
+    * status : ENUM
+    documents : JSON
+    * submitted_at : TIMESTAMP
+    reviewed_at : TIMESTAMP
+}
+
+entity "Prescription" as Prescription {
+    * id : UUID <<PK>>
+    --
+    * doctor_id : UUID <<FK>>
+    * client_id : UUID <<FK>>
+    pharmacist_id : UUID <<FK>>
+    * diagnosis : TEXT
+    medications : JSON
+    * status : ENUM
+    * created_at : TIMESTAMP
+}
+
+entity "LabRequest" as LabRequest {
+    * id : UUID <<PK>>
+    --
+    * doctor_id : UUID <<FK>>
+    * client_id : UUID <<FK>>
+    lab_tech_id : UUID <<FK>>
+    * tests : JSON
+    results : TEXT
+    * status : ENUM
+    * created_at : TIMESTAMP
+}
+
+entity "RadiologyRequest" as RadRequest {
+    * id : UUID <<PK>>
+    --
+    * doctor_id : UUID <<FK>>
+    * client_id : UUID <<FK>>
+    radiologist_id : UUID <<FK>>
+    * imaging_type : VARCHAR(100)
+    results : TEXT
+    * status : ENUM
+    * created_at : TIMESTAMP
+}
+
+entity "EmergencyRequest" as Emergency {
+    * id : UUID <<PK>>
+    --
+    * doctor_id : UUID <<FK>>
+    * client_id : UUID <<FK>>
+    * description : TEXT
+    * priority : ENUM
+    * status : ENUM
+    * created_at : TIMESTAMP
+}
+
+entity "Notification" as Notification {
+    * id : UUID <<PK>>
+    --
+    * user_id : UUID <<FK>>
+    * title : VARCHAR(200)
+    * message : TEXT
+    * is_read : BOOLEAN
+    * created_at : TIMESTAMP
+}
+
+' Relationships
+User ||--o| Client : "is a"
+User ||--o| Provider : "is a"
+Provider ||--|| Location : "has"
+Client ||--o{ Family : "has"
+Client ||--|| Policy : "has"
+
+Client ||--o{ Claim : "submits"
+Provider ||--o{ Claim : "submits"
+
+Provider ||--o{ Prescription : "creates/fulfills"
+Client ||--o{ Prescription : "receives"
+
+Provider ||--o{ LabRequest : "creates/processes"
+Client ||--o{ LabRequest : "receives"
+
+Provider ||--o{ RadRequest : "creates/processes"
+Client ||--o{ RadRequest : "receives"
+
+Provider ||--o{ Emergency : "creates"
+Client ||--o{ Emergency : "for"
+
+User ||--o{ Notification : "receives"
+
+@enduml
+
+
+' ============================================================================
+' 13. DATA FLOW DIAGRAM (Level 0)
+' ============================================================================
+@startuml DFD_Level0
+
+skinparam actorBackgroundColor #C8E6C9
+skinparam rectangleBackgroundColor #E8F5E9
+
+title Data Flow Diagram - Level 0 (Context Diagram)
+
+actor "Client" as Client
+actor "Healthcare\nProvider" as Provider
+actor "Insurance\nManager" as Manager
+actor "Medical\nAdmin" as MedAdmin
+
+rectangle "Birzeit University\nInsurance System" as System
+
+Client --> System : Registration Request\nClaim Submission\nView Requests
+System --> Client : Claim Status\nPrescriptions\nNotifications
+
+Provider --> System : Service Claims\nMedical Requests\nProfile Updates
+System --> Provider : Request Assignments\nApproval Status\nNotifications
+
+Manager --> System : User Management\nPolicy Updates\nReport Requests
+System --> Manager : Dashboard Stats\nReports\nAlerts
+
+MedAdmin --> System : Claim Reviews\nMedical Decisions
+System --> MedAdmin : Pending Claims\nPatient Data\nNotifications
+
+@enduml
+
+
+' ============================================================================
+' 14. DATA FLOW DIAGRAM (Level 1)
+' ============================================================================
+@startuml DFD_Level1
+
+skinparam actorBackgroundColor #C8E6C9
+skinparam rectangleBackgroundColor #E8F5E9
+skinparam databaseBackgroundColor #DCEDC8
+
+title Data Flow Diagram - Level 1
+
+actor "Client" as Client
+actor "Healthcare\nProvider" as Provider
+actor "Admin" as Admin
+
+rectangle "1.0\nAuthentication" as Auth
+rectangle "2.0\nClaims\nManagement" as Claims
+rectangle "3.0\nMedical\nRequests" as Medical
+rectangle "4.0\nUser\nManagement" as UserMgmt
+rectangle "5.0\nReporting" as Reporting
+rectangle "6.0\nNotifications" as Notif
+
+database "User\nData" as UserDB
+database "Claims\nData" as ClaimsDB
+database "Medical\nData" as MedicalDB
+
+' Authentication flows
+Client --> Auth : Login/Register
+Provider --> Auth : Login/Register
+Admin --> Auth : Login
+Auth --> UserDB : Verify/Store User
+Auth --> Client : JWT Token
+Auth --> Provider : JWT Token
+Auth --> Admin : JWT Token
+
+' Claims flows
+Client --> Claims : Submit Claim
+Provider --> Claims : Submit Claim
+Admin --> Claims : Review Claim
+Claims --> ClaimsDB : Store/Update Claim
+Claims --> Notif : Trigger Notification
+ClaimsDB --> Claims : Claim Data
+Claims --> Client : Claim Status
+Claims --> Provider : Claim Status
+
+' Medical request flows
+Provider --> Medical : Create Request
+Medical --> MedicalDB : Store Request
+Medical --> Notif : Notify Client
+MedicalDB --> Medical : Request Data
+Medical --> Client : Request Details
+Client --> Medical : View Requests
+
+' User management flows
+Admin --> UserMgmt : Manage Users
+UserMgmt --> UserDB : CRUD Operations
+UserDB --> UserMgmt : User Data
+UserMgmt --> Admin : User Lists
+
+' Reporting flows
+Admin --> Reporting : Request Report
+Reporting --> ClaimsDB : Query Data
+Reporting --> UserDB : Query Data
+ClaimsDB --> Reporting : Claims Data
+UserDB --> Reporting : User Data
+Reporting --> Admin : Generated Report
+
+' Notification flows
+Notif --> Client : Push Notification
+Notif --> Provider : Push Notification
+Notif --> Admin : Push Notification
+
+@enduml

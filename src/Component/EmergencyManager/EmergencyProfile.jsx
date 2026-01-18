@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import PropTypes from "prop-types";
 import {
   Box,
   Paper,
@@ -15,7 +16,10 @@ import {
 
 import EmergencySidebar from "./EmergencySidebar";
 import EmergencyHeader from "./EmergencyHeader";
-import axios from "axios";
+import { api, getToken } from "../../utils/apiService";
+import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 // Icons
 import PersonIcon from "@mui/icons-material/Person";
@@ -30,34 +34,32 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 const EmergencyProfile = () => {
+  const { language, isRTL } = useLanguage();
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // ✅ fetch emergency manager profile dynamically
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("⚠️ No token found, please login again.");
-        return;
-      }
+  const fetchProfile = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      console.error("No token found, please login again.");
+      return;
+    }
 
-      try {
-        const res = await axios.get("http://localhost:8080/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setProfile(res.data);
-        setFormData(res.data);
-      } catch (err) {
-        console.error("❌ Failed to load profile:", err.response?.data || err.message);
-      }
-    };
-
-    fetchProfile();
+    try {
+      const res = await api.get(API_ENDPOINTS.AUTH.ME);
+      setProfile(res.data);
+      setFormData(res.data);
+    } catch (err) {
+      console.error("Failed to load profile:", err.response?.data || err.message);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -71,11 +73,10 @@ const EmergencyProfile = () => {
     }
   };
 
-  // ✅ update emergency manager profile
   const handleSave = async () => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     if (!token) {
-      alert("⚠️ Please login first.");
+      alert("Please login first.");
       return;
     }
 
@@ -99,12 +100,11 @@ const EmergencyProfile = () => {
         multipartData.append("universityCard", selectedFile);
       }
 
-      const res = await axios.patch(
-        `http://localhost:8080/api/Clients/update/${profile.id}`,
+      const res = await api.patch(
+        `${API_ENDPOINTS.CLIENTS.UPDATE}/${profile.id}`,
         multipartData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         }
@@ -115,26 +115,27 @@ const EmergencyProfile = () => {
       setPreviewImage(null);
       setSelectedFile(null);
       setEditMode(false);
-      console.log("✅ Emergency Manager profile updated:", res.data);
+      console.log("Emergency Manager profile updated:", res.data);
     } catch (err) {
-      console.error("❌ Update failed:", err.response?.data || err.message);
+      console.error("Update failed:", err.response?.data || err.message);
       alert("Update failed, check console.");
     }
   };
 
   if (!profile) {
-    return <Typography sx={{ p: 3 }}>Loading...</Typography>;
+    return <Typography sx={{ p: 3 }}>{t("loading", language)}</Typography>;
   }
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{ display: "flex" }} dir={isRTL ? "rtl" : "ltr"}>
       <EmergencySidebar />
       <Box
         sx={{
           flexGrow: 1,
-          background: "#f5f7fb",
+          background: "#FAF8F5",
           minHeight: "100vh",
-          marginLeft: "240px",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
           display: "flex",
           flexDirection: "column",
         }}
@@ -149,7 +150,7 @@ const EmergencyProfile = () => {
               boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
               maxWidth: "950px",
               width: "100%",
-              background: "linear-gradient(145deg, #ffffffcc, #bed9facc)",
+              background: "linear-gradient(145deg, #ffffffcc, #E8EDE0cc)",
               backdropFilter: "blur(6px)",
             }}
           >
@@ -157,30 +158,30 @@ const EmergencyProfile = () => {
               variant="h4"
               fontWeight="bold"
               sx={{
-                color: "#150380",
+                color: "#3D4F23",
                 mb: 3,
                 display: "flex",
                 alignItems: "center",
                 gap: 1,
               }}
             >
-              <PersonIcon sx={{ fontSize: 36, color: "#1E8EAB" }} />
-              Emergency Manager Profile
+              <PersonIcon sx={{ fontSize: 36, color: "#556B2F" }} />
+              {t("emergencyManagerProfile", language)}
             </Typography>
             <Divider sx={{ mb: 4 }} />
 
             <Grid container spacing={4}>
-              {/* صورة البروفايل */}
+              {/* Profile Image */}
               <Grid xs={12} md={4} sx={{ display: "flex", justifyContent: "center" }}>
                 <Box sx={{ position: "relative" }}>
                   <Avatar
                     src={
                       previewImage ||
                       (profile.universityCardImage &&
-                        `http://localhost:8080${profile.universityCardImage}`)
+                        `${API_BASE_URL}${profile.universityCardImage}`)
                     }
                     alt="Profile"
-                    sx={{ width: 140, height: 140, border: "4px solid #1E8EAB" }}
+                    sx={{ width: 140, height: 140, border: "4px solid #556B2F" }}
                   />
                   {editMode && (
                     <IconButton
@@ -189,7 +190,7 @@ const EmergencyProfile = () => {
                         position: "absolute",
                         bottom: 10,
                         right: 10,
-                        bgcolor: "#1E8EAB",
+                        bgcolor: "#556B2F",
                         color: "#fff",
                       }}
                     >
@@ -205,12 +206,12 @@ const EmergencyProfile = () => {
                 </Box>
               </Grid>
 
-              {/* معلومات البروفايل */}
+              {/* Profile Information */}
               <Grid xs={12} md={8}>
                 <Grid container spacing={3}>
                   <Grid xs={12} md={6}>
                     <TextField
-                      label="Username"
+                      label={t("username", language)}
                       value={formData.username}
                       fullWidth
                       disabled
@@ -226,7 +227,7 @@ const EmergencyProfile = () => {
 
                   <Grid xs={12} md={6}>
                     <TextField
-                      label="Full Name"
+                      label={t("fullName", language)}
                       name="fullName"
                       value={formData.fullName || ""}
                       onChange={handleChange}
@@ -244,7 +245,7 @@ const EmergencyProfile = () => {
 
                   <Grid xs={12} md={6}>
                     <TextField
-                      label="Email"
+                      label={t("email", language)}
                       name="email"
                       value={formData.email || ""}
                       onChange={handleChange}
@@ -262,7 +263,7 @@ const EmergencyProfile = () => {
 
                   <Grid xs={12} md={6}>
                     <TextField
-                      label="Phone"
+                      label={t("phone", language)}
                       name="phone"
                       value={formData.phone || ""}
                       onChange={handleChange}
@@ -280,7 +281,7 @@ const EmergencyProfile = () => {
 
                   <Grid xs={12} md={6}>
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      Status
+                      {t("status", language)}
                     </Typography>
                     <Chip
                       icon={<CheckCircleIcon />}
@@ -292,7 +293,7 @@ const EmergencyProfile = () => {
 
                   <Grid xs={12} md={6}>
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      Roles
+                      {t("roles", language)}
                     </Typography>
                     {profile.roles.map((role, i) => (
                       <Chip
@@ -300,7 +301,7 @@ const EmergencyProfile = () => {
                         label={role}
                         sx={{
                           mr: 1,
-                          background: "#1E8EAB",
+                          background: "#556B2F",
                           color: "#fff",
                           fontWeight: "bold",
                         }}
@@ -310,14 +311,14 @@ const EmergencyProfile = () => {
 
                   <Grid xs={12} md={6}>
                     <Typography variant="body2" color="gray">
-                      <AccessTimeIcon fontSize="small" /> Created At:{" "}
+                      <AccessTimeIcon fontSize="small" /> {t("createdAt", language)}:{" "}
                       {new Date(profile.createdAt).toLocaleString()}
                     </Typography>
                   </Grid>
 
                   <Grid xs={12} md={6}>
                     <Typography variant="body2" color="gray">
-                      <AccessTimeIcon fontSize="small" /> Updated At:{" "}
+                      <AccessTimeIcon fontSize="small" /> {t("updatedAt", language)}:{" "}
                       {new Date(profile.updatedAt).toLocaleString()}
                     </Typography>
                   </Grid>
@@ -325,21 +326,21 @@ const EmergencyProfile = () => {
               </Grid>
             </Grid>
 
-            {/* أزرار الأكشن */}
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4, gap: 2 }}>
+            {/* Action Buttons */}
+            <Box sx={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", mt: 4, gap: 2 }}>
               {!editMode ? (
                 <Button
                   variant="contained"
                   startIcon={<EditIcon />}
                   sx={{
                     borderRadius: 3,
-                    background: "linear-gradient(90deg,#150380,#1E8EAB)",
+                    background: "linear-gradient(90deg,#3D4F23,#556B2F)",
                     fontWeight: "bold",
                     px: 4,
                   }}
                   onClick={() => setEditMode(true)}
                 >
-                  Edit Profile
+                  {t("editProfile", language)}
                 </Button>
               ) : (
                 <>
@@ -349,7 +350,7 @@ const EmergencyProfile = () => {
                     sx={{ borderRadius: 3, px: 3 }}
                     onClick={() => setEditMode(false)}
                   >
-                    Cancel
+                    {t("cancel", language)}
                   </Button>
                   <Button
                     variant="contained"
@@ -358,7 +359,7 @@ const EmergencyProfile = () => {
                     sx={{ borderRadius: 3, px: 3 }}
                     onClick={handleSave}
                   >
-                    Save Changes
+                    {t("saveChanges", language)}
                   </Button>
                 </>
               )}

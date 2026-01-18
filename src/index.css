@@ -1,6 +1,65 @@
-/* ✅ إصلاح مشكلة التمرير */
+/* Scroll fix */
 html, body, #root {
   height: auto !important;
   min-height: 100vh !important;
   overflow-y: auto !important;
+}
+
+/* Global text colors - Olive theme complementary (no gray) */
+body {
+  color: #1a1a1a;                    /* Primary text - near black */
+  background-color: #FAF8F5;         /* Warm white background */
+  font-family: 'Inter', 'Roboto', 'Arial', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Override any gray text colors globally */
+p, span, div, li, td, th, label {
+  color: inherit;
+}
+
+/* Secondary text styling */
+.text-secondary,
+.MuiTypography-colorTextSecondary {
+  color: #3d4f3d !important;         /* Dark olive-green */
+}
+
+/* Muted/hint text */
+.text-muted,
+.text-hint {
+  color: #4A5D4A !important;         /* Olive hint */
+}
+
+/* Disabled text */
+.text-disabled {
+  color: #6B7B6B !important;         /* Muted olive-green */
+}
+
+/* Link colors - olive themed */
+a {
+  color: #556B2F;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #3D4F23;
+  text-decoration: underline;
+}
+
+/* Placeholder text - olive tinted */
+::placeholder {
+  color: #6B7B6B !important;
+  opacity: 1;
+}
+
+/* Selection colors - olive themed */
+::selection {
+  background-color: rgba(85, 107, 47, 0.3);
+  color: #1a1a1a;
+}
+
+::-moz-selection {
+  background-color: rgba(85, 107, 47, 0.3);
+  color: #1a1a1a;
 }

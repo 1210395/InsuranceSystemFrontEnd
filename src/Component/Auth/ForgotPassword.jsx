@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
+import PropTypes from "prop-types";
 import {
   Avatar,
   Button,
@@ -11,32 +12,36 @@ import {
 } from "@mui/material";
 import MailIcon from "@mui/icons-material/Mail";
 import LockResetIcon from "@mui/icons-material/LockReset";
-import axios from "axios";
+import { api } from "../../utils/apiService";
+import { API_ENDPOINTS } from "../../config/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
-const ForgotPassword = ({ setMode }) => {
+const ForgotPassword = memo(function ForgotPassword({ setMode }) {
+  const { language, isRTL } = useLanguage();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:8080/api/auth/forgot-password", { email });
-      setMessage("✅ Check your email for reset instructions");
+      await api.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+      setMessage("Check your email for reset instructions");
     } catch (err) {
       console.error(err.response?.data || err.message);
-      setMessage("❌ Failed to send reset link");
+      setMessage("Failed to send reset link");
     }
   };
 
   return (
-    <Container component="main" maxWidth={false} disableGutters>
+    <Container component="main" maxWidth={false} disableGutters dir={isRTL ? "rtl" : "ltr"}>
       <CssBaseline />
       <Box
         sx={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          background: "linear-gradient(145deg, #ffffff, #f0f5ff)",
+          background: "linear-gradient(145deg, #FFFFFF, #E8EDE0)",
           p: 4,
           borderRadius: "18px",
           boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
@@ -45,12 +50,12 @@ const ForgotPassword = ({ setMode }) => {
           margin: "0 auto",
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: "#120460", width: 56, height: 56 }}>
+        <Avatar sx={{ m: 1, bgcolor: "#556B2F", width: 56, height: 56 }}>
           <LockResetIcon fontSize="medium" />
         </Avatar>
 
-        <Typography component="h1" variant="h5" sx={{ mb: 3, fontWeight: "bold", color: "#120460" }}>
-          Forgot Password
+        <Typography component="h1" variant="h5" sx={{ mb: 3, fontWeight: "bold", color: "#556B2F" }}>
+          {t("forgotPasswordTitle", language)}
         </Typography>
 
         <Box component="form" noValidate onSubmit={handleSubmit} sx={{ width: "100%" }}>
@@ -58,14 +63,14 @@ const ForgotPassword = ({ setMode }) => {
             margin="normal"
             required
             fullWidth
-            label="Enter your email"
+            label={t("email", language)}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <MailIcon sx={{ color: "#1E8EAB" }} />
+                  <MailIcon sx={{ color: "#7B8B5E" }} />
                 </InputAdornment>
               ),
             }}
@@ -79,18 +84,18 @@ const ForgotPassword = ({ setMode }) => {
               mt: 3,
               mb: 2,
               py: 1.3,
-              background: "linear-gradient(90deg, #120460, #1E8EAB)",
+              background: "linear-gradient(90deg, #556B2F, #7B8B5E)",
               "&:hover": { transform: "scale(1.02)" },
               borderRadius: "10px",
               fontWeight: "bold",
               transition: "0.2s",
             }}
           >
-            Reset Password
+            {t("sendResetLink", language)}
           </Button>
 
           {message && (
-            <Typography sx={{ mt: 2, color: message.startsWith("✅") ? "green" : "red" }}>
+            <Typography sx={{ mt: 2, color: message.startsWith("Check") ? "green" : "red" }}>
               {message}
             </Typography>
           )}
@@ -102,15 +107,19 @@ const ForgotPassword = ({ setMode }) => {
                 e.preventDefault();
                 setMode("signin");
               }}
-              style={{ color: "#120460", fontWeight: "600", textDecoration: "none" }}
+              style={{ color: "#556B2F", fontWeight: "600", textDecoration: "none" }}
             >
-              Back to Sign In
+              {t("backToSignIn", language)}
             </a>
           </Typography>
         </Box>
       </Box>
     </Container>
   );
+});
+
+ForgotPassword.propTypes = {
+  setMode: PropTypes.func.isRequired,
 };
 
 export default ForgotPassword;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -13,6 +13,7 @@ import {
   Snackbar,
   Alert,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import EmergencyHeader from "./EmergencyHeader";
 import EmergencySidebar from "./EmergencySidebar";
@@ -21,9 +22,13 @@ import ChatIcon from "@mui/icons-material/Chat";
 import WarningIcon from "@mui/icons-material/Warning";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import DescriptionIcon from "@mui/icons-material/Description";
-import axios from "axios";
+import { api, getToken } from "../../utils/apiService";
+import { API_ENDPOINTS } from "../../config/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 const EmergencyNotifications = () => {
+  const { language, isRTL } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [openReplyDialog, setOpenReplyDialog] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
@@ -33,118 +38,145 @@ const EmergencyNotifications = () => {
     message: "",
     severity: "success",
   });
+  const [loadingId, setLoadingId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ جلب إشعارات مدير الطوارئ
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("⚠️ No token found!");
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const token = getToken();
+      if (!token) return;
 
-        const res = await axios.get("http://localhost:8080/api/notifications", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      const res = await api.get(API_ENDPOINTS.NOTIFICATIONS.ALL);
 
-        setNotifications(res.data); // ✅ السيرفر يرجع إشعارات المستخدم الحالي فقط
-      } catch (err) {
-        console.error("❌ Failed to fetch notifications:", err);
-      }
-    };
-
-    fetchNotifications();
+      const dataWithReplied = res.data.map((n) => ({ ...n, replied: n.replied || false }));
+      setNotifications(
+        dataWithReplied.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      );
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // ✅ تعليم إشعار كمقروء
-  const markAsRead = async (id) => {
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const markAsRead = useCallback(async (id) => {
     try {
-      const token = localStorage.getItem("token");
-      await axios.patch(
-        `http://localhost:8080/api/notifications/${id}/read`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const token = getToken();
+      if (!token) return;
+      await api.patch(`${API_ENDPOINTS.NOTIFICATIONS.ALL}/${id}/read`, {});
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
     } catch (err) {
-      console.error("❌ Failed to mark as read:", err);
+      console.error("Failed to mark as read:", err);
     }
-  };
+  }, []);
 
-  // ✅ فتح الرد
-  const handleReply = (notification) => {
+  const markAllAsRead = useCallback(async () => {
+    try {
+      const token = getToken();
+      if (!token) return;
+      await api.patch(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ, {});
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setSnackbar({
+        open: true,
+        message: t("allNotificationsMarkedRead", language),
+        severity: "success",
+      });
+    } catch (err) {
+      console.error("Failed to mark all as read:", err);
+      setSnackbar({
+        open: true,
+        message: t("failedMarkAllRead", language),
+        severity: "error",
+      });
+    }
+  }, [language]);
+
+  // Open reply dialog
+  const handleReply = useCallback((notification) => {
     setSelectedNotification(notification);
     setReplyMessage("");
     setOpenReplyDialog(true);
-  };
+  }, []);
 
-  // ✅ إرسال الرد
   const handleConfirmReply = async () => {
     if (!replyMessage.trim()) {
       setSnackbar({
         open: true,
-        message: "Reply cannot be empty!",
+        message: t("replyCannotBeEmpty", language),
         severity: "error",
       });
       return;
     }
 
     try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `http://localhost:8080/api/notifications/${selectedNotification.id}/reply`,
+      const token = getToken();
+      if (!token) return;
+      setLoadingId(selectedNotification.id);
+
+      await api.post(
+        `${API_ENDPOINTS.NOTIFICATIONS.ALL}/${selectedNotification.id}/reply`,
         {
           recipientId: selectedNotification.senderId,
           message: replyMessage,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
         }
+      );
+
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === selectedNotification.id ? { ...n, replied: true, read: true } : n
+        )
       );
 
       setSnackbar({
         open: true,
-        message: "Reply sent successfully!",
+        message: t("replySentSuccess", language),
         severity: "success",
       });
       setOpenReplyDialog(false);
     } catch (err) {
-      console.error("❌ Failed to send reply:", err);
+      console.error("Failed to send reply:", err);
       setSnackbar({
         open: true,
-        message: "Failed to send reply!",
+        message: t("failedSendReply", language),
         severity: "error",
       });
+    } finally {
+      setLoadingId(null);
     }
   };
 
-  // ✅ اختيار الألوان والأيقونات حسب النوع
+  // ✅ أيقونات وألوان
   const getIconAndColor = (type) => {
     switch (type) {
       case "MANUAL_MESSAGE":
-        return { icon: <ChatIcon sx={{ color: "#6A1B9A" }} />, color: "#F3E5F5" };
+        return { icon: <ChatIcon sx={{ color: "#556B2F" }} />, bar: "#556B2F" };
       case "CLAIM":
-        return { icon: <DescriptionIcon sx={{ color: "#388E3C" }} />, color: "#E8F5E9" };
+        return { icon: <DescriptionIcon sx={{ color: "#7B8B5E" }} />, bar: "#7B8B5E" };
       case "EMERGENCY":
-        return { icon: <WarningIcon sx={{ color: "#D32F2F" }} />, color: "#FFEBEE" };
+        return { icon: <WarningIcon sx={{ color: "#3D4F23" }} />, bar: "#3D4F23" };
       default:
-        return { icon: <PersonAddIcon sx={{ color: "#1976D2" }} />, color: "#E3F2FD" };
+        return { icon: <PersonAddIcon sx={{ color: "#556B2F" }} />, bar: "#556B2F" };
     }
   };
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{ display: "flex" }} dir={isRTL ? "rtl" : "ltr"}>
       <EmergencySidebar />
       <Box
         sx={{
           flexGrow: 1,
-          backgroundColor: "#f4f6f9",
+          backgroundColor: "#FAF8F5",
           minHeight: "100vh",
-          marginLeft: "240px",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
         }}
       >
         <EmergencyHeader />
@@ -153,84 +185,206 @@ const EmergencyNotifications = () => {
             variant="h4"
             fontWeight="bold"
             gutterBottom
-            sx={{ color: "#120460", display: "flex", alignItems: "center" }}
+            sx={{ color: "#3D4F23", display: "flex", alignItems: "center" }}
           >
-            <NotificationsIcon sx={{ mr: 1, fontSize: 35, color: "#FF1744" }} />
-            Notifications
+            <NotificationsIcon sx={{ mr: 1, fontSize: 35, color: "#556B2F" }} />
+            {t("emergencyNotifications", language)}
           </Typography>
+
           <Typography variant="body1" color="text.secondary" gutterBottom>
-            View and respond to user messages and system notifications.
+            {t("viewRespondMessages", language)}
           </Typography>
+
+          {notifications.some((n) => !n.read) && (
+            <Button
+              variant="contained"
+              color="success"
+              onClick={markAllAsRead}
+              sx={{ mb: 2 }}
+            >
+              {t("markAllAsRead", language)}
+            </Button>
+          )}
+
           <Divider sx={{ my: 3 }} />
 
-          {notifications.map((n) => {
-            const { icon, color } = getIconAndColor(n.type);
-            return (
-              <Paper
-                key={n.id}
-                onClick={() => !n.read && markAsRead(n.id)}
-                sx={{
-                  p: 3,
-                  mb: 3,
-                  borderRadius: 3,
-                  boxShadow: 4,
-                  cursor: "pointer",
-                  backgroundColor: n.read ? "#fff" : color,
-                  transition: "0.3s",
-                  "&:hover": { boxShadow: 8 },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                  {icon}
-                  <Typography variant="body1" sx={{ ml: 1 }}>
-                    <strong>{n.senderName || "System"}</strong> ({n.type}):{" "}
-                    {n.message}
-                  </Typography>
-                </Box>
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
+              <CircularProgress />
+            </Box>
+          ) : notifications.length === 0 ? (
+            <Typography>{t("noNotificationsFound", language)}</Typography>
+          ) : (
+            notifications.map((n) => {
+              const { icon, bar } = getIconAndColor(n.type);
 
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 1 }}
-                >
-                  {new Date(n.createdAt).toLocaleString()}
-                </Typography>
+              const getBackgroundColor = () => {
+                if (n.read)
+                  return "linear-gradient(145deg, #ffffff 0%, #FAF8F5 100%)";
+                switch (n.type) {
+                  case "MANUAL_MESSAGE":
+                    return "linear-gradient(145deg, #F5F5DC 0%, #E8EDE0 100%)";
+                  case "EMERGENCY":
+                    return "linear-gradient(145deg, #E8EDE0 0%, #F5F5DC 100%)";
+                  default:
+                    return "linear-gradient(145deg, #E8EDE0 0%, #F5F5DC 100%)";
+                }
+              };
 
-                <Chip
-                  label={n.read ? "Read" : "Unread"}
-                  color={n.read ? "default" : "primary"}
-                  size="small"
-                  sx={{ mt: 1 }}
-                />
+              return (
+                <Box sx={{ display: "flex", justifyContent: "center" }} key={n.id}>
+                  <Paper
+                    onClick={() =>
+                      n.type === "MANUAL_MESSAGE" && !n.read ? markAsRead(n.id) : null
+                    }
+                    sx={{
+                      position: "relative",
+                      width: "80%",
+                      maxWidth: 800,
+                      p: 2,
+                      mb: 3,
+                      borderRadius: 3,
+                      boxShadow: n.read ? 2 : 4,
+                      background: getBackgroundColor(),
+                      transition: "all 0.3s ease",
+                      cursor:
+                        n.type === "MANUAL_MESSAGE" && !n.read
+                          ? "pointer"
+                          : "default",
+                      "&:hover": !n.read
+                        ? { transform: "scale(1.01)", boxShadow: 6 }
+                        : {},
+                    }}
+                  >
+                    {/* ✅ الشريط الجانبي */}
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: 6,
+                        height: "100%",
+                        borderRadius: "3px 0 0 3px",
+                        backgroundColor: bar,
+                      }}
+                    />
 
-                {n.type === "MANUAL_MESSAGE" && (
-                  <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      color="success"
-                      onClick={() => handleReply(n)}
+                    {/* Header */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        mb: 0.5,
+                        ml: 2,
+                      }}
                     >
-                      Reply
-                    </Button>
-                  </Box>
-                )}
-              </Paper>
-            );
-          })}
+                      {icon}
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ ml: 1, fontWeight: "bold", color: "#3D4F23" }}
+                      >
+                        {n.senderName || t("system", language)}
+                      </Typography>
+                    </Box>
+
+                    {/* 🔹 Type */}
+                    <Chip
+                      label={n.type || "SYSTEM"}
+                      color="secondary"
+                      size="small"
+                      sx={{ mb: 1, ml: 2 }}
+                    />
+
+                    {/* 🔹 Message */}
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        ml: 2,
+                        color: "#333",
+                        lineHeight: 1.5,
+                        whiteSpace: "pre-line",
+                      }}
+                    >
+                      {n.message}
+                    </Typography>
+
+                    <Divider sx={{ my: 1 }} />
+
+                    {/* Footer */}
+                    <Box
+                      sx={{
+                        ml: 2,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(n.createdAt).toLocaleString()}
+                      </Typography>
+
+                      <Box sx={{ display: "flex", gap: 0.5 }}>
+                        <Chip
+                          label={n.read ? t("read", language) : t("unread", language)}
+                          color={n.read ? "default" : "success"}
+                          size="small"
+                        />
+                        {n.replied && (
+                          <Chip
+                            label={t("replied", language)}
+                            color="success"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                    </Box>
+
+                    {/* Reply Button */}
+                    {n.type === "MANUAL_MESSAGE" && !n.replied && (
+                      <Box
+                        sx={{
+                          mt: 1,
+                          display: "flex",
+                          justifyContent: isRTL ? "flex-start" : "flex-end",
+                          pr: 1,
+                        }}
+                      >
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color="success"
+                          onClick={() => handleReply(n)}
+                          disabled={loadingId === n.id}
+                          startIcon={
+                            loadingId === n.id ? (
+                              <CircularProgress size={14} color="inherit" />
+                            ) : null
+                          }
+                        >
+                          {loadingId === n.id ? t("sending", language) : t("reply", language)}
+                        </Button>
+                      </Box>
+                    )}
+                  </Paper>
+                </Box>
+              );
+            })
+          )}
         </Box>
       </Box>
 
-      {/* Dialog للرد */}
+      {/* Reply Dialog */}
       <Dialog open={openReplyDialog} onClose={() => setOpenReplyDialog(false)}>
-        <DialogTitle>Reply to Notification</DialogTitle>
+        <DialogTitle>{t("replyToNotification", language)}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" gutterBottom>
-            Message: {selectedNotification?.message}
+            {t("message", language)}: {selectedNotification?.message}
           </Typography>
           <TextField
             fullWidth
-            label="Your Reply"
+            label={t("yourReply", language)}
             multiline
             rows={3}
             value={replyMessage}
@@ -239,14 +393,24 @@ const EmergencyNotifications = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenReplyDialog(false)}>Cancel</Button>
-          <Button onClick={handleConfirmReply} variant="contained" color="primary">
-            Send Reply
+          <Button onClick={() => setOpenReplyDialog(false)}>{t("cancel", language)}</Button>
+          <Button
+            onClick={handleConfirmReply}
+            variant="contained"
+            color="primary"
+            disabled={loadingId === selectedNotification?.id}
+            startIcon={
+              loadingId === selectedNotification?.id ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : null
+            }
+          >
+            {loadingId === selectedNotification?.id ? t("sending", language) : t("sendReply", language)}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
+      {/* ✅ Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

@@ -1,0 +1,288 @@
+{
+  "اسعار الادوية .xlsx": {
+    "sheets": [
+      {
+        "name": "ورقة1",
+        "headers": [
+          "UROCLEAN",
+          "SODIUM BENZOATE 2.00%HEXAMINE 5.00%",
+          "30 شيكل"
+        ],
+        "sample": [
+          [
+            "ALBOCAL POWDER 10X15G.",
+            "BORIC ACID 70%,MENTHOL 0.01%,THYMOL 0.5%,METHYL",
+            "37 شيكل"
+          ],
+          [
+            "FERRITON-3 15ML, DROPS",
+            "50 MG IRON (AS IRON III HYDROXIDE POLYMALTOSE COMPLEX)",
+            "33 شيكل"
+          ],
+          [
+            "GRIPMIN S.R.10TAB.",
+            "PSEUDOEPHEDRINE HCL 120MG,CHLORPHENIRAMINE MALEATE 8MG",
+            "19 شيكل"
+          ],
+          [
+            "Levemir FlexPen",
+            "INSULIN DETEMIR RDNA 100 IU (14.2 MG)/ML",
+            "267 شيكل"
+          ]
+        ],
+        "total_rows": 2782
+      }
+    ]
+  },
+  "بيانات مركز طبي .xlsx": {
+    "sheets": [
+      {
+        "name": "ورقة1",
+        "headers": [
+          "المسمى الوظيفي",
+          "التخصصات",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "المسمى الوظيفي"
+        ],
+        "sample": [
+          [
+            "موظف استقبال",
+            "طب عام",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "مسؤول مالي",
+            "نسائية وتوليد",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "طبيب",
+            "أسنان",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "موظفة استقبال "
+          ],
+          [
+            "صيدلاني",
+            "عيون",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ]
+        ],
+        "total_rows": 73
+      },
+      {
+        "name": "Sheet1",
+        "headers": [
+          "Speciality",
+          "",
+          ""
+        ],
+        "sample": [
+          [
+            "ENT",
+            "  أنف وأذن وحنجرة",
+            ""
+          ],
+          [
+            "ENT",
+            "",
+            ""
+          ],
+          [
+            "Orthopedic",
+            "طب العظام",
+            ""
+          ],
+          [
+            "Orthopedic",
+            "",
+            ""
+          ]
+        ],
+        "total_rows": 48
+      }
+    ]
+  },
+  "تشخيصات طبية .xlsx": {
+    "sheets": [
+      {
+        "name": "ورقة1",
+        "headers": [
+          "",
+          "",
+          ""
+        ],
+        "sample": [
+          [
+            "",
+            "Abdominal pain ",
+            " الام في البطن"
+          ],
+          [
+            "",
+            "Chest infection ",
+            "التهاب رئوي"
+          ],
+          [
+            "",
+            "Gastroenteritis",
+            "نزله معوية"
+          ],
+          [
+            "",
+            "Urinary tract infection",
+            "التهاب مسالك بولية"
+          ]
+        ],
+        "total_rows": 22
+      }
+    ]
+  },
+  "فحوصات طبية .xlsx": {
+    "sheets": [
+      {
+        "name": "ورقة1",
+        "headers": [
+          "TEST_FORMAL_NAME",
+          "COVERAGE_STATUS_NA"
+        ],
+        "sample": [
+          [
+            "FBS",
+            "مغطى"
+          ],
+          [
+            "C-peptide",
+            "مغطى"
+          ],
+          [
+            "Creatinine, serum",
+            "مغطى"
+          ],
+          [
+            "Creatinine, urine",
+            "مغطى"
+          ]
+        ],
+        "total_rows": 219
+      }
+    ]
+  },
+  "ملف الادوية .xlsx": {
+    "sheets": [
+      {
+        "name": "ورقة1",
+        "headers": [
+          "Name",
+          "Generic name",
+          "Type",
+          "MED_UNIT_NA",
+          "COVERAGE_STATUS_NA"
+        ],
+        "sample": [
+          [
+            "ROBUCEF 200 MG 10 CAP",
+            "CEFIXIME TRIHYDRATE",
+            "ROBUCEF 200 MG 10 CAP-Capsule",
+            "Mg",
+            "مغطى"
+          ],
+          [
+            "RONEXIN 25MG 30 TAB",
+            "LEVOMEPROMAZINE 25MG",
+            "RONEXIN 25MG 30 TAB-Tablet",
+            "Mg",
+            "يحتاج الى موافقة"
+          ],
+          [
+            "SIAFIL 5 MG 4 TAB",
+            "TADALAFIL",
+            "SIAFIL 5 MG 4 TAB-Tablet",
+            "Mg",
+            "يحتاج الى موافقة"
+          ],
+          [
+            "SIMVASTATIN 20 MG 30 TAB",
+            "SIMVASTATIN",
+            "SIMVASTATIN 20 MG 30 TAB-Tablet",
+            "Mg",
+            "يحتاج الى موافقة"
+          ]
+        ],
+        "total_rows": 240
+      }
+    ]
+  },
+  "ملف الاشعة.xlsx": {
+    "sheets": [
+      {
+        "name": "ورقة1",
+        "headers": [
+          "RAY_NAME",
+          "COVERAGE_STATUS_NA"
+        ],
+        "sample": [
+          [
+            "Venogram/ Phlebogram Antegrade ,Bilateral",
+            "يحتاج الى موافقة"
+          ],
+          [
+            "Venogram/ Phlebogram Antegrade ,Untilateral",
+            "يحتاج الى موافقة"
+          ],
+          [
+            "Venogram/ Phlebogram Antegrade+functional images Varicocele",
+            "يحتاج الى موافقة"
+          ],
+          [
+            "Virtual Bronchoscopy CT Scan",
+            "يحتاج الى موافقة"
+          ]
+        ],
+        "total_rows": 99
+      }
+    ]
+  }
+}

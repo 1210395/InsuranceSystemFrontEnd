@@ -1,0 +1,20 @@
+RAY_NAME,PRICE,COVERAGE_STATUS
+Chest X-Ray,80,مغطى
+X-Ray Spine (Cervical),100,مغطى
+X-Ray Spine (Lumbar),100,مغطى
+X-Ray Extremities,70,مغطى
+X-Ray Skull,90,مغطى
+Ultrasound Abdomen,150,مغطى
+Ultrasound Pelvis,150,مغطى
+Ultrasound Thyroid,120,مغطى
+Echocardiogram,200,مغطى
+Doppler Ultrasound,180,مغطى
+Mammogram,200,مغطى
+CT Scan Head,400,يحتاج الى موافقة
+CT Scan Chest,450,يحتاج الى موافقة
+CT Scan Abdomen,500,يحتاج الى موافقة
+MRI Brain,800,يحتاج الى موافقة
+MRI Spine,850,يحتاج الى موافقة
+MRI Knee/Joint,700,يحتاج الى موافقة
+PET Scan,2000,غير مغطى
+Nuclear Medicine Scan,1500,غير مغطى

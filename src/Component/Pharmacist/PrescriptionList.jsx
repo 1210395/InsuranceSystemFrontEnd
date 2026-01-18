@@ -1,169 +1,1060 @@
-import React from "react";
+// src/Component/Pharmacist/PrescriptionList.jsx
+import React, { useState, useEffect } from "react";
+import { api, getToken } from "../../utils/apiService";
+import { API_ENDPOINTS } from "../../config/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
+import {
+  Box,
+  Paper,
+  Typography,
+  Grid,
+  Stack,
+  Button,
+  Card,
+  CardContent,
+  Avatar,
+  InputAdornment,
+  TextField,
+} from "@mui/material";
+import DescriptionIcon from "@mui/icons-material/Description";
+import SearchIcon from "@mui/icons-material/Search";
+import PrescriptionCard from "./PrescriptionCard";
+import PrescriptionDialogs from "./PrescriptionDialogs";
 
-const PrescriptionList = ({ prescriptions = [], onVerify, onReject, onPrint, onDetails }) => {
+const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, onBill }) => {
+  const { language, isRTL } = useLanguage();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // "all", "pending", "verified"
+  const [_employeeIdToNameMap, setEmployeeIdToNameMap] = useState({});
+  const [nameToEmployeeIdMap, setNameToEmployeeIdMap] = useState({}); // Map patient names to employee IDs
+  const [_clientInfoMap, _setClientInfoMap] = useState({}); // Map member names to client info (age, gender)
+  const _token = getToken();
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+  const [verifyDialog, setVerifyDialog] = useState({
+    open: false,
+    prescription: null,
+    prices: [],
+  });
+  const [documentDialog, setDocumentDialog] = useState({
+    open: false,
+    loading: false,
+    document: null,
+    description: "",
+  });
+  const [imageDialog, setImageDialog] = useState({
+    open: false,
+    imageUrl: null,
+  });
+
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
     return date.toISOString().split("T")[0];
   };
 
-  const getStatusColor = (status) => {
+  // Calculate age from date of birth
+  const _calculateAgeFromDOB = (dateOfBirth) => {
+    if (!dateOfBirth) return null;
+    try {
+      const today = new Date();
+      const birthDate = new Date(dateOfBirth);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age > 0 ? `${age} years` : null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Get family member info from DTO (extracted by mapper) or parse from treatment field
+  const getFamilyMemberInfo = (prescription) => {
+    // First, try to use DTO fields (if mapper has extracted them)
+    if (prescription.isFamilyMember === true && prescription.familyMemberName) {
+      const info = {
+        name: prescription.familyMemberName,
+        relation: prescription.familyMemberRelation,
+        insuranceNumber: prescription.familyMemberInsuranceNumber,
+        age: prescription.familyMemberAge || null,
+        gender: prescription.familyMemberGender || null,
+        nationalId: prescription.familyMemberNationalId || null,
+      };
+      return info;
+    }
+    
+    // Fallback: Parse from treatment field (for backward compatibility or if mapper hasn't extracted yet)
+    if (prescription.treatment) {
+      // Backend format: "\nFamily Member: [Name] ([Relation]) - Insurance: [Insurance Number] - Age: [Age] - Gender: [Gender]"
+      // The pattern starts with optional newline/whitespace
+      
+      // Pattern 1: With age and gender (new format)
+      // Backend format: "\nFamily Member: Name (Relation) - Insurance: Number - Age: Age - Gender: Gender"
+      // Match anywhere in the string, handle optional whitespace
+      let familyMemberPattern = /Family\s+Member:\s*([^-]+?)\s*\(([^)]+)\)\s*-\s*Insurance:\s*([^-]+?)\s*-\s*Age:\s*([^-]+?)\s*-\s*Gender:\s*([^\n\r]+?)(?:\n|$|$)/i;
+      let match = prescription.treatment.match(familyMemberPattern);
+      
+      if (match && match.length >= 6) {
+        let age = match[4] ? match[4].trim() : null;
+        let gender = match[5] ? match[5].trim() : null;
+        
+        // Handle "N/A" or empty values
+        if (!age || age === "N/A" || age === "N/A years" || age === "null" || age === "") age = null;
+        if (!gender || gender === "N/A" || gender === "null" || gender === "") gender = null;
+        
+        const info = {
+          name: match[1].trim(),
+          relation: match[2].trim(),
+          insuranceNumber: match[3].trim(),
+          age: age,
+          gender: gender,
+          nationalId: null, // Not available from treatment field parsing
+        };
+        return info;
+      }
+      
+      // Pattern 2: Without age and gender (old format)
+      familyMemberPattern = /Family\s+Member:\s*([^-]+?)\s*\(([^)]+)\)\s*-\s*Insurance:\s*([^\n\r]+?)(?:\n|$)/i;
+      match = prescription.treatment.match(familyMemberPattern);
+      
+      if (match) {
+        const info = {
+          name: match[1].trim(),
+          relation: match[2].trim(),
+          insuranceNumber: match[3].trim(),
+          age: null, // Not available in old format
+          gender: null, // Not available in old format
+          nationalId: null, // Not available in old format
+        };
+        return info;
+      }
+    }
+    
+    return null;
+  };
+
+  const getStatusStyle = (status) => {
     switch (status?.toLowerCase()) {
-      case "pending": return "#F59E0B";
-      case "verified": return "#059669";
-      case "rejected": return "#DC2626";
-      default: return "#6B7280";
-    }
-  };
-
-  const renderActions = (prescription) => {
-    const status = prescription.status?.toLowerCase();
-    switch (status) {
       case "pending":
-        return (
-          <div className="action-buttons">
-            <button className="btn btn-verify" onClick={() => onVerify(prescription.id)}>✅ Verify</button>
-            <button className="btn btn-reject" onClick={() => onReject(prescription.id)}>❌ Reject</button>
-          </div>
-        );
+        return {
+          color: "warning",
+          label: t("pending", language),
+          bgcolor: "#FFF3E0",
+          textColor: "#E65100",
+          icon: "⏳",
+        };
       case "verified":
-        return (
-          <div className="action-buttons">
-            <button className="btn btn-print" onClick={() => onPrint(prescription.id)}>🖨 Print</button>
-          </div>
-        );
+        return {
+          color: "success",
+          label: t("verified", language),
+          bgcolor: "#E8F5E9",
+          textColor: "#2E7D32",
+          icon: "✅",
+        };
       case "rejected":
-        return (
-          <div className="action-buttons">
-            <button className="btn btn-details" onClick={() => onDetails(prescription.id)}>ℹ️ Details</button>
-          </div>
-        );
+        return {
+          color: "error",
+          label: t("rejected", language),
+          bgcolor: "#FFEBEE",
+          textColor: "#C62828",
+          icon: "❌",
+        };
+      case "billed":
+        return {
+          color: "info",
+          label: t("billed", language),
+          bgcolor: "#E3F2FD",
+          textColor: "#1565C0",
+          icon: "💰",
+        };
       default:
-        return null;
+        return {
+          color: "default",
+          label: t("noData", language),
+          bgcolor: "#F5F5F5",
+          textColor: "#757575",
+          icon: "❓",
+        };
     }
   };
 
-  if (!prescriptions || prescriptions.length === 0) {
+  // Helper function to detect form from medicine name (fallback)
+  const detectFormFromName = (medicineName) => {
+    if (!medicineName) return null;
+    const nameUpper = medicineName.toUpperCase();
+    // Check for Arabic "سائل" or English "liquid" or "syrup"
+    if (nameUpper.includes("سائل") || nameUpper.includes("LIQUID") || nameUpper.includes("SYRUP")) {
+      return "Syrup";
+    }
+    if (nameUpper.includes("TABLET") || nameUpper.includes("حبة")) {
+      return "Tablet";
+    }
+    if (nameUpper.includes("CREAM") || nameUpper.includes("كريم")) {
+      return "Cream";
+    }
+    if (nameUpper.includes("DROPS") || nameUpper.includes("قطرة")) {
+      return "Drops";
+    }
+    if (nameUpper.includes("INJECTION") || nameUpper.includes("حقن")) {
+      return "Injection";
+    }
+    return null;
+  };
+
+  // Helper functions to get dosage unit labels based on medicine form
+  const getDosageUnit = (form, medicineName = null) => {
+    // If form is null, try to detect from medicine name
+    if (!form && medicineName) {
+      const detectedForm = detectFormFromName(medicineName);
+      if (detectedForm) {
+        form = detectedForm;
+      }
+    }
+    if (!form) return { ar: "وحدة", en: "unit(s)" };
+    const formUpper = form.toUpperCase();
+    if (formUpper === "TABLET") return { ar: "حبة", en: "pill(s)" };
+    if (formUpper === "SYRUP" || formUpper === "LIQUID PACKAGE") return { ar: "مل", en: "ml" };
+    if (formUpper === "CREAM") return { ar: "جم", en: "g" };
+    if (formUpper === "DROPS") return { ar: "قطرة", en: "drops" };
+    if (formUpper === "INJECTION") return { ar: "مل", en: "ml" };
+    return { ar: "وحدة", en: "unit(s)" };
+  };
+
+  const getDailyUnit = (form, medicineName = null) => {
+    // If form is null, try to detect from medicine name
+    if (!form && medicineName) {
+      const detectedForm = detectFormFromName(medicineName);
+      if (detectedForm) {
+        form = detectedForm;
+      }
+    }
+    if (!form) return { ar: "وحدة/يوم", en: "units/day" };
+    const formUpper = form.toUpperCase();
+    if (formUpper === "TABLET") return { ar: "حبة/يوم", en: "pills/day" };
+    if (formUpper === "SYRUP" || formUpper === "LIQUID PACKAGE") return { ar: "مل/يوم", en: "ml/day" };
+    if (formUpper === "CREAM") return { ar: "جم/يوم", en: "g/day" };
+    if (formUpper === "DROPS") return { ar: "قطرة/يوم", en: "drops/day" };
+    if (formUpper === "INJECTION") return { ar: "مل/يوم", en: "ml/day" };
+    return { ar: "وحدة/يوم", en: "units/day" };
+  };
+
+  // Helper function to get quantity unit label (for display in calculated quantity)
+  // للسائل/الكريم/القطرة: علبة، للحبوب/الحقن: حبة/حقنة
+  const getQuantityUnit = (form, medicineName = null) => {
+    if (!form && medicineName) {
+      const detectedForm = detectFormFromName(medicineName);
+      if (detectedForm) {
+        form = detectedForm;
+      }
+    }
+    if (!form) return { ar: "وحدة", en: "unit" };
+    const formUpper = form.toUpperCase();
+    // للسائل/الكريم/القطرة: علبة كاملة
+    if (formUpper === "SYRUP" || formUpper === "LIQUID PACKAGE") return { ar: "علبة", en: "bottle" };
+    if (formUpper === "CREAM" || formUpper === "OINTMENT") return { ar: "علبة", en: "tube" };
+    if (formUpper === "DROPS") return { ar: "علبة", en: "bottle" };
+    // للحبوب/الحقن: حبة/حقنة
+    if (formUpper === "TABLET" || formUpper === "CAPSULE") return { ar: "حبة", en: "pill" };
+    if (formUpper === "INJECTION") return { ar: "حقنة", en: "injection" };
+    return { ar: "وحدة", en: "unit" };
+  };
+
+  const _isLiquidMedicine = (form, medicineName = null) => {
+    // If form is null, try to detect from medicine name
+    if (!form && medicineName) {
+      const detectedForm = detectFormFromName(medicineName);
+      if (detectedForm) {
+        form = detectedForm;
+      }
+    }
+    if (!form) return false;
+    const formUpper = form.toUpperCase();
+    return formUpper === "SYRUP" || formUpper === "LIQUID PACKAGE";
+  };
+
+  const openVerifyDialog = (prescription) => {
+    // الصيدلي يرى: الجرعة، كم مرة باليوم، المدة، الكمية المحسوبة
+    // الصيدلي يدخل: السعر فقط
+    const prices = prescription.items.map((item) => ({
+      id: item.id,
+      medicineName: item.medicineName,
+      scientificName: item.scientificName,
+      dosage: item.dosage, // الجرعة
+      timesPerDay: item.timesPerDay, // كم مرة باليوم
+      duration: item.duration, // المدة
+      calculatedQuantity: item.calculatedQuantity || 0, // الكمية المحسوبة
+      unionPrice: item.unionPrice || 0,
+      unionPricePerUnit: item.unionPricePerUnit || 0,
+      pharmacistPrice: item.pharmacistPrice || "", // الصيدلي يدخل السعر فقط
+      form: item.form || null,
+    }));
+    setVerifyDialog({ open: true, prescription, prices });
+  };
+
+  const handlePriceChange = (itemId, value) => {
+    setVerifyDialog((prev) => ({
+      ...prev,
+      prices: prev.prices.map((p) =>
+        p.id === itemId ? { ...p, pharmacistPrice: parseFloat(value) || 0 } : p
+      ),
+    }));
+  };
+
+  // Removed handleDispensedQuantityChange - الصيدلي لا يحتاج لإدخال الكمية، فقط السعر
+
+  const handleVerifySubmit = async () => {
+    const { prescription, prices } = verifyDialog;
+
+    const invalidPrice = prices.find((p) => !p.pharmacistPrice || p.pharmacistPrice <= 0);
+    if (invalidPrice) {
+      setSnackbar({
+        open: true,
+        message: t("pleaseEnterValidPrices", language),
+        severity: "warning",
+      });
+      return;
+    }
+
+    // Prepare items with prices only
+    // Backend will use calculatedQuantity and calculate the final claim amount
+    // الصيدلي يدخل السعر فقط، والـ backend يحسب كل شيء
+    const itemsWithPrices = prices.map((p) => {
+      const pharmacistPrice = parseFloat(p.pharmacistPrice) || 0;
+      
+      return {
+        id: p.id,
+        pharmacistPrice: pharmacistPrice, // السعر الكلي للكمية المحسوبة
+        // dispensedQuantity: لا نحتاج - الـ backend يستخدم calculatedQuantity
+      };
+    });
+
+    try {
+      await onVerify(prescription.id, itemsWithPrices, prescription);
+      setVerifyDialog({ open: false, prescription: null, prices: [] });
+      
+      // فتح dialog لإضافة document
+      setDocumentDialog({ open: true, loading: false, document: null });
+      
+      setSnackbar({
+        open: true,
+        message: t("prescriptionVerifiedSuccessfully", language),
+        severity: "success",
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || t("failedToVerifyPrescription", language),
+        severity: "error",
+      });
+    }
+  };
+
+  const handleReject = async (id) => {
+    if (!window.confirm(t("confirmRejectPrescription", language))) {
+      return;
+    }
+
+    try {
+      await onReject(id);
+      setSnackbar({
+        open: true,
+        message: t("prescriptionRejectedSuccessfully", language),
+        severity: "warning",
+      });
+    } catch {
+      setSnackbar({
+        open: true,
+        message: t("failedToRejectPrescription", language),
+        severity: "error",
+      });
+    }
+  };
+
+  const handleBill = async (id) => {
+    if (!window.confirm(t("confirmMarkAsBilled", language))) {
+      return;
+    }
+
+    try {
+      await onBill(id);
+
+      setSnackbar({
+        open: true,
+        message: t("prescriptionMarkedAsBilledSuccessfully", language),
+        severity: "success",
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || t("failedToMarkAsBilled", language),
+        severity: "error",
+      });
+    }
+  };
+
+  const _handleDocumentChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setDocumentDialog((prev) => ({ ...prev, document: file }));
+    }
+  };
+
+  const handleDocumentSubmit = async () => {
+    setDocumentDialog((prev) => ({ ...prev, loading: true }));
+    
+    try {
+      // إرسال الـ claim مع الـ document والـ description
+      if (onSubmitClaim) {
+        await onSubmitClaim({
+          document: documentDialog.document,
+          description: documentDialog.description,
+        });
+       
+      }
+      
+      setDocumentDialog({ open: false, loading: false, document: null, description: "" });
+      setSnackbar({
+        open: true,
+        message: t("claimSubmittedSuccessfully", language),
+        severity: "success",
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || t("failedToSubmitClaim", language),
+        severity: "error",
+      });
+    } finally {
+      setDocumentDialog((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  // ✅ Fetch Employee IDs for all unique patients when prescriptions load
+  // NOTE: This hook must be called before any conditional returns to follow Rules of Hooks
+  useEffect(() => {
+    const fetchEmployeeIdsForPatients = async () => {
+      if (!prescriptions || prescriptions.length === 0) {
+        return;
+      }
+      
+      // First, check if any prescriptions already have employee ID in data
+      const prescriptionsWithEmployeeId = prescriptions.filter(p => p.memberEmployeeId || p.employeeId);
+      
+      // Build map from data that already has employee ID
+      const mapFromData = {};
+      prescriptionsWithEmployeeId.forEach(p => {
+        if (p.memberName && (p.memberEmployeeId || p.employeeId)) {
+          const name = p.memberName.toLowerCase();
+          const employeeId = p.memberEmployeeId || p.employeeId;
+          mapFromData[name] = employeeId;
+        }
+      });
+      
+      if (Object.keys(mapFromData).length > 0) {
+        setNameToEmployeeIdMap(prev => ({ ...prev, ...mapFromData }));
+      }
+
+      // Get unique patient names (that don't already have employee ID in data)
+      const uniquePatients = Array.from(
+        new Set(
+          prescriptions
+            .filter(p => p.memberName && !p.memberEmployeeId && !p.employeeId)
+            .map(p => ({
+              name: p.memberName?.toLowerCase(),
+              memberId: p.memberId,
+              originalName: p.memberName // Keep original for matching
+            }))
+            .filter(p => p.name && p.memberId)
+        )
+      );
+
+      if (uniquePatients.length === 0) {
+        return;
+      }
+
+      // Use /api/clients/search/name/{fullName} to get employee IDs
+      // This endpoint is authorized for PHARMACIST role
+      try {
+        const searchPromises = uniquePatients.slice(0, 20).map(async (patient) => {
+          try {
+            const response = await api.get(
+              API_ENDPOINTS.CLIENTS.SEARCH_BY_NAME(encodeURIComponent(patient.originalName))
+            );
+
+            // api.get() returns data directly
+            if (response && response.employeeId) {
+              return { name: patient.name, employeeId: response.employeeId };
+            }
+          } catch {
+            // Ignore individual errors (404, 403, etc.)
+          }
+          return null;
+        });
+
+        const results = await Promise.all(searchPromises);
+        const validResults = results.filter(r => r !== null);
+
+        if (validResults.length > 0) {
+          const newMap = {};
+          validResults.forEach(r => {
+            newMap[r.name] = r.employeeId;
+          });
+          setNameToEmployeeIdMap(prev => ({ ...prev, ...newMap }));
+        }
+      } catch {
+        // Search failed, ignore
+      }
+    };
+
+    fetchEmployeeIdsForPatients();
+  }, [prescriptions]);
+
+  // Early return for loading state - must be after all hooks
+  if (!Array.isArray(prescriptions)) {
     return (
-      <div className="table-section">
-        <h2>Prescriptions</h2>
-        <div className="table-container empty">
-          <div style={{ padding: "2rem", textAlign: "center", color: "#6B7280" }}>
-            No prescriptions found
-          </div>
-        </div>
-      </div>
+      <Box sx={{ textAlign: "center", py: 8 }} dir={isRTL ? "rtl" : "ltr"}>
+        <Typography variant="h6" fontWeight="bold" color="text.secondary">
+          {t("loading", language)}
+        </Typography>
+      </Box>
     );
   }
 
-  return (
-    <div className="table-section">
-      {/* ✅ CSS داخل الصفحة */}
-      <style>
-        {`
-          .table-container {
-            max-height: 400px;   /* 👈 ارتفاع ثابت */
-            overflow-y: auto;    /* 👈 Scroll عمودي */
-            border: 1px solid #E5E7EB;
-            border-radius: 8px;
-          }
-          .table-container::-webkit-scrollbar {
-            width: 8px;
-          }
-          .table-container::-webkit-scrollbar-thumb {
-            background: #9CA3AF;
-            border-radius: 8px;
-          }
-          .table-container::-webkit-scrollbar-thumb:hover {
-            background: #6B7280;
-          }
-          table.data-table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-          table.data-table th, table.data-table td {
-            padding: 10px;
-            border-bottom: 1px solid #E5E7EB;
-            text-align: center;
-          }
-          table.data-table th {
-            background: #F9FAFB;
-            font-weight: bold;
-          }
-          .action-buttons {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-          }
-          .btn {
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          }
-          .btn-verify { background-color: #059669; color: #fff; }
-          .btn-verify:hover { background-color: #047857; }
-          .btn-reject { background-color: #DC2626; color: #fff; }
-          .btn-reject:hover { background-color: #B91C1C; }
-          .btn-print { background-color: #2563EB; color: #fff; }
-          .btn-print:hover { background-color: #1D4ED8; }
-          .btn-details { background-color: #6B7280; color: #fff; }
-          .btn-details:hover { background-color: #4B5563; }
-        `}
-      </style>
+  // ✅ Sorting and filtering
+  // Filter prescriptions based on status filter
+  const activePrescriptions = prescriptions.filter(
+    (p) => {
+      const status = p.status?.toLowerCase();
 
-      <h2>Prescriptions</h2>
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-             
-              <th>Patient</th>
-              <th>Doctor</th>
-              <th>Medicine</th>
-              <th>Dosage</th>
-              <th>Instructions</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {prescriptions.map((p) => (
-              <tr key={p.id}>
-              
-                <td>{p.memberName || "-"}</td>
-                <td>{p.doctorName || "-"}</td>
-                <td>{p.medicine}</td>
-                <td>{p.dosage}</td>
-                <td>{p.instructions}</td>
-                <td>{formatDate(p.createdAt)}</td>
-                <td>
-                  <span
-                    className="status-badge"
-                    style={{
-                      backgroundColor: getStatusColor(p.status),
-                      color: "#fff",
-                      padding: "0.3rem 0.6rem",
-                      borderRadius: "6px",
-                      fontSize: "0.85rem",
-                    }}
-                  >
-                    {p.status}
-                  </span>
-                </td>
-                <td>{renderActions(p)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      if (statusFilter === "pending") {
+        return status === "pending";
+      } else if (statusFilter === "verified") {
+        return status === "verified";
+      } else {
+        // "all" - show PENDING, VERIFIED, and BILLED
+        return status === "pending" || status === "verified" || status === "billed";
+      }
+    }
+  );
+
+  const sortedPrescriptions = [...activePrescriptions].sort(
+    (a, b) => {
+      // Sort: PENDING first, then VERIFIED, then by date
+      if (a.status?.toLowerCase() === "pending" && b.status?.toLowerCase() !== "pending") {
+        return -1;
+      }
+      if (a.status?.toLowerCase() !== "pending" && b.status?.toLowerCase() === "pending") {
+        return 1;
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    }
+  );
+
+  // ✅ Lookup employee ID to name mapping - only when user presses Enter or leaves the field
+  const handleEmployeeIdLookup = async (employeeId) => {
+    if (!employeeId || !employeeId.trim()) {
+      return;
+    }
+
+    const trimmedSearch = employeeId.trim();
+    const looksLikeEmployeeId = /^[A-Za-z0-9]{3,}$/.test(trimmedSearch);
+    
+    if (looksLikeEmployeeId) {
+      try {
+        const response = await api.get(
+          API_ENDPOINTS.CLIENTS.SEARCH_BY_EMPLOYEE_ID(encodeURIComponent(trimmedSearch))
+        );
+
+        // Check if response is successful and has fullName (not an error message)
+        if (response.status === 200 && response.data && response.data.fullName && !response.data.error) {
+          const employeeIdLower = trimmedSearch.toLowerCase();
+          const patientName = response.data.fullName.toLowerCase();
+          const actualEmployeeId = response.data.employeeId || trimmedSearch;
+          
+          // Map employee ID to patient name (for search)
+          setEmployeeIdToNameMap(prev => ({
+            ...prev,
+            [employeeIdLower]: patientName
+          }));
+          
+          // Map patient name to employee ID (for display in cards)
+          setNameToEmployeeIdMap(prev => ({
+            ...prev,
+            [patientName]: actualEmployeeId
+          }));
+        } else {
+          // Clear only this employee ID from map, keep others
+          setEmployeeIdToNameMap(prev => {
+            const newMap = { ...prev };
+            delete newMap[trimmedSearch.toLowerCase()];
+            return newMap;
+          });
+        }
+      } catch {
+        // Employee ID not found (404) or other error - silently handle
+        // Clear only this employee ID from map, keep others
+        setEmployeeIdToNameMap(prev => {
+          const newMap = { ...prev };
+          delete newMap[trimmedSearch.toLowerCase()];
+          return newMap;
+        });
+      }
+    }
+  };
+
+
+  const filteredPrescriptions = sortedPrescriptions.filter(
+    (p) => {
+      // Filter by search term: full name, employee ID, and insurance number
+      if (!searchTerm.trim()) return true;
+      
+      const searchLower = searchTerm.toLowerCase();
+      
+      // Search by patient name (main client)
+      const matchesName = p.memberName?.toLowerCase().includes(searchLower);
+      
+      // Search by Employee ID (main client)
+      const matchesEmployeeId = p.employeeId?.toLowerCase().includes(searchLower);
+      
+      // Search by family member info if exists
+      const familyMemberInfo = getFamilyMemberInfo(p);
+      const matchesFamilyMemberName = familyMemberInfo?.name?.toLowerCase().includes(searchLower);
+      const matchesFamilyMemberInsuranceNumber = familyMemberInfo?.insuranceNumber?.toLowerCase().includes(searchLower);
+      
+      return matchesName || matchesEmployeeId || matchesFamilyMemberName || matchesFamilyMemberInsuranceNumber;
+    }
+  );
+
+  if (prescriptions.length === 0) {
+    return (
+      <Box sx={{ textAlign: "center", py: 8 }} dir={isRTL ? "rtl" : "ltr"}>
+        <Typography variant="h5" fontWeight="bold" color="text.secondary">
+          {t("noPrescriptionsFound", language)}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          {t("noData", language)}
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Show message when filtered list is empty
+  if (filteredPrescriptions.length === 0 && activePrescriptions.length > 0) {
+    return (
+      <Box sx={{ px: { xs: 2, md: 4 }, py: 3 }} dir={isRTL ? "rtl" : "ltr"}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 4,
+            mb: 4,
+            borderRadius: 4,
+            background: "linear-gradient(135deg, #556B2F 0%, #7B8B5E 100%)",
+            color: "white",
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+            <Avatar
+              sx={{
+                bgcolor: "rgba(255,255,255,0.2)",
+                width: 56,
+                height: 56,
+              }}
+            >
+              <DescriptionIcon sx={{ fontSize: 32 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h4" fontWeight="700" sx={{ mb: 0.5 }}>
+                {t("pendingPrescriptions", language)}
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                {t("prescriptionList", language)}
+              </Typography>
+            </Box>
+          </Stack>
+        </Paper>
+
+        <Card elevation={0} sx={{ borderRadius: 4, border: "1px solid #E8EDE0", mb: 4 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Stack spacing={2}>
+              <TextField
+                placeholder={t("searchPlaceholder", language)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => {
+                  // If Enter is pressed and search term looks like employee ID, lookup
+                  if (e.key === 'Enter') {
+                    const trimmedSearch = searchTerm.trim();
+                    const looksLikeEmployeeId = /^[A-Za-z0-9]{3,}$/.test(trimmedSearch);
+                    if (looksLikeEmployeeId) {
+                      handleEmployeeIdLookup(trimmedSearch);
+                    }
+                  }
+                }}
+                onBlur={() => {
+                  // When user leaves the field, if search term looks like employee ID, lookup
+                  const trimmedSearch = searchTerm.trim();
+                  const looksLikeEmployeeId = /^[A-Za-z0-9]{3,}$/.test(trimmedSearch);
+                  if (looksLikeEmployeeId) {
+                    handleEmployeeIdLookup(trimmedSearch);
+                  }
+                }}
+                fullWidth
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "text.secondary" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    bgcolor: "#FAF8F5",
+                  },
+                }}
+              />
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: "center",
+            borderRadius: 3,
+            border: "1px dashed #d1d5db",
+          }}
+        >
+          <SearchIcon sx={{ fontSize: 64, color: "#cbd5e0", mb: 2 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            {t("noPrescriptionsFound", language)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {t("noData", language)}
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  const pendingCount = prescriptions.filter(
+    (p) => p.status?.toLowerCase() === "pending"
+  ).length;
+  const verifiedCount = prescriptions.filter(
+    (p) => p.status?.toLowerCase() === "verified"
+  ).length;
+  const billedCount = prescriptions.filter(
+    (p) => p.status?.toLowerCase() === "billed"
+  ).length;
+  const _rejectedCount = activePrescriptions.filter(
+    (p) => p.status?.toLowerCase() === "rejected"
+  ).length;
+
+  return (
+    <Box sx={{ px: { xs: 2, md: 4 }, py: 3, backgroundColor: "#FAF8F5", minHeight: "100vh" }}>
+      <Box>
+        {/* 📌 Header Section */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 4,
+            mb: 4,
+            borderRadius: 4,
+            background: "linear-gradient(135deg, #556B2F 0%, #7B8B5E 100%)",
+            color: "white",
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+            <Avatar
+              sx={{
+                bgcolor: "rgba(255,255,255,0.2)",
+                width: 56,
+                height: 56,
+              }}
+            >
+              <DescriptionIcon sx={{ fontSize: 32 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h4" fontWeight="700" sx={{ mb: 0.5 }}>
+                {t("pendingPrescriptions", language)}
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                {t("prescriptionList", language)}
+              </Typography>
+            </Box>
+          </Stack>
+
+          {/* Stats Summary - Show only PENDING count */}
+          <Grid container spacing={2} sx={{ mt: 2 }}>
+            <Grid item xs={12} sm={6}>
+              <Box
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.15)",
+                  p: 2,
+                  borderRadius: 2,
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <Typography variant="h4" fontWeight="700">
+                  {pendingCount}
+                </Typography>
+                <Typography variant="body2">{t("pendingPrescriptions", language)}</Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Box
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.15)",
+                  p: 2,
+                  borderRadius: 2,
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <Typography variant="h4" fontWeight="700">
+                  {verifiedCount}
+                </Typography>
+                <Typography variant="body2">{t("verified", language)}</Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {/* Filter & Search Section */}
+        <Card elevation={0} sx={{ borderRadius: 4, border: "1px solid #E8EDE0", mb: 4 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Stack spacing={2}>
+              {/* Status Filter Buttons */}
+              <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 1 }}>
+                <Button
+                  variant={statusFilter === "all" ? "contained" : "outlined"}
+                  onClick={() => setStatusFilter("all")}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    fontWeight: statusFilter === "all" ? 600 : 400,
+                    bgcolor: statusFilter === "all" ? "#0ea5e9" : "transparent",
+                    color: statusFilter === "all" ? "white" : "#0ea5e9",
+                    borderColor: "#0ea5e9",
+                    "&:hover": {
+                      bgcolor: statusFilter === "all" ? "#0284c7" : "rgba(14, 165, 233, 0.1)",
+                      borderColor: "#0284c7",
+                    },
+                  }}
+                >
+                  {t("all", language)} ({pendingCount + verifiedCount + billedCount})
+                </Button>
+                <Button
+                  variant={statusFilter === "pending" ? "contained" : "outlined"}
+                  onClick={() => setStatusFilter("pending")}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    fontWeight: statusFilter === "pending" ? 600 : 400,
+                    bgcolor: statusFilter === "pending" ? "#f59e0b" : "transparent",
+                    color: statusFilter === "pending" ? "white" : "#f59e0b",
+                    borderColor: "#f59e0b",
+                    "&:hover": {
+                      bgcolor: statusFilter === "pending" ? "#d97706" : "rgba(245, 158, 11, 0.1)",
+                      borderColor: "#d97706",
+                    },
+                  }}
+                >
+                  {t("pending", language)} ({pendingCount})
+                </Button>
+                <Button
+                  variant={statusFilter === "verified" ? "contained" : "outlined"}
+                  onClick={() => setStatusFilter("verified")}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    fontWeight: statusFilter === "verified" ? 600 : 400,
+                    bgcolor: statusFilter === "verified" ? "#556B2F" : "transparent",
+                    color: statusFilter === "verified" ? "white" : "#556B2F",
+                    borderColor: "#556B2F",
+                    "&:hover": {
+                      bgcolor: statusFilter === "verified" ? "#3D4F23" : "rgba(85, 107, 47, 0.1)",
+                      borderColor: "#3D4F23",
+                    },
+                  }}
+                >
+                  {t("verified", language)} ({verifiedCount})
+                </Button>
+              </Stack>
+
+              {/* Search Bar */}
+              <TextField
+                placeholder={t("searchPlaceholder", language)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                fullWidth
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "text.secondary" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    bgcolor: "#FAF8F5",
+                  },
+                }}
+              />
+
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Results Count */}
+        <Typography variant="body1" sx={{ mb: 3, color: "text.secondary" }}>
+          {t("showing", language)} <strong>{filteredPrescriptions.length}</strong> {t("prescriptionsLabel", language)}
+          {statusFilter === "all" && ` (${pendingCount} ${t("pending", language)}, ${verifiedCount} ${t("verified", language)}, ${billedCount} ${t("billed", language)})`}
+          {statusFilter === "pending" && ` (${pendingCount} ${t("pending", language)})`}
+          {statusFilter === "verified" && ` (${verifiedCount} ${t("verified", language)} - ${t("availableToBill", language)})`}
+        </Typography>
+
+        {/* Grid of Cards */}
+        <Box
+          sx={{
+            display: "grid",
+            gap: 3,
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            "@media (max-width: 1200px)": {
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            },
+            "@media (max-width: 600px)": {
+              gridTemplateColumns: "1fr",
+            },
+          }}
+        >
+          {filteredPrescriptions.map((p, index) => {
+            const status = getStatusStyle(p.status);
+            
+            // Get employee ID for this patient - prioritize data from backend, then from search map
+            const patientEmployeeId = (p.memberEmployeeId || 
+                                     p.employeeId || 
+                                     nameToEmployeeIdMap[p.memberName?.toLowerCase()] ||
+                                     null);
+            
+            // Get family member info from DTO (extracted by mapper) or parse from treatment field
+            const familyMemberInfo = getFamilyMemberInfo(p);
+            const isFamilyMember = familyMemberInfo !== null;
+            
+            // Get university card image (first image from list or single image)
+            const universityCardImage = p.universityCardImage || 
+                                      (p.universityCardImages && p.universityCardImages.length > 0 ? p.universityCardImages[0] : null);
+            
+            // استخدام البيانات مباشرة من p.memberAge و p.memberGender (من الـ backend)
+            let displayAge = p.memberAge || null;
+            let displayGender = p.memberGender || null;
+            
+            // Ensure we have string format for age (e.g., "26 years")
+            if (displayAge && typeof displayAge === 'number') {
+              displayAge = `${displayAge} years`;
+            }
+            
+            // Clean up age string (remove extra spaces, ensure format)
+            if (displayAge && typeof displayAge === 'string') {
+              displayAge = displayAge.trim();
+              if (/^\d+$/.test(displayAge)) {
+                displayAge = `${displayAge} years`;
+              }
+            }
+            
+            // Clean up gender string
+            if (displayGender && typeof displayGender === 'string') {
+              displayGender = displayGender.trim();
+              if (displayGender.length > 0) {
+                displayGender = displayGender.charAt(0).toUpperCase() + displayGender.slice(1).toLowerCase();
+              }
+            }
+
+            return (
+              <PrescriptionCard
+                key={p.id}
+                prescription={p}
+                index={index}
+                status={status}
+                patientEmployeeId={patientEmployeeId}
+                familyMemberInfo={familyMemberInfo}
+                isFamilyMember={isFamilyMember}
+                universityCardImage={universityCardImage}
+                displayAge={displayAge}
+                displayGender={displayGender}
+                formatDate={formatDate}
+                getDosageUnit={getDosageUnit}
+                getDailyUnit={getDailyUnit}
+                getQuantityUnit={getQuantityUnit}
+                onVerify={openVerifyDialog}
+                onReject={handleReject}
+                onBill={handleBill}
+                onImageClick={(imageUrl) => setImageDialog({ open: true, imageUrl })}
+              />
+            );
+          })}
+        </Box>
+
+        {/* No Results Message */}
+        {filteredPrescriptions.length === 0 && searchTerm && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 6,
+              textAlign: "center",
+              borderRadius: 3,
+              border: "1px dashed #d1d5db",
+            }}
+          >
+            <SearchIcon sx={{ fontSize: 64, color: "#cbd5e0", mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              {t("noPrescriptionsFound", language)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t("tryAdjustingSearchTerms", language)}
+            </Typography>
+          </Paper>
+        )}
+      </Box>
+
+      <PrescriptionDialogs
+        verifyDialog={verifyDialog}
+        documentDialog={documentDialog}
+        imageDialog={imageDialog}
+        snackbar={snackbar}
+        getDosageUnit={getDosageUnit}
+        getDailyUnit={getDailyUnit}
+        getQuantityUnit={getQuantityUnit}
+        onVerifyClose={() => setVerifyDialog({ open: false, prescription: null, prices: [] })}
+        onVerifySubmit={handleVerifySubmit}
+        onPriceChange={handlePriceChange}
+        onDocumentClose={() => setDocumentDialog({ open: false, loading: false, document: null, description: "" })}
+        onDocumentChange={(type, value) => {
+          if (type === 'description') {
+            setDocumentDialog((prev) => ({ ...prev, description: value }));
+          } else if (type === 'file') {
+            setDocumentDialog((prev) => ({ ...prev, document: value }));
+          }
+        }}
+        onDocumentSubmit={handleDocumentSubmit}
+        onImageClose={() => setImageDialog({ open: false, imageUrl: null })}
+        onSnackbarClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+      />
+    </Box>
   );
 };
 

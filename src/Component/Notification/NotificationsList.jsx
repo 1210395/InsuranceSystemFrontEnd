@@ -1,446 +1,365 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+// src/Component/Notification/NotificationsList.jsx
+import React, { useEffect, useState, useCallback, memo } from "react";
+import PropTypes from "prop-types";
+import {
+  Box,
+  Paper,
+  Typography,
+  Chip,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Snackbar,
+  Alert,
+  Divider,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import ChatIcon from "@mui/icons-material/Chat";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import WarningIcon from "@mui/icons-material/Warning";
+import DescriptionIcon from "@mui/icons-material/Description";
+import { api, getToken } from "../../utils/apiService";
+import { API_ENDPOINTS } from "../../config/api";
 
-function NotificationsList() {
+const NotificationsList = memo(function NotificationsList({ refresh }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [replyingTo, setReplyingTo] = useState(null);
-  const [replyRecipientId, setReplyRecipientId] = useState(null);
+  const [openReplyDialog, setOpenReplyDialog] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
   const [replyMessage, setReplyMessage] = useState("");
-  const [repliedIds, setRepliedIds] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
+  const [snackbar, setSnackbar] = useState({
+    open: false,
     message: "",
-    recipientName: "",
+    severity: "success",
   });
+  const [loadingId, setLoadingId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
-  const currentUser = localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user"))
-    : null;
+  // ✅ فورم إرسال إشعار
+  const [openSendDialog, setOpenSendDialog] = useState(false);
+  const [newNotification, setNewNotification] = useState({
+    recipientName: "",
+    message: "",
+  });
+  const [recipients, setRecipients] = useState([]);
 
-  // ✅ تحميل الإشعارات
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/notifications", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const incoming = res.data.filter(
-        (n) => n.recipientId === currentUser?.id
-      );
-
-      setNotifications(incoming);
+      const token = getToken();
+      if (!token) return;
+      const data = await api.get(API_ENDPOINTS.NOTIFICATIONS.ALL);
+      const notifications = Array.isArray(data) ? data : [];
+      setNotifications(notifications);
       setUnreadCount(
-        incoming.filter((n) => !n.read && n.type === "MANUAL_MESSAGE").length
+        notifications.filter((n) => !n.read && (n.type === "MANUAL_MESSAGE" || n.type === "SYSTEM")).length
       );
     } catch (err) {
-      console.error("❌ Error fetching notifications:", err);
+      console.error("Failed to fetch notifications:", err);
+      setNotifications([]);
+      setSnackbar({
+        open: true,
+        message: "Failed to load notifications",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
+
+  const fetchRecipients = useCallback(async () => {
+    try {
+      const token = getToken();
+      if (!token) return;
+      const data = await api.get(API_ENDPOINTS.NOTIFICATIONS.RECIPIENTS);
+      setRecipients(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch recipients:", err);
+      setRecipients([]);
+    }
+  }, []);
 
   useEffect(() => {
-    if (!token || !currentUser) return;
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 3000);
-    return () => clearInterval(interval);
-  }, [token, currentUser]);
+    fetchRecipients();
+  }, [fetchNotifications, fetchRecipients]);
 
-  // 📌 تغيير الفورم
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  // ➕ إرسال إشعار جديد
-  const handleAdd = async (e) => {
-    e.preventDefault();
+  const markAsRead = useCallback(async (id) => {
     try {
-      await axios.post(
-        "http://localhost:8080/api/notifications/by-name",
-        { ...form, type: "MANUAL_MESSAGE" },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setForm({ message: "", recipientName: "" });
-      setShowForm(false);
-
-      setSuccessMessage("✅ تم إرسال الإشعار بنجاح");
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err) {
-      console.error("❌ Error sending notification:", err.response || err);
+      const token = getToken();
+      if (!token) return;
+      setLoadingId(id);
+      await api.patch(`${API_ENDPOINTS.NOTIFICATIONS.ALL}/${id}/read`, {});
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      setUnreadCount((prev) => Math.max(prev - 1, 0));
+      refresh?.();
+    } catch {
+      setSnackbar({ open: true, message: "Failed to update notification.", severity: "error" });
+    } finally {
+      setLoadingId(null);
     }
-  };
+  }, [refresh]);
 
-  // 📖 تعليم كمقروء
-  const handleMarkRead = async (id) => {
+  const markAllAsRead = useCallback(async () => {
     try {
-      await axios.patch(
-        `http://localhost:8080/api/notifications/${id}/read/client`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
-      setUnreadCount((prev) => (prev > 0 ? prev - 1 : 0));
-    } catch (err) {
-      console.error("❌ Error marking as read:", err);
-    }
-  };
-
-  // 📖 تعليم الكل كمقروء
-  const handleMarkAllRead = async () => {
-    try {
-      await axios.patch(
-        "http://localhost:8080/api/notifications/mark-all-read/client",
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      await api.patch(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ, {});
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
-      setSuccessMessage("✅ تم تعليم جميع الإشعارات كمقروءة");
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err) {
-      console.error("❌ Error marking all as read:", err);
+      setSnackbar({ open: true, message: "All notifications marked as read", severity: "success" });
+      refresh?.();
+    } catch {
+      setSnackbar({ open: true, message: "Failed to mark all as read", severity: "error" });
     }
-  };
+  }, [refresh]);
 
-  // 🗑️ حذف إشعار
-  const handleDelete = async (id) => {
-    try {
-      const deleted = notifications.find((n) => n.id === id);
-      await axios.delete(
-        `http://localhost:8080/api/notifications/${id}/client`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-      if (deleted && !deleted.read) {
-        setUnreadCount((prev) => (prev > 0 ? prev - 1 : 0));
-      }
-    } catch (err) {
-      console.error("❌ Error deleting notification:", err);
-    }
-  };
-
-  // ✉️ فتح الرد
-  const handleReplyClick = async (id, senderId) => {
-    await handleMarkRead(id);
-    setReplyingTo(id);
-    setReplyRecipientId(senderId);
+  // Open reply dialog
+  const handleReply = useCallback((notification) => {
+    setSelectedNotification(notification);
     setReplyMessage("");
+    setOpenReplyDialog(true);
+  }, []);
+
+  const handleConfirmReply = async () => {
+    if (!replyMessage.trim()) {
+      setSnackbar({ open: true, message: "Reply cannot be empty!", severity: "error" });
+      return;
+    }
+    try {
+      setLoadingId(selectedNotification.id);
+      await api.post(
+        `${API_ENDPOINTS.NOTIFICATIONS.ALL}/${selectedNotification.id}/reply`,
+        {
+          recipientId: selectedNotification.senderId,
+          message: replyMessage,
+        }
+      );
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === selectedNotification.id ? { ...n, read: true, replied: true } : n
+        )
+      );
+      setSnackbar({ open: true, message: "Reply sent successfully!", severity: "success" });
+      setOpenReplyDialog(false);
+      refresh?.();
+    } catch {
+      setSnackbar({ open: true, message: "Failed to send reply!", severity: "error" });
+    } finally {
+      setLoadingId(null);
+    }
   };
 
-  // ✉️ إرسال الرد
-  const handleReplySubmit = async (id) => {
+  const handleSendNotification = useCallback(async () => {
+    if (!newNotification.recipientName || !newNotification.message) {
+      setSnackbar({ open: true, message: "All fields are required!", severity: "error" });
+      return;
+    }
     try {
-      await axios.post(
-        `http://localhost:8080/api/notifications/${id}/reply`,
-        {
-          recipientId: replyRecipientId,
-          message: replyMessage,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await api.post(
+        API_ENDPOINTS.NOTIFICATIONS.BY_FULLNAME,
+        { ...newNotification, type: "MANUAL_MESSAGE" }
       );
+      setSnackbar({ open: true, message: "Notification sent successfully!", severity: "success" });
+      setNewNotification({ recipientName: "", message: "" });
+      setOpenSendDialog(false);
+      fetchNotifications();
+      refresh?.();
+    } catch {
+      setSnackbar({ open: true, message: "Failed to send notification", severity: "error" });
+    }
+  }, [newNotification, fetchNotifications, refresh]);
 
-      setRepliedIds((prev) => [...prev, id]);
-      setReplyingTo(null);
-      setReplyRecipientId(null);
-      setReplyMessage("");
-      setSuccessMessage("✅ تم إرسال الرد بنجاح");
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err) {
-      console.error("❌ Error replying to notification:", err);
+  // ✅ الأيقونات والألوان
+  const getIconAndColor = (type) => {
+    switch (type) {
+      case "MANUAL_MESSAGE":
+        return { icon: <ChatIcon sx={{ color: "#556B2F" }} />, bar: "#556B2F" };
+      case "CLAIM":
+        return { icon: <DescriptionIcon sx={{ color: "#7B8B5E" }} />, bar: "#7B8B5E" };
+      case "EMERGENCY":
+        return { icon: <WarningIcon sx={{ color: "#3D4F23" }} />, bar: "#3D4F23" };
+      default:
+        return { icon: <PersonAddIcon sx={{ color: "#556B2F" }} />, bar: "#556B2F" };
+    }
+  };
+
+  const getBackgroundColor = (n) => {
+    if (n.read) return "linear-gradient(145deg, #ffffff 0%, #FAF8F5 100%)";
+    switch (n.type) {
+      case "MANUAL_MESSAGE":
+        return "linear-gradient(145deg, #F5F5DC 0%, #E8EDE0 100%)";
+      case "EMERGENCY":
+        return "linear-gradient(145deg, #E8EDE0 0%, #F5F5DC 100%)";
+      default:
+        return "linear-gradient(145deg, #E8EDE0 0%, #F5F5DC 100%)";
     }
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>🔔 Notifications ({unreadCount})</h2>
+    <Box sx={{ p: 3, backgroundColor: "#FAF8F5", minHeight: "100vh" }}>
+      <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ color: "#3D4F23", display: "flex", alignItems: "center" }}>
+        <NotificationsIcon sx={{ mr: 1, fontSize: 35, color: "#556B2F" }} />
+        Notifications
+      </Typography>
 
-      {successMessage && <div className="success-msg">{successMessage}</div>}
+      <Typography variant="body1" color="text.secondary" gutterBottom>
+        View, send, and respond to notifications.
+      </Typography>
 
-      {/* ✅ الأزرار فوق الجدول */}
-      <div className="top-buttons">
-        <button onClick={() => setShowForm(!showForm)} className="add-btn">
-          ➕ Add Notification
-        </button>
-        {unreadCount > 0 && (
-          <button onClick={handleMarkAllRead} className="markall-btn">
-            📖 Mark All as Read
-          </button>
-        )}
-      </div>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+        <Typography variant="h6" color="text.secondary">
+          Unread Notifications: {unreadCount}
+        </Typography>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          {unreadCount > 0 && (
+            <Button variant="contained" color="success" onClick={markAllAsRead}>
+              Mark All as Read
+            </Button>
+          )}
+          <Button variant="contained" color="primary" onClick={() => setOpenSendDialog(true)}>
+            ➕ Send Notification
+          </Button>
+        </Box>
+      </Box>
 
-      {/* ✅ فورم الإرسال */}
-      {showForm && (
-        <div className="chat-box">
-          <div className="chat-header">
-            <span>💬 Send Notification</span>
-            <button onClick={() => setShowForm(false)} className="close-btn">
-              ✕
-            </button>
-          </div>
+      <Divider sx={{ my: 3 }} />
 
-          <form onSubmit={handleAdd} className="chat-form">
-            <textarea
-              name="message"
-              placeholder="Type your message..."
-              value={form.message}
-              onChange={handleChange}
-              rows="3"
-              required
-            />
-            <input
-              type="text"
-              name="recipientName"
-              placeholder="Recipient Username"
-              value={form.recipientName}
-              onChange={handleChange}
-              required
-            />
-            <button type="submit" className="send-btn">
-              🚀 Send
-            </button>
-          </form>
-        </div>
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
+          <CircularProgress />
+        </Box>
+      ) : notifications.length === 0 ? (
+        <Typography>No notifications found.</Typography>
+      ) : (
+        notifications.map((n) => {
+          const { icon, bar } = getIconAndColor(n.type);
+          return (
+            <Box sx={{ display: "flex", justifyContent: "center" }} key={n.id}>
+              <Paper
+                sx={{
+                  position: "relative",
+                  width: "80%",
+                  maxWidth: 800,
+                  p: 2,
+                  mb: 3,
+                  borderRadius: 3,
+                  boxShadow: n.read ? 2 : 4,
+                  background: getBackgroundColor(n),
+                  transition: "all 0.3s ease",
+                  cursor: "pointer",
+                  "&:hover": { transform: "scale(1.01)", boxShadow: 6 },
+                  opacity: loadingId === n.id ? 0.5 : 1,
+                }}
+                onClick={() => !n.read && markAsRead(n.id)}
+              >
+                <Box sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: 6,
+                  height: "100%",
+                  borderRadius: "3px 0 0 3px",
+                  backgroundColor: bar,
+                }} />
+
+                <Box sx={{ display: "flex", alignItems: "center", mb: 0.5, ml: 2 }}>
+                  {icon}
+                  <Typography variant="subtitle1" sx={{ ml: 1, fontWeight: "bold", color: "#3D4F23" }}>
+                    {n.senderName || "System"}
+                  </Typography>
+                </Box>
+
+                <Chip label={n.type || "SYSTEM"} color="secondary" size="small" sx={{ mb: 1, ml: 2 }} />
+
+                <Typography variant="body2" sx={{ mb: 1, ml: 2, color: "#333", lineHeight: 1.5 }}>
+                  {n.message}
+                </Typography>
+
+                <Divider sx={{ my: 1 }} />
+
+                <Box sx={{ ml: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {new Date(n.createdAt).toLocaleString()}
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 0.5 }}>
+                    <Chip label={n.read ? "Read" : "Unread"} color={n.read ? "default" : "primary"} size="small" />
+                    {n.replied && <Chip label="✔ Replied" color="success" size="small" variant="outlined" />}
+                  </Box>
+                </Box>
+
+                {n.type === "MANUAL_MESSAGE" && !n.replied && (
+                  <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end", pr: 1 }}>
+                    <Button variant="contained" size="small" color="success" onClick={() => handleReply(n)} disabled={loadingId === n.id}>
+                      {loadingId === n.id ? <CircularProgress size={14} color="inherit" /> : "Reply"}
+                    </Button>
+                  </Box>
+                )}
+              </Paper>
+            </Box>
+          );
+        })
       )}
 
-      {/* جدول الإشعارات */}
-      <table className="notif-table">
-        <thead>
-          <tr>
-            <th>Message</th>
-            <th>Sender</th>
-            <th>Status</th>
-            <th>Created At</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {notifications.map((n) => (
-            <React.Fragment key={n.id}>
-              <tr>
-                <td>{n.message}</td>
-                <td>{n.senderName || "Unknown"}</td>
-                {/* ✅ Status فقط للـ MANUAL_MESSAGE */}
-                <td>
-                  {n.type === "MANUAL_MESSAGE" &&
-                    (n.read ? (
-                      <span style={{ color: "green" }}>✔️ Read</span>
-                    ) : (
-                      <span style={{ color: "red" }}>📩 Unread</span>
-                    ))}
-                </td>
-               <td>
-  {new Date(n.createdAt).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  })}{" "}
-  {new Date(n.createdAt).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}
-</td>
+      {/* ✅ Reply Dialog */}
+      <Dialog open={openReplyDialog} onClose={() => setOpenReplyDialog(false)}>
+        <DialogTitle>Reply to Notification</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" gutterBottom>Message: {selectedNotification?.message}</Typography>
+          <TextField fullWidth label="Your Reply" multiline rows={3} value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)} sx={{ mt: 2 }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenReplyDialog(false)}>Cancel</Button>
+          <Button onClick={handleConfirmReply} variant="contained" color="primary" disabled={loadingId === selectedNotification?.id}>
+            {loadingId === selectedNotification?.id ? <CircularProgress size={16} color="inherit" /> : "Send Reply"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-                {/* ✅ Actions فقط للـ MANUAL_MESSAGE */}
-                <td className="actions-cell">
-                  {n.type === "MANUAL_MESSAGE" && (
-                    <>
-                      {!repliedIds.includes(n.id) && replyingTo !== n.id && (
-                        <button
-                          onClick={() => handleReplyClick(n.id, n.senderId)}
-                          className="blue-btn"
-                        >
-                          ✉️ Reply
-                        </button>
-                      )}
-                      {!n.read && (
-                        <button
-                          onClick={() => handleMarkRead(n.id)}
-                          className="green-btn"
-                        >
-                          📖 Read
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(n.id)}
-                        className="red-btn"
-                      >
-                        🗑️ Delete
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
+      {/* ✅ Send Notification Dialog */}
+      <Dialog open={openSendDialog} onClose={() => setOpenSendDialog(false)}>
+        <DialogTitle>Send New Notification</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel id="recipient-label">Recipient</InputLabel>
+            <Select
+              label="Recipient"
+              labelId="recipient-label"
+              value={newNotification.recipientName}
+              onChange={(e) => setNewNotification({ ...newNotification, recipientName: e.target.value })}
+            >
+              <MenuItem value="">-- Select Recipient --</MenuItem>
+              {recipients.map((r) => (
+                <MenuItem key={r.id} value={r.fullName}>
+                  {r.fullName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField fullWidth label="Message" multiline rows={3} value={newNotification.message} onChange={(e) => setNewNotification({ ...newNotification, message: e.target.value })} sx={{ mt: 2 }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenSendDialog(false)}>Cancel</Button>
+          <Button onClick={handleSendNotification} variant="contained" sx={{ backgroundColor: "#556B2F" }}>Send</Button>
+        </DialogActions>
+      </Dialog>
 
-              {replyingTo === n.id && (
-                <tr>
-                  <td colSpan="5">
-                    <div className="reply-box">
-                      <h3>✉️ Reply to: {n.senderName}</h3>
-                      <textarea
-                        value={replyMessage}
-                        onChange={(e) => setReplyMessage(e.target.value)}
-                        placeholder="Type your reply..."
-                        rows="3"
-                      />
-                      <div className="reply-actions">
-                        <button
-                          onClick={() => handleReplySubmit(n.id)}
-                          className="blue-btn"
-                        >
-                          🚀 Send Reply
-                        </button>
-                        <button
-                          onClick={() => setReplyingTo(null)}
-                          className="gray-btn"
-                        >
-                          ❌ Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
-
-      {/* 🎨 CSS */}
-      <style>{`
-        .success-msg {
-          background: #D1FAE5;
-          color: #065F46;
-          padding: 0.75rem;
-          border-radius: 8px;
-          margin-bottom: 1rem;
-          font-weight: bold;
-        }
-        .top-buttons {
-          display: flex;
-          gap: 0.8rem;
-          margin: 1rem 0;
-        }
-        .add-btn {
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          color: white;
-          padding: 0.6rem 1.2rem;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-        }
-        .markall-btn {
-          background: #10B981;
-          color: white;
-          padding: 0.6rem 1.2rem;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          font-size: 0.85rem;
-          cursor: pointer;
-          transition: background 0.2s ease;
-        }
-        .markall-btn:hover {
-          background: #059669;
-        }
-        .chat-box {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          width: 320px;
-          background: white;
-          border: 1px solid #ddd;
-          border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          animation: slideUp 0.3s ease;
-          overflow: hidden;
-        }
-        .chat-header {
-          background: #059669;
-          color: white;
-          padding: 0.75rem;
-          font-weight: bold;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .chat-form {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          padding: 1rem;
-        }
-        .chat-form textarea,
-        .chat-form input {
-          border: 1px solid #ccc;
-          border-radius: 6px;
-          padding: 0.5rem;
-          font-size: 0.9rem;
-        }
-        .send-btn {
-          background: #059669;
-          color: white;
-          padding: 0.6rem;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-        }
-        .notif-table {
-          width: 100%;
-          margin-top: 1rem;
-          border-collapse: collapse;
-        }
-        .notif-table th, .notif-table td {
-          padding: 0.75rem;
-          border-bottom: 1px solid #eee;
-          text-align: center;
-        }
-        .notif-table th {
-          background: #f3f4f6;
-        }
-        .actions-cell {
-          display: flex;
-          justify-content: center;
-          gap: 0.4rem;
-        }
-        .blue-btn, .green-btn, .red-btn, .gray-btn {
-          border: none;
-          padding: 0.4rem 0.8rem;
-          border-radius: 6px;
-          font-weight: 500;
-          cursor: pointer;
-          font-size: 0.85rem;
-        }
-        .blue-btn { background: #2563EB; color: white; }
-        .green-btn { background: #10B981; color: white; }
-        .red-btn { background: #EF4444; color: white; }
-        .gray-btn { background: #6B7280; color: white; }
-        .reply-box {
-          margin-top: 0.5rem;
-          padding: 1rem;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          background: #f1f5f9;
-        }
-        .reply-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
-    </div>
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: "top", horizontal: "center" }}>
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
-}
+});
+
+NotificationsList.propTypes = {
+  refresh: PropTypes.func,
+};
 
 export default NotificationsList;

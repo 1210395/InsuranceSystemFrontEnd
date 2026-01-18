@@ -1,673 +1,371 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import "./ClientDashboard.css";
+// src/Component/Client/ClientDashboard.jsx
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { api, getToken, clearAuthData } from "../../utils/apiService";
+import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { ROLES } from "../../config/roles";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
+
+// Sidebar
+import ClientSidebar from "./ClientSidebar";
+import ClientHeader from "./ClientHeader";
 
 // Client Components
 import MyPrescriptions from "./MyPrescriptions";
 import MyLabRequests from "./MyLabRequests";
-import MyClaims from "./MyClaims";
+import MyRadiologyRequests from "./MyRadiologyRequests";
 import AddClaim from "./AddClaim";
-import MyEmergencyRequests from "./MyEmergencyRequests";
-import AddEmergency from "./AddEmergency";
-import ClientMedicalRecord from "./ClientMedicalRecord";
+import ConsultationPrices from "../Shared/ConsultationPrices";
+
+// Shared Components
+import HealthcareProviderMyClaims from "../Shared/HealthcareProviderMyClaims";
+import HealthcareProvidersFilter from "../Shared/HealthcareProvidersFilter";
+import HealthcareProvidersMapOnly from "../Shared/HealthcareProvidersMapOnly";
 
 // Notifications
-import NotificationsList from "../Notification/NotificationListClient";
+import NotificationsList from "../Notification/NotificationsList";
 
 // Shared
 import Profile from "../Profile/Profile";
+import LogoutDialog from "../Auth/LogoutDialog";
+
+// ✅ MUI
+import {
+  Typography,
+  Box,
+  TextField,
+  InputAdornment,
+  CircularProgress,
+  Grid,
+  Paper,
+  Button,
+} from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
+import MedicationIcon from "@mui/icons-material/Medication";
+import ScienceIcon from "@mui/icons-material/Science";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import ImageIcon from "@mui/icons-material/Image";
 
 const ClientDashboard = () => {
-  const [activeView, setActiveView] = useState("dashboard");
-  const [user, setUser] = useState(null);
+  const token = getToken();
+  const { language, isRTL } = useLanguage();
 
+  // Active View
+  const [activeView, setActiveView] = useState(
+    localStorage.getItem("clientActiveView") || "dashboard"
+  );
+  useEffect(() => {
+    localStorage.setItem("clientActiveView", activeView);
+  }, [activeView]);
+
+  // User Info
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem("clientUser");
+    if (storedUser) {
+      try {
+        return JSON.parse(storedUser);
+      } catch {
+        return { fullName: "Client", roles: [ROLES.INSURANCE_CLIENT], status: "ACTIVE" };
+      }
+    }
+    return { fullName: "Client", roles: [ROLES.INSURANCE_CLIENT], status: "ACTIVE" };
+  });
+  const [profileImage, setProfileImage] = useState(null);
+
+
+  // ✅ Data
   const [prescriptions, setPrescriptions] = useState([]);
   const [labRequests, setLabRequests] = useState([]);
+  const [radiologyRequests, setRadiologyRequests] = useState(
+    JSON.parse(localStorage.getItem("clientRadiologyRequests")) || []
+  );
   const [claims, setClaims] = useState([]);
-  const [emergencyRequests, setEmergencyRequests] = useState([]);
-
-  // ✅ Notifications
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // ✅ البحث
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
+  // ✅ Healthcare Providers
+  const [providers, setProviders] = useState([]);
+  const [providerFilter, setProviderFilter] = useState("ALL");
 
-  const token = localStorage.getItem("token");
+  // Header State
+  const [openLogout, setOpenLogout] = useState(false);
 
-  // ✅ fetch user from /auth/me
-  const fetchUser = async () => {
+  // Fast refresh for notification counter only
+  const refreshUnreadCount = useCallback(async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/auth/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUser(res.data);
+      const notifRes = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
+      const count = typeof notifRes.data === 'number' ? notifRes.data : parseInt(notifRes.data) || 0;
+      setUnreadCount(count);
     } catch (err) {
-      console.error("❌ Error fetching user:", err);
+      console.error("Error fetching unread count:", err);
+      setUnreadCount(0);
     }
-  };
+  }, []);
 
-  // ✅ Prescriptions
-  const fetchPrescriptions = async () => {
+  // Fetch Healthcare Providers
+  const fetchProviders = useCallback(async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/prescriptions/get", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPrescriptions(res.data);
-    } catch (err) {
-      console.error("❌ Error fetching prescriptions:", err);
-    }
-  };
-
-  // ✅ Labs
-  const fetchLabs = async () => {
-    try {
-      const res = await axios.get("http://localhost:8080/api/labs/getByMember", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setLabRequests(res.data);
-    } catch (err) {
-      console.error("❌ Error fetching lab requests:", err);
-    }
-  };
-
-  // ✅ Claims
-  const fetchClaims = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:8080/api/claims/allClaimForOneMember",
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await api.get(API_ENDPOINTS.SEARCH_PROFILES.APPROVED);
+      const withLocations = (res.data || []).filter(
+        (p) => p.locationLat && p.locationLng
       );
-      setClaims(res.data);
+      setProviders(withLocations);
     } catch (err) {
-      console.error("❌ Error fetching claims:", err);
+      console.error("Failed to fetch providers:", err);
     }
-  };
+  }, []);
 
-  // ✅ Emergencies
-  const fetchEmergencies = async () => {
+  // Fetch All Data
+  const fetchData = useCallback(async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/emergencies", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setEmergencyRequests(res.data);
-    } catch (err) {
-      console.error("❌ Error fetching emergencies:", err);
-    }
-  };
+      const userRes = await api.get(API_ENDPOINTS.AUTH.ME);
+      setUser(userRes.data);
+      localStorage.setItem("clientUser", JSON.stringify(userRes.data));
 
-  // ✅ Unread notifications count
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:8080/api/notifications/unread-count",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setUnreadCount(res.data);
+      const imgs = userRes.data.universityCardImages || [];
+      const lastImg = imgs[imgs.length - 1];
+
+      if (lastImg) {
+        setProfileImage(`${API_BASE_URL}${lastImg}?t=${Date.now()}`);
+      } else {
+        setProfileImage(null);
+      }
+
+      const presRes = await api.get(API_ENDPOINTS.PRESCRIPTIONS.GET);
+      setPrescriptions(presRes.data);
+
+      const labsRes = await api.get(API_ENDPOINTS.LABS.GET_BY_MEMBER);
+      setLabRequests(labsRes.data);
+
+      const radiologyRes = await api.get(API_ENDPOINTS.RADIOLOGY.GET_BY_MEMBER);
+      const radiologyData = radiologyRes.data || [];
+      setRadiologyRequests(radiologyData);
+      localStorage.setItem("clientRadiologyRequests", JSON.stringify(radiologyData));
+
+      const claimsRes = await api.get(API_ENDPOINTS.HEALTHCARE_CLAIMS.MY_CLAIMS);
+      setClaims(claimsRes.data);
+
+      const notifRes = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
+      setUnreadCount(notifRes.data);
     } catch (err) {
-      console.error("❌ Error fetching unread count:", err);
+      console.error("Error fetching client data:", err);
+
+      if (err.response?.status === 401) {
+        clearAuthData();
+        window.location.href = "/LandingPage";
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!token) return;
+    fetchData();
+    fetchProviders();
+  }, [token]);
 
-    fetchUser();
-    fetchPrescriptions();
-    fetchLabs();
-    fetchClaims();
-    fetchEmergencies();
-    fetchUnreadCount();
-
-    const interval = setInterval(() => {
-      fetchUnreadCount();
-    }, 3000);
-
+  // ✅ Poll for unread notifications every 5 seconds
+  useEffect(() => {
+    if (!token) return;
+    refreshUnreadCount();
+    const interval = setInterval(refreshUnreadCount, 5000);
     return () => clearInterval(interval);
   }, [token]);
 
-  // ✅ Verify Prescription
-  const handleVerify = async (id) => {
-    try {
-      await axios.patch(
-        `http://localhost:8080/api/prescriptions/${id}/verify`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setPrescriptions((p) =>
-        p.map((pr) => (pr.id === id ? { ...pr, status: "VERIFIED" } : pr))
-      );
-    } catch (err) {
-      console.error("❌ Error verifying:", err);
-    }
-  };
-
-  // ❌ Reject Prescription
-  const handleReject = async (id) => {
-    try {
-      await axios.patch(
-        `http://localhost:8080/api/prescriptions/${id}/reject`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setPrescriptions((p) =>
-        p.map((pr) => (pr.id === id ? { ...pr, status: "REJECTED" } : pr))
-      );
-    } catch (err) {
-      console.error("❌ Error rejecting:", err);
-    }
-  };
-
-  // 📊 إحصائيات
-  const statistics = [
+  // Memoized stats to prevent unnecessary re-renders
+  const stats = useMemo(() => [
     {
       id: 1,
-      title: "Pending Prescriptions",
-      value: prescriptions.filter((p) => p.status === "PENDING").length,
-      icon: "💊",
-      color: "#F59E0B",
-      bgColor: "#FEF3C7",
+      title: t("prescriptions", language),
+      value: prescriptions.length,
+      icon: <MedicationIcon />,
+      color: "linear-gradient(135deg, #556B2F 0%, #7B8B5E 100%)",
     },
     {
       id: 2,
-      title: "Lab Requests",
+      title: t("labRequests", language),
       value: labRequests.length,
-      icon: "🧪",
-      color: "#7C3AED",
-      bgColor: "#F3E8FF",
+      icon: <ScienceIcon />,
+      color: "linear-gradient(135deg, #8B9A46 0%, #A8B56B 100%)",
     },
     {
       id: 3,
-      title: "My Claims",
-      value: claims.length,
-      icon: "📋",
-      color: "#1976D2",
-      bgColor: "#E3F2FD",
+      title: t("radiologyRequests", language),
+      value: radiologyRequests.length,
+      icon: <ImageIcon />,
+      color: "linear-gradient(135deg, #6B7A32 0%, #8B9A46 100%)",
     },
     {
       id: 4,
-      title: "Emergency Requests",
-      value: emergencyRequests.length,
-      icon: "🚨",
-      color: "#DC2626",
-      bgColor: "#FEF2F2",
+      title: t("claims", language),
+      value: claims.length,
+      icon: <AssignmentIcon />,
+      color: "linear-gradient(135deg, #C9A646 0%, #DDB85C 100%)",
     },
-  ];
+    {
+      id: 5,
+      title: t("total", language),
+      value:
+        prescriptions.length +
+        labRequests.length +
+        radiologyRequests.length +
+        claims.length,
+      icon: <BarChartIcon />,
+      color: "linear-gradient(135deg, #556B2F 0%, #7B8B5E 100%)",
+    },
+  ], [prescriptions.length, labRequests.length, radiologyRequests.length, claims.length, language]);
 
-  // ✅ Search
-  const handleSearch = async () => {
-    try {
-      let url = "";
-      let params = {};
-
-      if (searchType && !searchQuery) {
-        url = "http://localhost:8080/api/search-profiles/by-type";
-        params = { type: searchType };
-      } else if (searchType && searchQuery) {
-        url = "http://localhost:8080/api/search-profiles/by-name-type";
-        params = { name: searchQuery, type: searchType };
-      } else if (!searchType && searchQuery) {
-        url = "http://localhost:8080/api/search-profiles/by-name";
-        params = { name: searchQuery };
-      } else {
-        return;
-      }
-
-      const res = await axios.get(url, {
-        params,
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setSearchResults(res.data);
-    } catch (err) {
-      console.error("❌ Error searching profiles:", err);
-    }
-  };
-
-  // 🎨 Styles by type
-  const typeStyles = {
-    CLINIC: { bg: "#ECFDF5", color: "#059669", icon: "🏥" },
-    PHARMACY: { bg: "#EFF6FF", color: "#2563EB", icon: "💊" },
-    LAB: { bg: "#FEF3C7", color: "#D97706", icon: "🧪" },
-    EMERGENCY: { bg: "#FEF2F2", color: "#DC2626", icon: "🚨" },
-    DEFAULT: { bg: "#F3F4F6", color: "#374151", icon: "📌" },
-  };
+  // Memoized filtered providers to prevent recalculation on every render
+  const filteredProviders = useMemo(() => {
+    return providerFilter === "ALL"
+      ? providers
+      : providers.filter(p => p.type === providerFilter);
+  }, [providers, providerFilter]);
 
   return (
-    <div className="client-dashboard" dir="ltr">
+    <Box
+      dir={isRTL ? "rtl" : "ltr"}
+      sx={{
+        display: "flex",
+        height: "100vh",
+        backgroundColor: "#FAF8F5",
+        overflow: "hidden",
+      }}
+    >
       {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <h2>Client Portal</h2>
-        </div>
-        <nav className="sidebar-nav">
-          <div className="nav-sections">
-            <div className="nav-section">
-              <h3>🏠 Dashboard</h3>
-              <ul>
-                <li>
-                  <a
-                    href="#dashboard"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("dashboard");
-                    }}
-                    style={{
-                      color:
-                        activeView === "dashboard"
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    📊 Main Dashboard
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="nav-section">
-              <h3>💊 Prescriptions</h3>
-              <ul>
-                <li>
-                  <a
-                    href="#my-prescriptions"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("prescriptions");
-                    }}
-                    style={{
-                      color:
-                        activeView === "prescriptions"
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    📄 My Prescriptions
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="nav-section">
-              <h3>🧪 Lab Requests</h3>
-              <ul>
-                <li>
-                  <a
-                    href="#my-lab-requests"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("lab");
-                    }}
-                    style={{
-                      color:
-                        activeView === "lab"
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    📋 My Lab Requests
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="nav-section">
-              <h3>📋 Claims</h3>
-              <ul>
-                <li>
-                  <a
-                    href="#my-claims"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("claims");
-                    }}
-                    style={{
-                      color:
-                        activeView === "claims"
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    📋 My Claims
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#add-claims"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("add-claims");
-                    }}
-                    style={{
-                      color:
-                        activeView === "add-claims"
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    ➕ Add Claim
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="nav-section">
-              <h3>🚨 Emergency</h3>
-              <ul>
-                <li>
-                  <a
-                    href="#emergency-requests"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("emergency");
-                    }}
-                    style={{
-                      color:
-                        activeView === "emergency"
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    ⚡ Emergency Requests
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#add-emergency"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("add-emergency");
-                    }}
-                    style={{
-                      color:
-                        activeView === "add-emergency"
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    ➕ Add Emergency
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="nav-section">
-              <h3>📖 Medical</h3>
-              <ul>
-                <li>
-                  <a
-                    href="#medical-records"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("medical");
-                    }}
-                    style={{
-                      color:
-                        activeView === "medical"
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    📖 My Medical Records
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="nav-section">
-              <h3>👤 Account</h3>
-              <ul>
-                <li>
-                  <a
-                    href="#profile"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveView("profile");
-                    }}
-                    style={{
-                      color:
-                        activeView === "profile"
-                          ? "#FFFFFF"
-                          : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    👤 Profile
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#logout"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      // ✅ Logout مباشرة
-                      localStorage.removeItem("token");
-                      window.location.href = "/LandingPage";
-                    }}
-                    style={{ color: "#FF6B6B" }}
-                  >
-                    🚪 Logout
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </nav>
-      </aside>
+      <ClientSidebar activeView={activeView} setActiveView={setActiveView} />
 
       {/* Main Content */}
-      <main className="main-content">
-        <header className="top-nav">
-          <div className="nav-left">
-            <div className="logo">
-              <h1>Birzeit Insurance</h1>
-            </div>
-          </div>
-          <div className="nav-right">
-            <button
-              className="notification-btn"
-              onClick={() => setActiveView("notifications")}
-            >
-              🔔
-              {unreadCount > 0 && (
-                <span className="notification-badge">{unreadCount}</span>
-              )}
-            </button>
-            <div className="user-info">
-              <div className="user-avatar">
-                <img
-                  src={
-                    user?.universityCardImage
-                      ? user.universityCardImage.startsWith("http")
-                        ? user.universityCardImage
-                        : `http://localhost:8080${user.universityCardImage}`
-                      : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                  }
-                  alt="User Avatar"
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                  }}
-                />
-              </div>
-              <div className="user-details">
-                <span className="user-name">{user?.fullName || "Client"}</span>
-                <span className="user-role">{user?.roles?.[0] || "CLIENT"}</span>
-              </div>
-            </div>
-          </div>
-        </header>
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          backgroundColor: "#FAF8F5",
+          height: "100vh",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
+          transition: "margin 0.3s ease",
+          "@media (max-width: 600px)": {
+            marginLeft: isRTL ? 0 : "75px",
+            marginRight: isRTL ? "75px" : 0,
+          },
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "#f1f1f1",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#888",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            background: "#555",
+          },
+        }}
+      >
+        {/* Header */}
+        <ClientHeader
+          userInfo={user}
+          profileImage={profileImage}
+          unreadCount={unreadCount}
+          onNotificationsClick={() => setActiveView("notifications")}
+          onProfileClick={() => setActiveView("profile")}
+          onLogoClick={() => setActiveView("dashboard")}
+          onLogoutClick={() => setOpenLogout(true)}
+        />
 
-        {/* Conditional Rendering */}
+        {/* باقي الكود: Dashboard + Stats + باقي الصفحات */}
         {activeView === "dashboard" && (
           <>
-            <div className="page-header">
-              <h1>Client Dashboard</h1>
-              <p>Overview of your insurance activity</p>
+            {/* 1️⃣ Filter Buttons (فوق) */}
+            <Box sx={{ mt: 3, px: 2 }}>
+              <HealthcareProvidersFilter 
+                providers={providers}
+                providerFilter={providerFilter}
+                setProviderFilter={setProviderFilter}
+              />
+            </Box>
 
-           {/* 🔍 Search Section */}
-                  <div
-                    style={{
-                      marginTop: "1rem",
+            {/* 2️⃣ Stats Cards (في النص) */}
+            <Grid container spacing={4} justifyContent="center" sx={{ px: 4 }}>
+              {stats.map((stat) => (
+                <Grid item xs={12} sm={6} md={2.4} key={stat.id}>
+                  <Paper
+                    sx={{
+                      p: 3,
+                      borderRadius: 3,
+                      textAlign: "center",
+                      background: stat.color,
+                      color: "#fff",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+                      minHeight: "140px",
                       display: "flex",
-                      gap: "0.5rem",
+                      flexDirection: "column",
+                      justifyContent: "center",
                       alignItems: "center",
+                      "&:hover": { transform: "scale(1.05)" },
                     }}
                   >
-                    {/* اختيار نوع البحث */}
-                    <select
-                      value={searchType}
-                      onChange={(e) => setSearchType(e.target.value)}
-                      style={{
-                        padding: "0.6rem",
-                        borderRadius: "8px",
-                        border: "1px solid #d1d5db",
-                      }}
-                    >
-                      <option value="">All</option>
-                      <option value="CLINIC">Clinic</option>
-                      <option value="PHARMACY">Pharmacy</option>
-                      <option value="LAB">Lab</option>
-                      <option value="EMERGENCY">Emergency</option>
-                    </select>
-
-                    {/* البحث بالاسم */}
-                    <input
-                      type="text"
-                      placeholder="Search"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: "0.6rem 1rem",
-                        borderRadius: "8px",
-                        border: "1px solid #d1d5db",
-                        backgroundColor: "#F9FAFB",
-                        color: "#111827",
-                      }}
-                    />
-
-                    {/* زر البحث */}
-                    <button
-                      onClick={handleSearch}
-                      style={{
-                        backgroundColor: "#7C3AED",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        padding: "0.6rem 1.2rem",
-                        fontWeight: "600",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Search
-                    </button>
-                  </div>
-                                </div>
-
-            {/* 📊 Status Cards */}
-            <div className="stats-grid">
-              {statistics.map((stat) => (
-                <div key={stat.id} className="stat-card">
-                  <div
-                    className="stat-icon"
-                    style={{
-                      backgroundColor: stat.bgColor,
-                      color: stat.color,
-                    }}
-                  >
-                    {stat.icon}
-                  </div>
-                  <div className="stat-content">
-                    <h3>{stat.value}</h3>
-                    <p>{stat.title}</p>
-                  </div>
-                </div>
+                    <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+                      {React.cloneElement(stat.icon, { sx: { fontSize: 40 } })}
+                    </Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                      {stat.title}
+                    </Typography>
+                    <Typography variant="h4" fontWeight="bold">
+                      {stat.value}
+                    </Typography>
+                  </Paper>
+                </Grid>
               ))}
-            </div>
+            </Grid>
 
-            {/* ✅ Search Results */}
-            {searchResults.length > 0 && (
-              <div style={{ marginTop: "2rem" }}>
-                <h2 style={{ marginBottom: "1rem" }}>Search Results</h2>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                    gap: "1rem",
-                  }}
-                >
-                  {searchResults.map((profile) => {
-                    const style = typeStyles[profile.type] || typeStyles.DEFAULT;
-                    return (
-                      <div
-                        key={profile.id}
-                        style={{
-                          background: style.bg,
-                          color: style.color,
-                          padding: "1rem",
-                          borderRadius: "12px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                        }}
-                      >
-                        <h3 style={{ marginBottom: "0.5rem" }}>
-                          {style.icon} {profile.name}
-                        </h3>
-                        <p>
-                          <b>Type:</b> {profile.type}
-                        </p>
-                        <p>
-                          <b>Address:</b> {profile.address}
-                        </p>
-                        <p>
-                          <b>Contact:</b> {profile.contactInfo}
-                        </p>
-                        <p>
-                          <b>Owner:</b> {profile.ownerName}
-                        </p>
-                        <p style={{ fontSize: "0.9rem" }}>{profile.description}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* 3️⃣ Map (تحت) */}
+            <Box sx={{ mt: 4 }}>
+              <HealthcareProvidersMapOnly
+                filteredProviders={filteredProviders}
+              />
+            </Box>
           </>
         )}
 
+        {/* باقي الصفحات */}
         {activeView === "prescriptions" && (
-          <MyPrescriptions
-            prescriptions={prescriptions}
-            onVerify={handleVerify}
-            onReject={handleReject}
-          />
+          <MyPrescriptions prescriptions={prescriptions} />
         )}
-
         {activeView === "lab" && <MyLabRequests labRequests={labRequests} />}
-        {activeView === "claims" && <MyClaims claims={claims} />}
+        {activeView === "radiology" && <MyRadiologyRequests />}
+        {activeView === "claims" && (
+          <HealthcareProviderMyClaims userRole={ROLES.INSURANCE_CLIENT} />
+        )}
         {activeView === "add-claims" && (
-          <AddClaim onAdded={(newClaim) => setClaims((prev) => [...prev, newClaim])} />
-        )}
-        {activeView === "emergency" && (
-          <MyEmergencyRequests
-            emergencyRequests={emergencyRequests}
-            setEmergencyRequests={setEmergencyRequests}
+          <AddClaim
+            onAdded={(newClaim) => {
+              setClaims((prev) => [...prev, newClaim]);
+              fetchData();
+            }}
           />
         )}
-        {activeView === "add-emergency" && (
-          <AddEmergency
-            onAdded={(newEmergency) =>
-              setEmergencyRequests((prev) => [...prev, newEmergency])
-            }
-          />
-        )}
-        {activeView === "medical" && <ClientMedicalRecord user={user} />}
         {activeView === "profile" && <Profile userInfo={user} setUser={setUser} />}
-        {activeView === "notifications" && <NotificationsList />}
-      </main>
-    </div>
+        {activeView === "notifications" && (
+          <NotificationsList refresh={refreshUnreadCount} />
+        )}
+        {activeView === "consultation-prices" && <ConsultationPrices />}
+      </Box>
+
+      {/* Logout */}
+      <LogoutDialog
+        open={openLogout}
+        onClose={() => setOpenLogout(false)}
+        onConfirm={() => {
+          clearAuthData();
+          window.location.href = "/LandingPage";
+        }}
+      />
+    </Box>
   );
 };
 

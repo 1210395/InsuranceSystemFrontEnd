@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, memo } from "react";
 import {
   AppBar,
   Toolbar,
@@ -16,10 +16,15 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import Logout from "@mui/icons-material/Logout";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { api, getToken } from "../../utils/apiService";
+import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
 import LogoutDialog from "../Auth/LogoutDialog";
+import logo from "../../images/image.jpg";
+import LanguageToggle from "../Shared/LanguageToggle";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
-const EmergencyHeader = () => {
+const EmergencyHeader = memo(function EmergencyHeader() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [profileImage, setProfileImage] = useState(null);
@@ -27,39 +32,42 @@ const EmergencyHeader = () => {
   const [openLogout, setOpenLogout] = useState(false);
   const [fullName, setFullName] = useState("");
   const [roles, setRoles] = useState([]);
+  const { language, isRTL } = useLanguage();
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
+  const fetchProfile = useCallback(async () => {
+    const token = getToken();
     if (!token) return;
 
-    // ✅ جلب بيانات البروفايل
-    axios
-      .get("http://localhost:8080/api/auth/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        setFullName(res.data.fullName);
-        setRoles(res.data.roles || []);
-        if (res.data.universityCardImage) {
-          setProfileImage(`http://localhost:8080${res.data.universityCardImage}`);
-        }
-      })
-      .catch((err) => console.error("❌ Profile fetch error:", err));
-
-    // ✅ جلب عدد الإشعارات الغير مقروءة لمدير الطوارئ
-    const fetchUnreadCount = () => {
-      axios
-        .get("http://localhost:8080/api/notifications/unread-count/emergency", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        .then((res) => setUnreadCount(res.data))
-        .catch((err) => console.error("❌ Unread count fetch error:", err));
-    };
-
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 5000);
-    return () => clearInterval(interval);
+    try {
+      const res = await api.get(API_ENDPOINTS.AUTH.ME);
+      setFullName(res.data.fullName);
+      setRoles(res.data.roles || []);
+      if (res.data.universityCardImage) {
+        setProfileImage(`${API_BASE_URL}${res.data.universityCardImage}`);
+      }
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+    }
   }, []);
+
+  const fetchUnreadCount = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const res = await api.get(`${API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT}/emergency`);
+      setUnreadCount(res.data);
+    } catch (err) {
+      console.error("Unread count fetch error:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000); // 30s instead of 5s
+    return () => clearInterval(interval);
+  }, [fetchProfile, fetchUnreadCount]);
 
   // 📌 فتح/إغلاق قائمة الحساب
   const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
@@ -77,21 +85,39 @@ const EmergencyHeader = () => {
         elevation={0}
         sx={{
           backgroundColor: "#fff",
-          borderBottom: "1px solid #e0e0e0",
+          borderBottom: "1px solid #E8EDE0",
           color: "#333",
           px: 3,
         }}
       >
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: "bold", color: "#150380", cursor: "pointer" }}
+          {/* ✅ اللوجو + اسم النظام */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              cursor: "pointer",
+            }}
             onClick={() => navigate("/EmergencyDashboard")}
           >
-            🚨 Emergency Manager
-          </Typography>
+            <img
+              src={logo}
+              alt="System Logo"
+              style={{ height: 40, width: 40, borderRadius: "50%" }}
+            />
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: "bold", color: "#556B2F" }}
+            >
+              Birzeit Insurance System
+            </Typography>
+          </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexDirection: isRTL ? "row-reverse" : "row" }}>
+            {/* Language Toggle */}
+            <LanguageToggle />
+
             {/* Notifications */}
             <IconButton onClick={() => navigate("/EmergencyNotifications")}>
               <Badge color="error" badgeContent={unreadCount || null}>
@@ -118,7 +144,7 @@ const EmergencyHeader = () => {
             <IconButton onClick={handleMenuOpen}>
               <Avatar
                 src={profileImage || undefined}
-                sx={{ bgcolor: "#150380", width: 42, height: 42 }}
+                sx={{ bgcolor: "#556B2F", width: 42, height: 42, border: "2px solid #7B8B5E" }}
               >
                 {!profileImage && fullName?.charAt(0)}
               </Avatar>
@@ -132,14 +158,14 @@ const EmergencyHeader = () => {
                 <ListItemIcon>
                   <AccountCircle fontSize="small" />
                 </ListItemIcon>
-                Profile
+                {t("profile", language)}
               </MenuItem>
               <Divider />
               <MenuItem onClick={() => setOpenLogout(true)}>
                 <ListItemIcon>
                   <Logout fontSize="small" sx={{ color: "red" }} />
                 </ListItemIcon>
-                Logout
+                {t("logout", language)}
               </MenuItem>
             </Menu>
           </Box>
@@ -149,6 +175,6 @@ const EmergencyHeader = () => {
       <LogoutDialog open={openLogout} onClose={() => setOpenLogout(false)} />
     </>
   );
-};
+});
 
 export default EmergencyHeader;

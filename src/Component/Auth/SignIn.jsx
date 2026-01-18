@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, memo } from "react";
+import PropTypes from "prop-types";
 import {
   Avatar,
   Button,
@@ -9,113 +10,142 @@ import {
   Typography,
   Container,
   InputAdornment,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
 import LockIcon from "@mui/icons-material/Lock";
-import axios from "axios";
+import { api, setToken, setUser, setRoles } from "../../utils/apiService";
+import { API_ENDPOINTS } from "../../config/api";
+import { ROLES, normalizeRoles, getDashboardRoute } from "../../config/roles";
+import { sanitizeString } from "../../utils/sanitize";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
-const SignIn = ({ setMode }) => {
+const SignIn = memo(function SignIn({ setMode }) {
+  const { language, isRTL } = useLanguage();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
+
     const data = new FormData(event.currentTarget);
 
+    // Sanitize inputs
     const payload = {
-      username: data.get("username"),
-      password: data.get("password"),
+      email: sanitizeString(data.get("email")),
+      password: data.get("password"), // Don't sanitize password - it may contain special chars
     };
 
+    // Basic validation
+    if (!payload.email || !payload.password) {
+      setError(t("enterBothEmailAndPassword", language));
+      setLoading(false);
+      return;
+    }
+
     try {
-  // 1) تسجيل الدخول
-  const res = await axios.post("http://localhost:8080/api/auth/login", payload);
-  const token = res.data.token;
-  localStorage.setItem("token", token);
+      // 1) Login - api.post returns response.data directly
+      const loginResponse = await api.post(API_ENDPOINTS.AUTH.LOGIN, payload);
+      const token = loginResponse.token;
+      setToken(token);
 
-  // 2) جلب بيانات المستخدم
-  const meRes = await axios.get("http://localhost:8080/api/auth/me", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+      // 2) Fetch user data - api.get returns response.data directly
+      const user = await api.get(API_ENDPOINTS.AUTH.ME);
 
-  const user = meRes.data;
+      // 3) Store data using centralized service
+      setUser(user);
 
-  // 3) تخزين البيانات في localStorage
-  localStorage.setItem("user", JSON.stringify(user));
-  localStorage.setItem("username", user.username || "");
-  localStorage.setItem("roles", JSON.stringify(user.roles || []));
+      // Handle roles - use requestedRole if roles array is empty but user is approved
+      let effectiveRoles = user.roles || [];
+      if ((!effectiveRoles || effectiveRoles.length === 0) && user.requestedRole && user.roleRequestStatus === 'APPROVED') {
+        effectiveRoles = [user.requestedRole];
+      }
+      setRoles(effectiveRoles);
 
-  // ✅ لا تعمل alert هنا → خلّي الدخول مباشر
-  // 4) التوجيه حسب الرول
- const roles = user.roles || [];
-if (roles.includes("INSURANCE_MANAGER")) {
-  window.location.href = "/ManagerDashboard";
-} else if (roles.includes("EMERGENCY_MANAGER")) {
-  window.location.href = "/EmergencyDashboard"; // 👈 جديد
-} else if (roles.includes("DOCTOR")) {
-  window.location.href = "/DoctorDashboard";
-} else if (roles.includes("PHARMACIST")) {
-  window.location.href = "/PharmacistDashboard";
-} else if (roles.includes("LAB_TECH")) {
-  window.location.href = "/LabDashboard";
-} else {
-  window.location.href = "/ClientDashboard";
-}
+      // 4) Redirect based on role using centralized role utilities
+      const userRoles = normalizeRoles(effectiveRoles);
+      const dashboardRoute = getDashboardRoute(userRoles);
 
-} catch (err) {
-  console.error(err.response?.data || err.message);
-  alert("❌ Invalid username or password"); // 👈 فقط لو كان في خطأ
-}
+      window.location.href = dashboardRoute;
 
+    } catch (err) {
+      const msg = err.response?.data?.message;
+      setError(msg || t("invalidEmailOrPassword", language));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Container component="main" maxWidth={false} disableGutters>
+    <Container component="main" maxWidth={false} disableGutters dir={isRTL ? "rtl" : "ltr"}>
       <CssBaseline />
       <Box
         sx={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          background: "linear-gradient(145deg, #ffffff, #bed9faff)",
-          p: 4,
-          borderRadius: "18px",
+          background: "linear-gradient(145deg, #FFFFFF, #E8EDE0)",
+          p: { xs: 2, sm: 3, md: 4 },
+          borderRadius: { xs: "12px", sm: "15px", md: "18px" },
           boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
           border: "1px solid #e0e6ed",
-          maxWidth: "460px",
+          maxWidth: { xs: "100%", sm: "400px", md: "460px" },
           margin: "0 auto",
+          width: "100%",
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: "#120460", width: 56, height: 56 }}>
+        <Avatar sx={{ m: 1, bgcolor: "#556B2F", width: { xs: 48, sm: 52, md: 56 }, height: { xs: 48, sm: 52, md: 56 } }}>
           <LockOutlinedIcon fontSize="medium" />
         </Avatar>
 
         <Typography
           component="h1"
           variant="h5"
-          sx={{ mb: 3, fontWeight: "bold", color: "#120460" }}
+          sx={{ mb: { xs: 2, md: 3 }, fontWeight: "bold", color: "#556B2F", fontSize: { xs: "1.25rem", sm: "1.4rem", md: "1.5rem" } }}
         >
-          Sign In
+          {t("signIn", language)}
         </Typography>
 
         <Box component="form" noValidate onSubmit={handleSubmit} sx={{ width: "100%" }}>
-          {/* Username */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
+              {error}
+            </Alert>
+          )}
+
           <TextField
             margin="normal"
             size="small"
             required
             fullWidth
-            id="username"
-            label="Username"
-            name="username"
-            autoComplete="username"
+            id="email"
+            label={t("email", language)}
+            name="email"
+            type="email"
+            autoComplete="email"
+            disabled={loading}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <PersonIcon sx={{ color: "#1E8EAB" }} />
+                  <EmailIcon sx={{ color: "#7B8B5E", fontSize: { xs: 20, md: 24 } }} />
                 </InputAdornment>
               ),
             }}
             InputLabelProps={{
               style: { color: "#000", fontWeight: "bold" },
+            }}
+            sx={{
+              "& .MuiInputBase-root": {
+                minHeight: { xs: 44, md: 40 },
+              },
+              "& .MuiInputBase-input": {
+                fontSize: { xs: "0.95rem", md: "1rem" },
+              },
             }}
           />
 
@@ -126,19 +156,28 @@ if (roles.includes("INSURANCE_MANAGER")) {
             required
             fullWidth
             name="password"
-            label="Password"
+            label={t("password", language)}
             type="password"
             id="password"
             autoComplete="current-password"
+            disabled={loading}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <LockIcon sx={{ color: "#1E8EAB" }} />
+                  <LockIcon sx={{ color: "#7B8B5E", fontSize: { xs: 20, md: 24 } }} />
                 </InputAdornment>
               ),
             }}
             InputLabelProps={{
               style: { color: "#000", fontWeight: "bold" },
+            }}
+            sx={{
+              "& .MuiInputBase-root": {
+                minHeight: { xs: 44, md: 40 },
+              },
+              "& .MuiInputBase-input": {
+                fontSize: { xs: "0.95rem", md: "1rem" },
+              },
             }}
           />
 
@@ -146,36 +185,40 @@ if (roles.includes("INSURANCE_MANAGER")) {
             type="submit"
             fullWidth
             variant="contained"
+            disabled={loading}
             sx={{
-              mt: 3,
+              mt: { xs: 2, md: 3 },
               mb: 2,
-              py: 1.3,
-              background: "linear-gradient(90deg, #120460, #1E8EAB)",
-              "&:hover": { transform: "scale(1.02)" },
+              py: { xs: 1.5, md: 1.3 },
+              minHeight: { xs: 48, md: 44 },
+              background: loading ? "#ccc" : "linear-gradient(90deg, #556B2F, #7B8B5E)",
+              "&:hover": { transform: loading ? "none" : "scale(1.02)" },
               borderRadius: "10px",
               fontWeight: "bold",
+              fontSize: { xs: "0.95rem", md: "1rem" },
               transition: "0.2s",
             }}
           >
-            Sign In
+            {loading ? <CircularProgress size={24} color="inherit" /> : t("signIn", language)}
           </Button>
 
-          <a
-  href="#"
-  onClick={(e) => {
-    e.preventDefault();
-    setMode("forgot");
-  }}
-  style={{ color: "#1E8EAB", fontWeight: "600", textDecoration: "none" }}
->
-  Forgot Password?
-</a>
-
+          <Box sx={{ textAlign: "center" }}>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setMode("forgot");
+              }}
+              style={{ color: "#7B8B5E", fontWeight: "600", textDecoration: "none", fontSize: "0.9rem" }}
+            >
+              {t("forgotPassword", language)}
+            </a>
+          </Box>
 
           <Grid container justifyContent="center">
             <Grid item>
-              <Typography variant="body2" sx={{ mt: 2 }}>
-                Don’t have an account?{" "}
+              <Typography variant="body2" sx={{ mt: 2, fontSize: { xs: "0.85rem", md: "0.875rem" } }}>
+                {t("dontHaveAccount", language)}{" "}
                 <a
                   href="#"
                   onClick={(e) => {
@@ -183,12 +226,12 @@ if (roles.includes("INSURANCE_MANAGER")) {
                     setMode("signup");
                   }}
                   style={{
-                    color: "#120460",
+                    color: "#556B2F",
                     fontWeight: "600",
                     textDecoration: "none",
                   }}
                 >
-                  Sign Up
+                  {t("signUp", language)}
                 </a>
               </Typography>
             </Grid>
@@ -197,6 +240,10 @@ if (roles.includes("INSURANCE_MANAGER")) {
       </Box>
     </Container>
   );
+});
+
+SignIn.propTypes = {
+  setMode: PropTypes.func.isRequired,
 };
 
 export default SignIn;

@@ -1,0 +1,266 @@
+@startuml Claims Lifecycle - Insurance System
+
+!theme cerulean
+skinparam backgroundColor #FEFEFE
+skinparam roundcorner 10
+skinparam defaultFontSize 11
+skinparam titleFontSize 18
+skinparam legendFontSize 10
+
+title **Insurance Claims Lifecycle - Complete Workflow**\n(All Roles, All Claim Types, All Statuses)
+
+|#LightBlue| Healthcare Providers |
+|#LightGreen| Insurance Client |
+|#LightYellow| Medical Admin |
+|#LightCoral| Coordination Admin |
+|#Lavender| Insurance Manager |
+
+' ==================== LEGEND ====================
+legend left
+  **CLAIM TYPES:**
+  • Doctor Claims (Consultations, Follow-ups)
+  • Pharmacist Claims (Prescriptions)
+  • Lab Technician Claims (Lab Tests)
+  • Radiologist Claims (Radiology Services)
+  • Client Claims (Out-of-Network)
+  • Emergency Claims (Fast Track)
+
+  **ROLES:**
+  🩺 Doctor, Pharmacist, Lab Tech, Radiologist
+  👤 Insurance Client (Patient)
+  🏥 Medical Admin
+  📋 Coordination Admin
+  👔 Insurance Manager (All Access)
+endlegend
+
+' ==================== START ====================
+|Healthcare Providers|
+start
+:🩺 **Healthcare Provider**
+(Doctor/Pharmacist/Lab/Radiologist)
+searches for patient;
+
+fork
+  :Search by Full Name;
+fork again
+  :Search by University ID;
+end fork
+
+:Select Patient or Family Member;
+
+|Insurance Client|
+:👤 **OR** Insurance Client
+submits self-service claim
+(out-of-network provider);
+
+|Healthcare Providers|
+:Enter Claim Details:
+• Service Description
+• Diagnosis (if Doctor)
+• Treatment Details
+• Amount (₪)
+• Service Date
+• Invoice Image (optional);
+
+note right
+  **Follow-Up Detection (Doctors Only)**
+  If same patient + same specialization
+  within 14 days → Amount = ₪0
+  (Insurance doesn't pay consultation)
+end note
+
+:Submit Claim;
+
+' ==================== PENDING MEDICAL ====================
+|Medical Admin|
+#PaleGreen:📥 **PENDING_MEDICAL**
+(New Claim Submitted);
+
+note left
+  **Notifications Sent:**
+  → All Medical Admins
+  "New claim awaiting review"
+end note
+
+:🏥 **Medical Admin Reviews**
+━━━━━━━━━━━━━━━━━
+**What They See:**
+• Provider Name & Type
+• Patient/Beneficiary Info
+• Service Details & Amount
+• Diagnosis & Treatment
+• Invoice Documents
+• Coverage Eligibility;
+
+:🔍 **Coverage Engine Check:**
+• Service covered by policy?
+• Age/Gender restrictions?
+• Deductible met?
+• Within coverage limits?
+• Emergency bypass eligible?;
+
+if (Medical Decision?) then (✅ Approve)
+  :Record:
+  • Reviewer Name
+  • Review Timestamp
+  • Coverage Details;
+
+  #LightGreen:✅ **APPROVED_BY_MEDICAL**;
+
+  note right
+    **Notifications:**
+    → Provider: "Medical approved"
+    → Patient: "Medical approved"
+    → Coordination Admins: "Ready for review"
+  end note
+
+else (❌ Reject)
+  :Enter Rejection Reason
+  (Required);
+
+  #Salmon:❌ **REJECTED_FINAL**
+  (TERMINAL);
+
+  note left
+    **Notifications:**
+    → Provider: "Rejected: [reason]"
+    → Patient: "Claim rejected"
+  end note
+
+  stop
+endif
+
+' ==================== COORDINATION REVIEW ====================
+|Coordination Admin|
+#LightYellow:📋 **AWAITING_COORDINATION_REVIEW**;
+
+:📋 **Coordination Admin Reviews**
+━━━━━━━━━━━━━━━━━━━━━
+**What They See:**
+• All Medical Admin Info
+• Medical Reviewer Details
+• Coverage Calculation
+• Insurance vs Client Amount
+• Payment Details;
+
+switch (Coordination Decision?)
+case (✅ Approve Final)
+  :Calculate Final Payment:
+  • Insurance Covered Amount
+  • Client Pay Amount
+  • Coverage % Applied;
+
+  #LightGreen:✅ **APPROVED_FINAL**;
+
+  note right
+    **Notifications:**
+    → Provider: "Final approval - Ready for payment"
+    → Patient: "Insurance will pay ₪[amount]"
+  end note
+
+case (❌ Reject Final)
+  :Enter Rejection Reason
+  (Required);
+
+  #Salmon:❌ **REJECTED_FINAL**
+  (TERMINAL);
+
+  note left
+    **Notifications:**
+    → Provider: "Rejected: [reason]"
+    → Patient: "Claim rejected"
+  end note
+
+  stop
+
+case (🔙 Return to Medical)
+  :Enter Return Reason;
+
+  #Orange:🔙 **RETURNED_FOR_REVIEW**;
+
+  note left
+    **Notification:**
+    → Medical Admin: "Needs re-review"
+  end note
+
+  |Medical Admin|
+  :🏥 Medical Admin
+  Re-reviews Claim;
+
+  if (Re-review Decision?) then (✅ Approve)
+    #LightGreen:✅ **APPROVED_BY_MEDICAL**;
+    |Coordination Admin|
+    #LightYellow:📋 **AWAITING_COORDINATION_REVIEW**;
+    backward:Continue Review;
+  else (❌ Reject)
+    #Salmon:❌ **REJECTED_FINAL**;
+    stop
+  endif
+
+case (↩️ Return to Provider)
+  :Enter Return Reason
+  (e.g., Missing documents);
+
+  #Orange:↩️ **RETURNED_TO_PROVIDER**;
+
+  |Healthcare Providers|
+  note right
+    **Notification:**
+    → Provider: "Corrections needed"
+  end note
+
+  :Provider Makes Corrections
+  and Resubmits;
+
+  |Medical Admin|
+  #PaleGreen:📥 **PENDING_MEDICAL**;
+  backward:Start Review Again;
+
+endswitch
+
+' ==================== PAYMENT ====================
+|Coordination Admin|
+:💳 **Payment Processing**;
+
+if (Process Payment?) then (Mark as Paid)
+  :Record:
+  • Paid At Timestamp
+  • Paid By (Admin ID);
+
+  #LightGreen:💳 **PAID**
+  (TERMINAL - IRREVERSIBLE);
+
+  note right
+    **Final Notifications:**
+    → Provider: "₪[amount] transferred"
+    → Patient: "Insurance paid ₪[amount]"
+  end note
+
+else (Hold)
+  #LightYellow:⏳ **PAYMENT_PENDING**;
+
+  :Awaiting Payment
+  Processing;
+  backward:Process When Ready;
+endif
+
+' ==================== INSURANCE MANAGER ====================
+|Insurance Manager|
+note right
+  **👔 Insurance Manager**
+  Has FULL ACCESS to ALL:
+  ━━━━━━━━━━━━━━━━━━━
+  ✓ View ALL claims (any status)
+  ✓ Approve/Reject at Medical level
+  ✓ Approve/Reject at Coordination level
+  ✓ Return claims to Medical/Provider
+  ✓ Mark claims as Paid
+  ✓ Create claims on behalf of clients
+  ✓ Generate reports (PDF, Excel)
+  ✓ Batch operations
+  ✓ Advanced filtering & search
+end note
+
+stop
+
+@enduml

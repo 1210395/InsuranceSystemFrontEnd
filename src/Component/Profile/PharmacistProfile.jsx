@@ -1,36 +1,112 @@
-import React, { useState } from "react";
-import axios from "axios";
-import "./Profile.css";
+import React, { useState, memo } from "react";
+import PropTypes from "prop-types";
+import { api } from "../../utils/apiService";
+import { API_BASE_URL } from "../../config/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
+import {
+  Box,
+  Paper,
+  Typography,
+  Grid,
+  TextField,
+  Button,
+  Avatar,
+  Chip,
+  Divider,
+  InputAdornment,
+  IconButton,
+  CircularProgress,
+} from "@mui/material";
 
-const PharmacistProfile = ({ userInfo, setUser }) => {
+// Icons
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import BadgeIcon from "@mui/icons-material/Badge";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import UploadIcon from "@mui/icons-material/Upload";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
+import CancelIcon from "@mui/icons-material/Cancel";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import VerifiedIcon from "@mui/icons-material/Verified";
+
+const PharmacistProfileComponent = ({ userInfo, setUser }) => {
+  const { language } = useLanguage();
+
+  // Check if it's universityCardImages (array) like client or universityCardImage (string)
+  const getImageFromUserInfo = () => {
+    if (userInfo?.universityCardImage) {
+      return userInfo.universityCardImage;
+    }
+    if (userInfo?.universityCardImages && userInfo.universityCardImages.length > 0) {
+      return userInfo.universityCardImages[userInfo.universityCardImages.length - 1];
+    }
+    return "";
+  };
+
   const [formData, setFormData] = useState({
-    username: userInfo?.username || "",
+    employeeId: userInfo?.employeeId || userInfo?.pharmacyCode || "",
     fullName: userInfo?.fullName || "",
     email: userInfo?.email || "",
     phone: userInfo?.phone || "",
-    universityCardImage: userInfo?.universityCardImage || "",
+    nationalId: userInfo?.nationalId || "",
+    dateOfBirth: userInfo?.dateOfBirth || "",
+    universityCardImage: getImageFromUserInfo(),
     file: null,
   });
 
   const [loading, setLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  // ✅ Sync formData with userInfo when it changes
+  React.useEffect(() => {
+    if (userInfo) {
+      let imgPath = userInfo.universityCardImage || "";
+      if (!imgPath && userInfo.universityCardImages && userInfo.universityCardImages.length > 0) {
+        imgPath = userInfo.universityCardImages[userInfo.universityCardImages.length - 1];
+      }
+      
+      setFormData((prev) => ({
+        ...prev,
+        employeeId: userInfo.employeeId || userInfo.pharmacyCode || prev.employeeId,
+        fullName: userInfo.fullName || prev.fullName,
+        email: userInfo.email || prev.email,
+        phone: userInfo.phone || prev.phone,
+        nationalId: userInfo.nationalId || prev.nationalId,
+        dateOfBirth: userInfo.dateOfBirth || prev.dateOfBirth,
+        universityCardImage: imgPath || prev.universityCardImage,
+      }));
+    }
+  }, [userInfo]);
+
+  // ✅ Get avatar source - handles all cases
+  const getAvatarSrc = () => {
+    if (previewImage) return previewImage;
+    
+    const imgPath = formData.universityCardImage;
+    if (!imgPath) return undefined;
+    
+    if (imgPath.startsWith("blob:")) return imgPath;
+    if (imgPath.startsWith("http")) return `${imgPath}?t=${Date.now()}`;
+    
+    return `${API_BASE_URL}${imgPath}?t=${Date.now()}`;
+  };
 
   // ✅ تعديل النصوص
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   // ✅ تعديل الصورة
-  const handleImageChange = (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const preview = URL.createObjectURL(file);
-      setFormData((prev) => ({
-        ...prev,
-        file: file,
-        universityCardImage: preview,
-      }));
+      setSelectedFile(file);
+      setPreviewImage(URL.createObjectURL(file));
     }
   };
 
@@ -38,7 +114,6 @@ const PharmacistProfile = ({ userInfo, setUser }) => {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
 
       const form = new FormData();
       form.append(
@@ -47,163 +122,340 @@ const PharmacistProfile = ({ userInfo, setUser }) => {
           [
             JSON.stringify({
               fullName: formData.fullName,
-              email: formData.email,
               phone: formData.phone,
             }),
           ],
           { type: "application/json" }
         )
       );
-      if (formData.file) {
-        form.append("universityCard", formData.file);
+      if (selectedFile) {
+        form.append("universityCard", selectedFile);
       }
 
-      const res = await axios.patch(
-        "http://localhost:8080/api/prescriptions/pharmacist/me/update", // 👈 Endpoint خاص بالصيدلاني
-        form,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const res = await api.patch("/api/prescriptions/pharmacist/me/update", form, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       // ✅ تحديث البيانات
       setUser(res.data);
-      localStorage.setItem("user", JSON.stringify(res.data));
+      localStorage.setItem("pharmacistUser", JSON.stringify(res.data));
 
-      setIsEditing(false);
-      alert("✅ Pharmacist profile updated successfully!");
+      // Handle both single image and array format
+      let newImagePath = res.data.universityCardImage || "";
+      if (!newImagePath && res.data.universityCardImages && res.data.universityCardImages.length > 0) {
+        newImagePath = res.data.universityCardImages[res.data.universityCardImages.length - 1];
+      }
+
+      // ✅ تحديث الـ formData
+      setFormData((prev) => ({
+        ...prev,
+        fullName: res.data.fullName || prev.fullName,
+        email: res.data.email || prev.email,
+        phone: res.data.phone || prev.phone,
+        universityCardImage: newImagePath || prev.universityCardImage,
+      }));
+
+      // ✅ تحديث الصورة فوراً مع منع الكاش
+      if (newImagePath) {
+        const newUrl = `${API_BASE_URL}${newImagePath}?t=${new Date().getTime()}`;
+        localStorage.setItem("pharmacistProfileImage", newUrl);
+        setPreviewImage(newUrl);
+      }
+
+      setEditMode(false);
+      setSelectedFile(null);
+      alert(t("profileUpdatedSuccessfully", language));
     } catch (err) {
-      console.error("❌ Error updating pharmacist profile:", err.response || err);
-      alert("Error updating pharmacist profile ❌");
+      console.error("Error updating pharmacist profile:", err.response || err);
+      alert(t("errorUpdatingProfile", language));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="profile-page">
-      <div className="profile-card">
-        <div className="profile-header">
-          <span className="profile-icon">💊</span>
-          <h2>Pharmacist Profile</h2>
-        </div>
+    <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+      <Paper
+        sx={{
+          p: 5,
+          borderRadius: 4,
+          boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
+          maxWidth: "950px",
+          width: "100%",
+          background: "linear-gradient(145deg, #FAF8F5cc, #E8EDE0cc)",
+          backdropFilter: "blur(6px)",
+        }}
+      >
+        <Typography
+          variant="h4"
+          fontWeight="bold"
+          sx={{
+            color: "#556B2F",
+            mb: 3,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          {t("pharmacistProfile", language)}
+        </Typography>
+        <Divider sx={{ mb: 4 }} />
 
-        {/* صورة البروفايل */}
-        <div className="profile-avatar-wrapper">
-          <label
-            htmlFor="imageUpload"
-            style={{ cursor: isEditing ? "pointer" : "default" }}
-          >
-            <img
-              src={
-                formData.universityCardImage
-                  ? formData.universityCardImage.startsWith("blob:")
-                    ? formData.universityCardImage
-                    : `http://localhost:8080${formData.universityCardImage}`
-                  : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-              }
-              alt="Profile"
-              className="profile-avatar"
-              style={{
-                width: "120px",
-                height: "120px",
-                borderRadius: "50%",
-                objectFit: "cover",
+        <Grid container spacing={4}>
+          {/* صورة البروفايل */}
+          <Grid xs={12} md={4} sx={{ display: "flex", justifyContent: "center" }}>
+            <Box sx={{ position: "relative" }}>
+              <Avatar
+                src={getAvatarSrc()}
+                alt="Profile"
+                sx={{
+                  width: 140,
+                  height: 140,
+                  border: "4px solid #556B2F",
+                }}
+              >
+                {!getAvatarSrc() && userInfo?.fullName?.charAt(0)}
+              </Avatar>
+              {editMode && (
+                <IconButton
+                  component="label"
+                  sx={{
+                    position: "absolute",
+                    bottom: 10,
+                    right: 10,
+                    bgcolor: "#556B2F",
+                    color: "#fff",
+                  }}
+                >
+                  <UploadIcon />
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </IconButton>
+              )}
+            </Box>
+          </Grid>
+
+          {/* معلومات البروفايل */}
+          <Grid xs={12} md={8}>
+            <Grid container spacing={3}>
+
+              <Grid xs={12} md={6}>
+                <TextField
+                  label={t("employeeId", language)}
+                  value={formData.employeeId || ""}
+                  fullWidth
+                  disabled
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <VerifiedIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <TextField
+                  label={t("fullName", language)}
+                  name="fullName"
+                  value={formData.fullName || ""}
+                  onChange={handleChange}
+                  fullWidth
+                  disabled={!editMode}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <TextField
+                  label={t("email", language)}
+                  name="email"
+                  value={formData.email || ""}
+                  fullWidth
+                  disabled
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <TextField
+                  label={t("phone", language)}
+                  name="phone"
+                  value={formData.phone || ""}
+                  onChange={handleChange}
+                  fullWidth
+                  disabled={!editMode}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PhoneIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <TextField
+                  label={t("nationalId", language)}
+                  value={formData.nationalId || ""}
+                  fullWidth
+                  disabled
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <BadgeIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <TextField
+                  label={t("dateOfBirth", language)}
+                  value={formData.dateOfBirth || ""}
+                  fullWidth
+                  disabled
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AccessTimeIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  {t("status", language)}
+                </Typography>
+                <Chip
+                  icon={<CheckCircleIcon />}
+                  label={t("active", language)}
+                  color="success"
+                  sx={{ fontWeight: "bold" }}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  {t("role", language)}
+                </Typography>
+                <Chip
+                  label={userInfo?.roles?.[0] || "PHARMACIST"}
+                  sx={{
+                    mr: 1,
+                    background: "#556B2F",
+                    color: "#fff",
+                    fontWeight: "bold",
+                  }}
+                />
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <Typography variant="body2" color="gray">
+                  <AccessTimeIcon fontSize="small" /> {t("createdAt", language)}:{" "}
+                  {userInfo?.createdAt || t("na", language)}
+                </Typography>
+              </Grid>
+
+              <Grid xs={12} md={6}>
+                <Typography variant="body2" color="gray">
+                  <AccessTimeIcon fontSize="small" /> {t("updatedAt", language)}:{" "}
+                  {userInfo?.updatedAt || t("na", language)}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+
+        {/* أزرار الأكشن */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4, gap: 2 }}>
+          {!editMode ? (
+            <Button
+              variant="contained"
+              startIcon={<EditIcon />}
+              sx={{
+                borderRadius: 3,
+                background: "linear-gradient(90deg,#3D4F23,#556B2F)",
+                fontWeight: "bold",
+                px: 4,
               }}
-            />
-          </label>
-          {isEditing && (
-            <input
-              id="imageUpload"
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={handleImageChange}
-            />
-          )}
-        </div>
-
-        {/* معلومات المستخدم */}
-        <div className="profile-info-grid">
-          <div className="form-group">
-            <label>Username</label>
-            <input type="text" value={formData.username} readOnly />
-          </div>
-
-          <div className="form-group">
-            <label>Full Name</label>
-            <input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              readOnly={!isEditing}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              readOnly={!isEditing}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Phone</label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              readOnly={!isEditing}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Status</label>
-            <span className="badge active">ACTIVE</span>
-          </div>
-
-          <div className="form-group">
-            <label>Role</label>
-            <span className="badge role">
-              {userInfo?.roles?.[0] || "PHARMACIST"}
-            </span>
-          </div>
-
-          <div className="form-group">
-            <label>Created At</label>
-            <span>{userInfo?.createdAt || "N/A"}</span>
-          </div>
-
-          <div className="form-group">
-            <label>Updated At</label>
-            <span>{userInfo?.updatedAt || "N/A"}</span>
-          </div>
-        </div>
-
-        {/* أزرار التحكم */}
-        <div className="profile-actions">
-          {!isEditing ? (
-            <button className="edit-btn" onClick={() => setIsEditing(true)}>
-              ✏️ Edit Profile
-            </button>
+              onClick={() => setEditMode(true)}
+            >
+              {t("editProfile", language)}
+            </Button>
           ) : (
-            <button className="edit-btn" onClick={handleSave} disabled={loading}>
-              {loading ? "Saving..." : "💾 Save Changes"}
-            </button>
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<CancelIcon />}
+                sx={{ borderRadius: 3, px: 3 }}
+                onClick={() => setEditMode(false)}
+              >
+                {t("cancel", language)}
+              </Button>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={loading ? <CircularProgress size={18} /> : <SaveIcon />}
+                sx={{ borderRadius: 3, px: 3 }}
+                onClick={handleSave}
+                disabled={loading}
+              >
+                {loading ? t("saving", language) : t("saveChanges", language)}
+              </Button>
+            </>
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Paper>
+    </Box>
   );
 };
+
+PharmacistProfileComponent.propTypes = {
+  userInfo: PropTypes.shape({
+    employeeId: PropTypes.string,
+    pharmacyCode: PropTypes.string,
+    fullName: PropTypes.string,
+    email: PropTypes.string,
+    phone: PropTypes.string,
+    nationalId: PropTypes.string,
+    dateOfBirth: PropTypes.string,
+    universityCardImage: PropTypes.string,
+    universityCardImages: PropTypes.arrayOf(PropTypes.string),
+    roles: PropTypes.arrayOf(PropTypes.string),
+    createdAt: PropTypes.string,
+    updatedAt: PropTypes.string,
+  }),
+  setUser: PropTypes.func.isRequired,
+};
+
+PharmacistProfileComponent.defaultProps = {
+  userInfo: null,
+};
+
+const PharmacistProfile = memo(PharmacistProfileComponent);
 
 export default PharmacistProfile;

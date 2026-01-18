@@ -1,25 +1,27 @@
 import React, { useState } from "react";
-import axios from "axios";
+import PropTypes from "prop-types";
+import { api } from "../../utils/apiService";
+import { API_ENDPOINTS } from "../../config/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
+// SearchProfiles component does not receive any props
+// PropTypes import included for potential future use
 const SearchProfiles = () => {
+  const { language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
 
   const handleSearch = async () => {
     try {
-      const token = localStorage.getItem("token");
       if (!searchQuery) return;
 
-      const res = await axios.get(
-        "http://localhost:8080/api/search-profiles/by-name",
-        {
-          params: { name: searchQuery },
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await api.get(API_ENDPOINTS.SEARCH_PROFILES.BY_NAME, {
+        params: { name: searchQuery },
+      });
       setSearchResults(res.data);
     } catch (err) {
-      console.error("❌ Error searching profiles:", err);
+      console.error("Error searching profiles:", err);
     }
   };
 
@@ -29,7 +31,7 @@ const SearchProfiles = () => {
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <input
           type="text"
-          placeholder="Search clinics, pharmacies, labs, emergencies..."
+          placeholder={t("searchProvidersPlaceholder", language)}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
@@ -42,7 +44,7 @@ const SearchProfiles = () => {
         <button
           onClick={handleSearch}
           style={{
-            backgroundColor: "#7C3AED",
+            backgroundColor: "#556B2F",
             color: "#fff",
             border: "none",
             borderRadius: "8px",
@@ -51,14 +53,14 @@ const SearchProfiles = () => {
             cursor: "pointer",
           }}
         >
-          🔍 Search
+          {t("search", language)}
         </button>
       </div>
 
       {/* Results as Cards */}
       {searchResults.length > 0 && (
         <div style={{ marginTop: "2rem" }}>
-          <h2 style={{ marginBottom: "1rem" }}>Search Results</h2>
+          <h2 style={{ marginBottom: "1rem" }}>{t("searchResults", language)}</h2>
           <div
             style={{
               display: "grid",
@@ -76,13 +78,13 @@ const SearchProfiles = () => {
                   boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                 }}
               >
-                <h3 style={{ color: "#7C3AED", marginBottom: "0.5rem" }}>
+                <h3 style={{ color: "#556B2F", marginBottom: "0.5rem" }}>
                   {profile.name}
                 </h3>
-                <p><b>Type:</b> {profile.type}</p>
-                <p><b>Address:</b> {profile.address}</p>
-                <p><b>Contact:</b> {profile.contactInfo}</p>
-                <p><b>Owner:</b> {profile.ownerName}</p>
+                <p><b>{t("type", language)}:</b> {profile.type}</p>
+                <p><b>{t("address", language)}:</b> {profile.address}</p>
+                <p><b>{t("contact", language)}:</b> {profile.contactInfo}</p>
+                <p><b>{t("owner", language)}:</b> {profile.ownerName}</p>
                 <p style={{ fontSize: "0.9rem", color: "#6B7280" }}>
                   {profile.description}
                 </p>

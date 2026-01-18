@@ -1,0 +1,142 @@
+@startuml Claims Status State Diagram
+
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam state {
+  BackgroundColor<<initial>> #FFE0B2
+  BackgroundColor<<medical>> #C8E6C9
+  BackgroundColor<<coordination>> #BBDEFB
+  BackgroundColor<<returned>> #FFE082
+  BackgroundColor<<approved>> #81C784
+  BackgroundColor<<rejected>> #EF9A9A
+  BackgroundColor<<paid>> #4CAF50
+  BorderColor Black
+  FontSize 12
+}
+
+title **Claims Status State Machine**\nComplete Status Transitions
+
+[*] --> PENDING_MEDICAL : Claim Submitted
+
+state "🆕 PENDING_MEDICAL" as PENDING_MEDICAL <<initial>> {
+  state "Awaiting Medical Review" as pm_desc
+}
+
+state "Medical Admin Review" as MedicalReview <<choice>>
+
+PENDING_MEDICAL --> MedicalReview : Medical Admin\nReviews
+
+state "✅ APPROVED_BY_MEDICAL" as APPROVED_MEDICAL <<medical>> {
+  state "Coverage Verified" as am_desc
+}
+
+state "📋 AWAITING_COORDINATION_REVIEW" as AWAITING_COORD <<coordination>> {
+  state "Awaiting Coordination Decision" as ac_desc
+}
+
+MedicalReview --> APPROVED_MEDICAL : ✅ Approve
+MedicalReview --> REJECTED_FINAL : ❌ Reject\n(with reason)
+
+APPROVED_MEDICAL --> AWAITING_COORD : Auto-transition
+
+state "Coordination Admin Review" as CoordReview <<choice>>
+
+AWAITING_COORD --> CoordReview : Coordination Admin\nReviews
+
+state "🔙 RETURNED_FOR_REVIEW" as RETURNED_MEDICAL <<returned>> {
+  state "Back to Medical Admin" as rm_desc
+}
+
+state "↩️ RETURNED_TO_PROVIDER" as RETURNED_PROVIDER <<returned>> {
+  state "Corrections Needed" as rp_desc
+}
+
+state "✅ APPROVED_FINAL" as APPROVED_FINAL <<approved>> {
+  state "Ready for Payment" as af_desc
+}
+
+state "❌ REJECTED_FINAL" as REJECTED_FINAL <<rejected>> {
+  state "TERMINAL - No Recovery" as rf_desc
+}
+
+CoordReview --> APPROVED_FINAL : ✅ Approve Final
+CoordReview --> REJECTED_FINAL : ❌ Reject Final\n(with reason)
+CoordReview --> RETURNED_MEDICAL : 🔙 Return to Medical\n(with reason)
+CoordReview --> RETURNED_PROVIDER : ↩️ Return to Provider\n(with reason)
+
+state "Medical Re-Review" as MedicalReReview <<choice>>
+
+RETURNED_MEDICAL --> MedicalReReview : Medical Admin\nRe-reviews
+
+MedicalReReview --> APPROVED_MEDICAL : ✅ Re-approve
+MedicalReReview --> REJECTED_FINAL : ❌ Re-reject
+
+RETURNED_PROVIDER --> PENDING_MEDICAL : Provider\nResubmits
+
+state "⏳ PAYMENT_PENDING" as PAYMENT_PENDING <<approved>> {
+  state "Awaiting Payment Processing" as pp_desc
+}
+
+APPROVED_FINAL --> PAYMENT_PENDING : Queue for\nPayment
+
+state "💳 PAID" as PAID <<paid>> {
+  state "TERMINAL - Complete" as p_desc
+}
+
+PAYMENT_PENDING --> PAID : 💳 Mark as Paid\n(Coord/Manager)
+
+REJECTED_FINAL --> [*] : Claim Closed\n(No Payment)
+PAID --> [*] : Claim Complete\n(Payment Sent)
+
+note right of PENDING_MEDICAL
+  **Who Submits:**
+  • Doctor
+  • Pharmacist
+  • Lab Technician
+  • Radiologist
+  • Insurance Client
+end note
+
+note right of MedicalReview
+  **Medical Admin Checks:**
+  • Service coverage
+  • Age/Gender eligibility
+  • Deductible requirements
+  • Coverage limits
+  • Emergency bypass
+end note
+
+note right of CoordReview
+  **Coordination Admin Checks:**
+  • Final approval authority
+  • Payment calculation
+  • Insurance vs Client amounts
+  • Return if issues found
+end note
+
+note bottom of PAID
+  **PAID is IRREVERSIBLE**
+  Cannot be modified or
+  returned once paid
+end note
+
+note bottom of REJECTED_FINAL
+  **REJECTED is TERMINAL**
+  Provider must submit
+  a new claim if needed
+end note
+
+legend right
+  **🔔 NOTIFICATION TRIGGERS:**
+  ━━━━━━━━━━━━━━━━━━━━━━
+  Submit → Medical Admins
+  Medical Approve → Provider, Patient, Coord Admins
+  Medical Reject → Provider, Patient
+  Coord Approve → Provider, Patient
+  Coord Reject → Provider, Patient
+  Return to Medical → Medical Admin
+  Return to Provider → Provider
+  Mark Paid → Provider, Patient
+endlegend
+
+@enduml

@@ -1,0 +1,18 @@
+TEST_FORMAL_NAME,PRICE,COVERAGE_STATUS
+CBC (Complete Blood Count),50,مغطى
+Lipid Profile,80,مغطى
+Fasting Blood Sugar,30,مغطى
+HbA1c (Glycated Hemoglobin),70,مغطى
+Liver Function Tests (LFT),90,مغطى
+Kidney Function Tests (KFT),85,مغطى
+Thyroid Panel (TSH/T3/T4),120,مغطى
+Urine Analysis,25,مغطى
+Stool Analysis,30,مغطى
+ESR (Erythrocyte Sedimentation Rate),35,مغطى
+CRP (C-Reactive Protein),60,مغطى
+Vitamin D,120,يحتاج الى موافقة
+Vitamin B12,100,يحتاج الى موافقة
+Iron Studies,90,يحتاج الى موافقة
+Tumor Markers (CEA/CA125/PSA),200,يحتاج الى موافقة
+Genetic Testing,500,غير مغطى
+Allergy Panel (Full),400,غير مغطى

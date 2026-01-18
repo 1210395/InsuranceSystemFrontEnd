@@ -19,9 +19,13 @@ import LocalPharmacyIcon from "@mui/icons-material/LocalPharmacy";
 import ScienceIcon from "@mui/icons-material/Science";
 import PeopleIcon from "@mui/icons-material/People";
 import { motion } from "framer-motion";
-import axios from "axios";
+import { api } from "../../../utils/apiService";
+import { API_ENDPOINTS } from "../../../config/api";
+import { useLanguage } from "../../../context/LanguageContext";
+import { t } from "../../../config/translations";
 
 const ProvidersReport = () => {
+  const { language, isRTL } = useLanguage();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,11 +33,8 @@ const ProvidersReport = () => {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:8080/api/reports/providers", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setReport(res.data);
+        const res = await api.get(API_ENDPOINTS.REPORTS.PROVIDERS);
+        setReport(res || {});
       } catch (err) {
         console.error("❌ Failed to fetch providers report:", err.response?.data || err.message);
       } finally {
@@ -46,44 +47,44 @@ const ProvidersReport = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress />
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "#FAF8F5" }}>
+        <CircularProgress sx={{ color: "#556B2F" }} />
       </Box>
     );
   }
 
   if (!report) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography color="error">⚠️ Failed to load Providers Report</Typography>
+      <Box sx={{ p: 3, backgroundColor: "#FAF8F5" }}>
+        <Typography color="error">{t("failedToLoadProvidersReport", language)}</Typography>
       </Box>
     );
   }
 
   const cards = [
     {
-      title: "Total Providers",
+      title: t("totalProviders", language),
       value: report.totalProviders,
       icon: <PeopleIcon />,
-      color: "linear-gradient(135deg, #00c6ff, #0072ff)",
+      color: "linear-gradient(135deg, #556B2F, #7B8B5E)",
     },
     {
-      title: "Doctors",
+      title: t("doctors", language),
       value: report.doctorsCount,
       icon: <LocalHospitalIcon />,
-      color: "linear-gradient(135deg, #56ab2f, #a8e063)",
+      color: "linear-gradient(135deg, #8B9A46, #A8B56B)",
     },
     {
-      title: "Pharmacies",
+      title: t("pharmacies", language),
       value: report.pharmaciesCount,
       icon: <LocalPharmacyIcon />,
-      color: "linear-gradient(135deg, #ff512f, #dd2476)",
+      color: "linear-gradient(135deg, #3D4F23, #556B2F)",
     },
     {
-      title: "Labs",
+      title: t("labs", language),
       value: report.labsCount,
       icon: <ScienceIcon />,
-      color: "linear-gradient(135deg, #2193b0, #6dd5ed)",
+      color: "linear-gradient(135deg, #7B8B5E, #8B9A46)",
     },
   ];
 
@@ -93,25 +94,25 @@ const ProvidersReport = () => {
       <Box
         sx={{
           flexGrow: 1,
-          background: "linear-gradient(to bottom, #f9f9f9, #eef2f7)",
+          background: "linear-gradient(to bottom, #FAF8F5, #E8EDE0)",
           minHeight: "100vh",
           marginLeft: "240px",
         }}
       >
         <Header />
-        <Box sx={{ p: 3 }}>
-          {/* العنوان */}
+        <Box sx={{ p: 3 }} dir={isRTL ? "rtl" : "ltr"}>
+          {/* Title */}
           <Typography
             variant="h4"
             fontWeight="bold"
             sx={{
-              color: "#120460",
+              color: "#3D4F23",
               display: "flex",
               alignItems: "center",
               mb: 3,
             }}
           >
-            Providers Report
+            {t("providersReportTitle", language)}
           </Typography>
 
           {/* كروت الأرقام */}
@@ -158,21 +159,21 @@ const ProvidersReport = () => {
             ))}
           </Grid>
 
-          {/* التفاصيل */}
+          {/* Details */}
           <Box sx={{ mt: 5 }}>
             <Grid container spacing={3}>
               {/* Doctors */}
               <Grid item xs={12} md={4}>
-                <Card sx={{ borderRadius: 3, boxShadow: "0 6px 15px rgba(0,0,0,0.1)" }}>
+                <Card sx={{ borderRadius: 3, boxShadow: "0 6px 15px rgba(0,0,0,0.1)", backgroundColor: "#F5F5DC" }}>
                   <CardContent>
-                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: "#2c3e50" }}>
-                      Doctors
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: "#3D4F23" }}>
+                      {t("doctors", language)}
                     </Typography>
                     <List>
                       {report.doctors.map((doctor, idx) => (
                         <ListItem key={idx}>
                           <ListItemIcon>
-                            <LocalHospitalIcon sx={{ color: "#56ab2f" }} />
+                            <LocalHospitalIcon sx={{ color: "#556B2F" }} />
                           </ListItemIcon>
                           <ListItemText primary={doctor} />
                         </ListItem>
@@ -184,16 +185,16 @@ const ProvidersReport = () => {
 
               {/* Pharmacies */}
               <Grid item xs={12} md={4}>
-                <Card sx={{ borderRadius: 3, boxShadow: "0 6px 15px rgba(0,0,0,0.1)" }}>
+                <Card sx={{ borderRadius: 3, boxShadow: "0 6px 15px rgba(0,0,0,0.1)", backgroundColor: "#F5F5DC" }}>
                   <CardContent>
-                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: "#2c3e50" }}>
-                      Pharmacies
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: "#3D4F23" }}>
+                      {t("pharmacies", language)}
                     </Typography>
                     <List>
                       {report.pharmacies.map((pharmacy, idx) => (
                         <ListItem key={idx}>
                           <ListItemIcon>
-                            <LocalPharmacyIcon sx={{ color: "#ff512f" }} />
+                            <LocalPharmacyIcon sx={{ color: "#8B9A46" }} />
                           </ListItemIcon>
                           <ListItemText primary={pharmacy} />
                         </ListItem>
@@ -205,16 +206,16 @@ const ProvidersReport = () => {
 
               {/* Labs */}
               <Grid item xs={12} md={4}>
-                <Card sx={{ borderRadius: 3, boxShadow: "0 6px 15px rgba(0,0,0,0.1)" }}>
+                <Card sx={{ borderRadius: 3, boxShadow: "0 6px 15px rgba(0,0,0,0.1)", backgroundColor: "#F5F5DC" }}>
                   <CardContent>
-                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: "#2c3e50" }}>
-                      Labs
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: "#3D4F23" }}>
+                      {t("labs", language)}
                     </Typography>
                     <List>
                       {report.labs.map((lab, idx) => (
                         <ListItem key={idx}>
                           <ListItemIcon>
-                            <ScienceIcon sx={{ color: "#2193b0" }} />
+                            <ScienceIcon sx={{ color: "#7B8B5E" }} />
                           </ListItemIcon>
                           <ListItemText primary={lab} />
                         </ListItem>

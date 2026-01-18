@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import PropTypes from "prop-types";
 import {
   Box,
   Paper,
@@ -15,7 +16,10 @@ import {
 
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import axios from "axios";
+import { api, getToken } from "../../utils/apiService";
+import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 // Icons
 import PersonIcon from "@mui/icons-material/Person";
@@ -30,37 +34,32 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 const Profile = () => {
+  const { language, isRTL } = useLanguage();
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // ✅ fetch profile from backend
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("⚠️ No token found, please login again.");
-        return;
-      }
+  const fetchProfile = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      console.error("No token found, please login again.");
+      return;
+    }
 
-      try {
-        const res = await axios.get(
-          "http://localhost:8080/api/Clients/get/abdb4e87-da11-40cc-9e68-7ac59c8cbfcf",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setProfile(res.data);
-        setFormData(res.data);
-      } catch (err) {
-        console.error("❌ Failed to load profile:", err.response?.data || err.message);
-      }
-    };
-
-    fetchProfile();
+    try {
+      const res = await api.get(API_ENDPOINTS.AUTH.ME);
+      setProfile(res || {});
+      setFormData(res || {});
+    } catch (err) {
+      console.error("Failed to load profile:", err.response?.data || err.message);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -74,11 +73,10 @@ const Profile = () => {
     }
   };
 
-  // ✅ save profile with FormData
   const handleSave = async () => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     if (!token) {
-      alert("⚠️ Please login first.");
+      alert(t("pleaseLoginFirst", language));
       return;
     }
 
@@ -90,6 +88,10 @@ const Profile = () => {
           fullName: formData.fullName,
           email: formData.email,
           phone: formData.phone,
+          employeeId: formData.employeeId,
+          nationalId: formData.nationalId,
+          gender: formData.gender,
+          dateOfBirth: formData.dateOfBirth
         })], { type: "application/json" })
       );
 
@@ -97,32 +99,39 @@ const Profile = () => {
         multipartData.append("universityCard", selectedFile);
       }
 
-      const res = await axios.patch(
-        `http://localhost:8080/api/Clients/update/${profile.id}`,
+      const res = await api.patch(
+        `${API_ENDPOINTS.CLIENTS.UPDATE}/${profile.id}`,
         multipartData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         }
       );
 
-      setProfile(res.data);
-      setFormData(res.data);
+      setProfile(res || {});
+      setFormData(res || {});
       setPreviewImage(null);
       setSelectedFile(null);
       setEditMode(false);
-      console.log("✅ Profile updated successfully:", res.data);
     } catch (err) {
-      console.error("❌ Update failed:", err.response?.data || err.message);
-      alert("Update failed, check console.");
+      console.error("Update failed:", err.response?.data || err.message);
+      alert(t("updateFailed", language));
     }
   };
 
   if (!profile) {
-    return <Typography sx={{ p: 3 }}>Loading...</Typography>;
+    return <Typography sx={{ p: 3 }}>{t("loading", language)}</Typography>;
   }
+
+  const getAvatarSrc = () => {
+    if (previewImage) return previewImage;
+
+    const imgs = formData.universityCardImages || profile.universityCardImages || [];
+    const last = imgs[imgs.length - 1];
+
+    return last ? `${API_BASE_URL}${last}` : "";
+  };
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -139,7 +148,7 @@ const Profile = () => {
       >
         <Header />
 
-        <Box sx={{ flex: 1, p: 4, display: "flex", justifyContent: "center" }}>
+        <Box sx={{ flex: 1, p: 4, display: "flex", justifyContent: "center" }} dir={isRTL ? "rtl" : "ltr"}>
           <Paper
             sx={{
               p: 5,
@@ -163,7 +172,7 @@ const Profile = () => {
               }}
             >
               <PersonIcon sx={{ fontSize: 36, color: "#1E8EAB" }} />
-              Profile
+              {t("profile", language)}
             </Typography>
             <Divider sx={{ mb: 4 }} />
 
@@ -172,14 +181,11 @@ const Profile = () => {
               <Grid xs={12} md={4} sx={{ display: "flex", justifyContent: "center" }}>
                 <Box sx={{ position: "relative" }}>
                   <Avatar
-                    src={
-                      previewImage ||
-                      (profile.universityCardImage &&
-                        `http://localhost:8080${profile.universityCardImage}`)
-                    }
+                    src={getAvatarSrc()}
                     alt="Profile"
                     sx={{ width: 140, height: 140, border: "4px solid #1E8EAB" }}
                   />
+
                   {editMode && (
                     <IconButton
                       component="label"
@@ -208,23 +214,7 @@ const Profile = () => {
                 <Grid container spacing={3}>
                   <Grid xs={12} md={6}>
                     <TextField
-                      label="Username"
-                      value={formData.username}
-                      fullWidth
-                      disabled
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <BadgeIcon />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid xs={12} md={6}>
-                    <TextField
-                      label="Full Name"
+                      label={t("fullName", language)}
                       name="fullName"
                       value={formData.fullName || ""}
                       onChange={handleChange}
@@ -242,7 +232,7 @@ const Profile = () => {
 
                   <Grid xs={12} md={6}>
                     <TextField
-                      label="Email"
+                      label={t("email", language)}
                       name="email"
                       value={formData.email || ""}
                       onChange={handleChange}
@@ -260,7 +250,7 @@ const Profile = () => {
 
                   <Grid xs={12} md={6}>
                     <TextField
-                      label="Phone"
+                      label={t("phone", language)}
                       name="phone"
                       value={formData.phone || ""}
                       onChange={handleChange}
@@ -276,9 +266,75 @@ const Profile = () => {
                     />
                   </Grid>
 
+                  {/* Employee ID */}
+                  <Grid xs={12} md={6}>
+                    <TextField
+                      label={t("employeeId", language)}
+                      name="employeeId"
+                      value={formData.employeeId || ""}
+                      onChange={handleChange}
+                      fullWidth
+                      disabled={!editMode}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <BadgeIcon />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+
+                  {/* National ID */}
+                  <Grid xs={12} md={6}>
+                    <TextField
+                      label={t("nationalId", language)}
+                      name="nationalId"
+                      value={formData.nationalId || ""}
+                      onChange={handleChange}
+                      fullWidth
+                      disabled={!editMode}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <BadgeIcon />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+
+                  {/* Gender */}
+                  <Grid xs={12} md={6}>
+                    <TextField
+                      label={t("gender", language)}
+                      name="gender"
+                      value={formData.gender || ""}
+                      onChange={handleChange}
+                      fullWidth
+                      disabled={!editMode}
+                    />
+                  </Grid>
+
+                  {/* Date of Birth */}
+                  <Grid xs={12} md={6}>
+                    <TextField
+                      label={t("dateOfBirth", language)}
+                      name="dateOfBirth"
+                      type="date"
+                      value={formData.dateOfBirth || ""}
+                      onChange={handleChange}
+                      fullWidth
+                      disabled={!editMode}
+                      InputLabelProps={{
+                        shrink: true,
+                      }}
+                    />
+                  </Grid>
+
                   <Grid xs={12} md={6}>
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      Status
+                      {t("status", language)}
                     </Typography>
                     <Chip
                       icon={<CheckCircleIcon />}
@@ -290,7 +346,7 @@ const Profile = () => {
 
                   <Grid xs={12} md={6}>
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      Roles
+                      {t("roles", language)}
                     </Typography>
                     {profile.roles.map((role, i) => (
                       <Chip
@@ -308,14 +364,14 @@ const Profile = () => {
 
                   <Grid xs={12} md={6}>
                     <Typography variant="body2" color="gray">
-                      <AccessTimeIcon fontSize="small" /> Created At:{" "}
+                      <AccessTimeIcon fontSize="small" /> {t("createdAt", language)}:{" "}
                       {new Date(profile.createdAt).toLocaleString()}
                     </Typography>
                   </Grid>
 
                   <Grid xs={12} md={6}>
                     <Typography variant="body2" color="gray">
-                      <AccessTimeIcon fontSize="small" /> Updated At:{" "}
+                      <AccessTimeIcon fontSize="small" /> {t("updatedAt", language)}:{" "}
                       {new Date(profile.updatedAt).toLocaleString()}
                     </Typography>
                   </Grid>
@@ -323,7 +379,7 @@ const Profile = () => {
               </Grid>
             </Grid>
 
-            {/* أزرار الأكشن */}
+            {/* Action Buttons */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4, gap: 2 }}>
               {!editMode ? (
                 <Button
@@ -337,7 +393,7 @@ const Profile = () => {
                   }}
                   onClick={() => setEditMode(true)}
                 >
-                  Edit Profile
+                  {t("editProfile", language)}
                 </Button>
               ) : (
                 <>
@@ -347,7 +403,7 @@ const Profile = () => {
                     sx={{ borderRadius: 3, px: 3 }}
                     onClick={() => setEditMode(false)}
                   >
-                    Cancel
+                    {t("cancel", language)}
                   </Button>
                   <Button
                     variant="contained"
@@ -356,7 +412,7 @@ const Profile = () => {
                     sx={{ borderRadius: 3, px: 3 }}
                     onClick={handleSave}
                   >
-                    Save Changes
+                    {t("saveChanges", language)}
                   </Button>
                 </>
               )}
