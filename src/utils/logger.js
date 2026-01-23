@@ -1,54 +1,52 @@
 /**
- * Production-safe logger utility
- * Only logs in development mode, silent in production
+ * Logger utility for frontend - replaces console.log in production
+ * In production, logs are suppressed or sent to monitoring service
  */
 
-const isDev = import.meta.env.DEV;
+const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
 
 const logger = {
   log: (...args) => {
-    if (isDev) {
-       
-      console.log(...args);
+    if (isDevelopment) {
+      console.log('[LOG]', ...args);
+    }
+  },
+
+  info: (...args) => {
+    if (isDevelopment) {
+      console.info('[INFO]', ...args);
     }
   },
 
   warn: (...args) => {
-    if (isDev) {
-       
-      console.warn(...args);
-    }
+    // Always show warnings
+    console.warn('[WARN]', ...args);
   },
 
   error: (...args) => {
-    if (isDev) {
-       
-      console.error(...args);
-    }
-    // In production, you could send errors to a monitoring service
-    // Example: errorReportingService.captureException(args);
-  },
-
-  info: (...args) => {
-    if (isDev) {
-       
-      console.info(...args);
-    }
+    // Always show errors
+    console.error('[ERROR]', ...args);
+    // In production, you could send to error monitoring service here
+    // if (!isDevelopment) { sendToMonitoringService(args); }
   },
 
   debug: (...args) => {
-    if (isDev) {
-       
-      console.debug(...args);
+    if (isDevelopment) {
+      console.debug('[DEBUG]', ...args);
     }
   },
 
   table: (...args) => {
-    if (isDev) {
-       
+    if (isDevelopment) {
       console.table(...args);
     }
   },
+
+  // For API responses
+  apiError: (endpoint, error) => {
+    const message = error?.response?.data?.message || error?.message || 'Unknown error';
+    console.error(`[API ERROR] ${endpoint}:`, message);
+  }
 };
 
 export default logger;

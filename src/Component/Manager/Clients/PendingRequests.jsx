@@ -578,7 +578,7 @@ const PendingRequests = () => {
   return (
     <Box sx={{ display: "flex" }}>
       <Sidebar />
-      <Box sx={{ flexGrow: 1, background: "linear-gradient(180deg, #FAF8F5 0%, #ffffff 100%)", minHeight: "100vh", marginLeft: "240px" }}>
+      <Box dir={isRTL ? "rtl" : "ltr"} sx={{ flexGrow: 1, background: "linear-gradient(180deg, #FAF8F5 0%, #ffffff 100%)", minHeight: "100vh", marginLeft: isRTL ? 0 : "240px", marginRight: isRTL ? "240px" : 0 }}>
         <Header />
         <Box sx={{ p: 4 }} dir={isRTL ? "rtl" : "ltr"}>
             {/* Page Title */}

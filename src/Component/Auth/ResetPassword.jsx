@@ -16,6 +16,7 @@ import { api } from "../../utils/apiService";
 import { API_ENDPOINTS } from "../../config/api";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 const ResetPassword = memo(function ResetPassword() {
   const { language, isRTL } = useLanguage();
@@ -50,7 +51,7 @@ setTimeout(() => {
 }, 2000);
 
     } catch (err) {
-      console.error(err.response?.data || err.message);
+      logger.error(err.response?.data || err.message);
       setMessage("Failed to reset password. Try again.");
     }
   };

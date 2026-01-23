@@ -262,6 +262,7 @@ const ManagerMedicalDecisionsList = () => {
 
   // FILTER CLAIMS
   const filteredClaims = useMemo(() => {
+    if (!claims || !Array.isArray(claims)) return [];
     let result = claims.filter((c) => c.providerRole === claimTabs[selectedTab].role);
 
     // Apply client name search
@@ -356,6 +357,7 @@ const ManagerMedicalDecisionsList = () => {
 
   // Get tab counts
   const tabCounts = useMemo(() => {
+    if (!claims || !Array.isArray(claims)) return claimTabs.map(() => 0);
     return claimTabs.map(tab =>
       claims.filter(c => c.providerRole === tab.role).length
     );
@@ -364,7 +366,7 @@ const ManagerMedicalDecisionsList = () => {
   // Get statistics for current tab
   const currentTabStats = useMemo(() => {
     const currentRole = claimTabs[selectedTab]?.role;
-    if (!currentRole) return { total: 0, approved: 0, rejected: 0, totalAmount: 0 };
+    if (!currentRole || !claims || !Array.isArray(claims)) return { total: 0, approved: 0, rejected: 0, totalAmount: 0 };
 
     const tabClaims = claims.filter((c) => c.providerRole === currentRole);
     return {

@@ -5,6 +5,7 @@ import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
 import { ROLES } from "../../config/roles";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 import PharmacistSidebar from "./PharmacistSidebar";
 import PharmacistHeader from "./PharmacistHeader";
@@ -93,7 +94,7 @@ const PharmacistDashboard = () => {
       setUnreadCount(count);
       localStorage.setItem("pharmacistUnreadCount", count);
     } catch (err) {
-      console.error("Error fetching unread count:", err);
+      logger.error("Error fetching unread count:", err);
     }
   }, []);
 
@@ -138,7 +139,7 @@ const PharmacistDashboard = () => {
       setUnreadCount(count);
       localStorage.setItem("pharmacistUnreadCount", count);
     } catch (err) {
-      console.error("Error fetching pharmacist data:", err);
+      logger.error("Error fetching pharmacist data:", err);
     }
   }, []);
 
@@ -169,7 +170,7 @@ const PharmacistDashboard = () => {
         JSON.stringify(combined)
       );
     } catch (err) {
-      console.error("Error fetching prescriptions:", err);
+      logger.error("Error fetching prescriptions:", err);
     }
   }, []);
 
@@ -237,32 +238,32 @@ const PharmacistDashboard = () => {
       const verifiedPrescription = verifyResponse || {};
       const totalPrice = verifiedPrescription.totalPrice || 0;
       
-      console.log("💰 [VERIFY] Using totalPrice from backend:", totalPrice);
-      console.log("📋 [VERIFY] Prescription data:", {
+      logger.log("💰 [VERIFY] Using totalPrice from backend:", totalPrice);
+      logger.log("📋 [VERIFY] Prescription data:", {
         memberId: prescription.memberId,
         memberName: prescription.memberName,
         fullPrescription: prescription
       });
-      console.log("📋 [VERIFY] Verified prescription data:", {
+      logger.log("📋 [VERIFY] Verified prescription data:", {
         memberId: verifiedPrescription.memberId,
         memberName: verifiedPrescription.memberName,
         isFamilyMember: verifiedPrescription.isFamilyMember,
         familyMemberName: verifiedPrescription.familyMemberName,
         familyMemberAge: verifiedPrescription.familyMemberAge,
         familyMemberGender: verifiedPrescription.familyMemberGender,
-        isChronic: verifiedPrescription.isChronic, // ✅ Log isChronic from verified prescription
+        isChronic: verifiedPrescription.isChronic, // Log isChronic from verified prescription
         "isChronic type": typeof verifiedPrescription.isChronic,
         "isChronic === true": verifiedPrescription.isChronic === true
       });
-      console.log("📋 [VERIFY] Original prescription.isChronic:", prescription.isChronic, "type:", typeof prescription.isChronic);
+      logger.log("📋 [VERIFY] Original prescription.isChronic:", prescription.isChronic, "type:", typeof prescription.isChronic);
 
       // 4️⃣ إنشاء claim تلقائي (Healthcare Provider Claim) - بدون إرسال الآن
       // Use memberId from verifiedPrescription if available, otherwise use prescription.memberId
       const memberIdToUse = verifiedPrescription.memberId || prescription.memberId;
       const memberNameToUse = verifiedPrescription.memberName || prescription.memberName;
       
-      console.log("🔍 [VERIFY] Using memberId for claim:", memberIdToUse);
-      console.log("🔍 [VERIFY] Using memberName for claim:", memberNameToUse);
+      logger.log("🔍 [VERIFY] Using memberId for claim:", memberIdToUse);
+      logger.log("🔍 [VERIFY] Using memberName for claim:", memberNameToUse);
       
       const claimData = {
         clientId: memberIdToUse, // ID المريض من الوصفة (يمكن أن يكون family member ID أو main client ID)
@@ -312,7 +313,7 @@ const PharmacistDashboard = () => {
       };
       
       setCurrentClaimData(claimData);
-      console.log("📤 Claim data prepared:", claimData);
+      logger.log("📤 Claim data prepared:", claimData);
 
       // Refresh prescriptions (جميع الوصفات) و stats
       // api.get() returns data directly
@@ -335,8 +336,8 @@ const PharmacistDashboard = () => {
       localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
       if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
     } catch (err) {
-      console.error("Error verifying prescription:", err);
-      console.error("Error details:", err.response?.data);
+      logger.error("Error verifying prescription:", err);
+      logger.error("Error details:", err.response?.data);
       alert(t("failedToVerifyPrescription", language));
       throw err;
     }
@@ -368,7 +369,7 @@ const PharmacistDashboard = () => {
       localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
       if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
     } catch (err) {
-      console.error("Error rejecting prescription:", err);
+      logger.error("Error rejecting prescription:", err);
       alert(t("failedToRejectPrescription", language));
       throw err;
     }
@@ -400,7 +401,7 @@ const PharmacistDashboard = () => {
       localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
       if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
     } catch (err) {
-      console.error("Error marking prescription as billed:", err);
+      logger.error("Error marking prescription as billed:", err);
       alert(t("failedToMarkAsBilled", language));
       throw err;
     }
@@ -466,10 +467,12 @@ const PharmacistDashboard = () => {
           overflowX: "hidden",
           backgroundColor: "#FAF8F5",
           height: "100vh",
-          marginLeft: "240px",
-          transition: "margin-left 0.3s ease",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
+          transition: "margin 0.3s ease",
           "@media (max-width: 600px)": {
-            marginLeft: "75px",
+            marginLeft: isRTL ? 0 : "75px",
+            marginRight: isRTL ? "75px" : 0,
           },
           "&::-webkit-scrollbar": {
             width: "8px",
@@ -1076,8 +1079,8 @@ const PharmacistDashboard = () => {
             onReject={handleReject}
             onSubmitClaim={handleSubmitClaim}
             onBill={handleBill}
-            onPrint={(id) => console.log("🖨 Print", id)}
-            onDetails={(id) => console.log("ℹ️ Details", id)}
+            onPrint={(id) => logger.log("Print", id)}
+            onDetails={(id) => logger.log("Details", id)}
           />
         )}
 

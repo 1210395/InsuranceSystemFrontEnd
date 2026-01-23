@@ -4,11 +4,10 @@ import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
 import { ROLES } from "../../config/roles";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 import NotificationsList from "../Notification/NotificationsList";
 import AddSearchProfileDoctor from "./AddSearchProfile";
-import MyEmergencyRequests from "./MyEmergencyRequests";
-import AddEmergency from "./AddEmergency";
 import DoctorCreateCenter from "./DoctorCreateCenter";
 import UnifiedCreateRequest from "./UnifiedCreateRequest";
 import DoctorHeader from "./DoctorHeader";
@@ -34,7 +33,6 @@ import MedicationIcon from "@mui/icons-material/Medication";
 import ScienceIcon from "@mui/icons-material/Science";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import BarChartIcon from "@mui/icons-material/BarChart";
-import WarningIcon from "@mui/icons-material/Warning";
 import ImageIcon from "@mui/icons-material/Image";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
@@ -148,8 +146,6 @@ const DoctorDashboard = () => {
     Number(localStorage.getItem("doctorUnreadCount")) || 0
   );
 
-  const [emergencyRequests, setEmergencyRequests] = useState([]);
-
   const [openLogout, setOpenLogout] = useState(false);
 
   const [snackbar, setSnackbar] = useState({
@@ -178,7 +174,7 @@ const DoctorDashboard = () => {
         localStorage.removeItem("doctorProfileImage");
       }
     } catch (err) {
-      console.error("Error fetching user:", err);
+      logger.error("Error fetching user:", err);
       const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || "Failed to load user information";
       setSnackbar({
         open: true,
@@ -196,7 +192,7 @@ const DoctorDashboard = () => {
       setUnreadCount(count);
       localStorage.setItem("doctorUnreadCount", count);
     } catch (err) {
-      console.error("Error fetching unread count:", err);
+      logger.error("Error fetching unread count:", err);
       // Silently fail for notification count - not critical enough to show error to user
     }
   }, []);
@@ -220,7 +216,7 @@ const DoctorDashboard = () => {
         localStorage.setItem("doctorStats", JSON.stringify(res));
       }
     } catch (err) {
-      console.error("Error fetching stats:", err);
+      logger.error("Error fetching stats:", err);
       const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || "Failed to load dashboard statistics";
       setSnackbar({
         open: true,
@@ -240,7 +236,7 @@ const DoctorDashboard = () => {
         radiologyRequests: count
       }));
     } catch (err) {
-      console.error("Error fetching radiology count:", err);
+      logger.error("Error fetching radiology count:", err);
       const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || "Failed to load radiology requests";
       setSnackbar({
         open: true,
@@ -260,24 +256,8 @@ const DoctorDashboard = () => {
         labRequests: count
       }));
     } catch (err) {
-      console.error("Error fetching lab count:", err);
+      logger.error("Error fetching lab count:", err);
       const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || "Failed to load lab requests";
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      });
-    }
-  }, []);
-
-  const fetchEmergencyRequests = useCallback(async () => {
-    try {
-      const res = await api.get(API_ENDPOINTS.EMERGENCIES.DOCTOR_MY_REQUESTS);
-      // api.get() returns response.data directly, so use res directly
-      setEmergencyRequests(Array.isArray(res) ? res : []);
-    } catch (err) {
-      console.error("Error fetching emergency requests:", err);
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || "Failed to load emergency requests";
       setSnackbar({
         open: true,
         message: errorMessage,
@@ -291,7 +271,6 @@ const DoctorDashboard = () => {
     await Promise.all([
       fetchUser(),
       fetchUnreadCount(),
-      fetchEmergencyRequests(),
       fetchStats(),
       fetchRadiologyCount(),
       fetchLabCount(),
@@ -318,7 +297,6 @@ const DoctorDashboard = () => {
     if (!token) return;
     fetchAll();
     const interval = setInterval(() => {
-      fetchEmergencyRequests();
       refreshUnreadCount();
     }, 5000);
     return () => clearInterval(interval);
@@ -664,78 +642,6 @@ const DoctorDashboard = () => {
                     p: { xs: 3, md: 4 },
                     borderRadius: 4,
                       textAlign: "center",
-                    background: "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)",
-                      color: "#fff",
-                    boxShadow: "0 4px 20px rgba(220, 38, 38, 0.3), 0 8px 30px rgba(220, 38, 38, 0.2)",
-                    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                      cursor: "pointer",
-                    position: "relative",
-                    overflow: "hidden",
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      top: "-50%",
-                      right: "-50%",
-                      width: "200%",
-                      height: "200%",
-                      background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
-                      transition: "all 0.4s ease",
-                    },
-                      "&:hover": { 
-                      transform: "translateY(-12px) scale(1.02)",
-                      boxShadow: "0 8px 30px rgba(220, 38, 38, 0.4), 0 12px 40px rgba(220, 38, 38, 0.3)",
-                      "&::before": {
-                        transform: "rotate(45deg)",
-                      },
-                      },
-                    }}
-                  >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      mb: 2,
-                      bgcolor: "rgba(255, 255, 255, 0.25)",
-                      borderRadius: "50%",
-                      width: { xs: 70, md: 90 },
-                      height: { xs: 70, md: 90 },
-                      mx: "auto",
-                      alignItems: "center",
-                      boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
-                    }}
-                  >
-                    <WarningIcon sx={{ fontSize: { xs: 35, md: 50 } }} />
-                  </Box>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      mb: 1.5,
-                      fontWeight: 600,
-                      fontSize: { xs: "1rem", md: "1.25rem" },
-                    }}
-                  >
-                      {t("emergency", language)}
-                    </Typography>
-                  <Typography 
-                    variant="h2" 
-                    fontWeight="bold"
-                    sx={{
-                      fontSize: { xs: "2rem", md: "3rem" },
-                      textShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                    }}
-                  >
-                      {emergencyRequests.length}
-                    </Typography>
-                  </Paper>
-                </Grid>
-
-              <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                  <Paper
-                  elevation={0}
-                    sx={{
-                    p: { xs: 3, md: 4 },
-                    borderRadius: 4,
-                      textAlign: "center",
                     background: "linear-gradient(135deg, #C9A646 0%, #DDB85C 100%)",
                       color: "#fff",
                     boxShadow: "0 4px 20px rgba(201, 166, 70, 0.3), 0 8px 30px rgba(201, 166, 70, 0.2)",
@@ -798,8 +704,7 @@ const DoctorDashboard = () => {
                   >
                       {(stats?.total || 0) +
                         (stats?.labRequests || 0) +
-                        (stats?.radiologyRequests || 0) +
-                        emergencyRequests.length}
+                        (stats?.radiologyRequests || 0)}
                     </Typography>
                   </Paper>
                 </Grid>
@@ -890,64 +795,6 @@ const DoctorDashboard = () => {
                         </Typography>
                         <Typography variant="body2" sx={{ color: "#5d6b5d" }}>
                           {t("createPrescriptionOrRequest", language)}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box
-                    onClick={() => setActiveView("emergency-add")}
-                    sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      border: "2px solid #E8EBE0",
-                      bgcolor: "#F5F7F0",
-                      cursor: "pointer",
-                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                      position: "relative",
-                      overflow: "hidden",
-                      "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: 0,
-                        left: "-100%",
-                        width: "100%",
-                        height: "100%",
-                        background: "linear-gradient(90deg, transparent, rgba(85, 107, 47, 0.1), transparent)",
-                        transition: "left 0.5s ease",
-                      },
-                      "&:hover": {
-                        borderColor: "#556B2F",
-                        bgcolor: "#E8EBE0",
-                        transform: "translateY(-4px)",
-                        boxShadow: "0 8px 24px rgba(85, 107, 47, 0.15)",
-                        "&::before": {
-                          left: "100%",
-                        },
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Box
-                        sx={{
-                          bgcolor: "#556B2F",
-                          borderRadius: 2,
-                          p: 1.5,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <WarningIcon sx={{ color: "white", fontSize: 28 }} />
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#2E3B2D", mb: 0.5 }}>
-                          {t("addEmergency", language)}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: "#5d6b5d" }}>
-                          {t("createEmergencyRequest", language)}
                         </Typography>
                       </Box>
                     </Box>
@@ -1081,14 +928,6 @@ const DoctorDashboard = () => {
         {activeView === "notifications" && <NotificationsList refresh={fetchUnreadCount} />}
         {activeView === "doctor-searchprofile-add" && (
           <AddSearchProfileDoctor refresh={fetchAll} />
-        )}
-        {activeView === "emergency-list" && (
-          <MyEmergencyRequests emergencyRequests={emergencyRequests} />
-        )}
-        {activeView === "emergency-add" && (
-          <AddEmergency onAdded={() => {
-            fetchEmergencyRequests();
-          }} />
         )}
         {activeView === "create-center" && (
           <DoctorCreateCenter refresh={fetchAll} />

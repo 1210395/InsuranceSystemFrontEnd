@@ -4,6 +4,7 @@ import SockJS from "sockjs-client";
 import { over } from "stompjs";
 import { api, getToken } from "../../utils/apiService";
 import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
+import logger from "../../utils/logger";
 import {
   Box,
   Typography,
@@ -40,7 +41,7 @@ const UserChat = () => {
   // ✅ Check login data before running anything
   useEffect(() => {
     if (!currentUserId || !token) {
-      console.warn("Missing userId or token in localStorage.");
+      logger.log("Missing userId or token in localStorage.");
       setError("Please log in again. Missing authentication data.");
       return;
     }
@@ -52,27 +53,27 @@ const UserChat = () => {
     return () => {
 
       if (stompClient && stompClient.connected) {
-        stompClient.disconnect(() => console.log("WebSocket disconnected"));
+        stompClient.disconnect(() => logger.log("WebSocket disconnected"));
       }
     };
   }, []);
 
   // ✅ WebSocket connection success
   const onConnected = () => {
-    console.log("✅ Connected to WebSocket server");
+    logger.log("Connected to WebSocket server");
     setConnected(true);
 
     setTimeout(() => {
       if (stompClient.connected && currentUserId) {
         const destination = `/user/${currentUserId}/queue/messages`;
         stompClient.subscribe(destination, onMessageReceived);
-        console.log("📡 Subscribed to:", destination);
+        logger.log("Subscribed to:", destination);
       }
     }, 300);
   };
 
   const onError = (err) => {
-    console.error("❌ WebSocket error:", err);
+    logger.error("WebSocket error:", err);
     setConnected(false);
   };
 
@@ -104,7 +105,7 @@ const UserChat = () => {
         setUsers(filtered);
       })
       .catch((err) => {
-        console.error("Failed to load users:", err);
+        logger.error("Failed to load users:", err);
         setError(
           err.response?.status === 403
             ? "Access denied. Please log in again."
@@ -133,7 +134,7 @@ const UserChat = () => {
 
       if (conv) setMessages(conv.messages);
     } catch (err) {
-      console.error("Error loading conversation:", err);
+      logger.error("Error loading conversation:", err);
       setError("Error loading chat conversation.");
     } finally {
       setLoading(false);

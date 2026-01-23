@@ -5,6 +5,7 @@ import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
 import { ROLES } from "../../config/roles";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 import LabSidebar from "./LabSidebar";
 import LabHeader from "./LabHeader";
@@ -100,7 +101,7 @@ const LabDashboard = () => {
       setUnreadCount(count);
       localStorage.setItem("labUnreadCount", count);
     } catch (err) {
-      console.error("Error fetching unread count:", err);
+      logger.error("Error fetching unread count:", err);
     }
   }, []);
 
@@ -172,7 +173,7 @@ const LabDashboard = () => {
         setStats(calculatedStats);
         localStorage.setItem("labStats", JSON.stringify(calculatedStats));
       } catch (err) {
-        console.error("Error fetching requests:", err);
+        logger.error("Error fetching requests:", err);
         setRequests([]);
         setStats({ pending: 0, completed: 0, total: 0 });
       }
@@ -183,7 +184,7 @@ const LabDashboard = () => {
       setUnreadCount(count);
       localStorage.setItem("labUnreadCount", count);
     } catch (err) {
-      console.error("Error fetching data:", err);
+      logger.error("Error fetching data:", err);
     }
   }, []);
 
@@ -227,9 +228,9 @@ const LabDashboard = () => {
     
     // ✅ التحقق من وجود claimData صالح قبل المتابعة
     if (!claimDataToUse || !claimDataToUse.clientId) {
-      const errorMsg = "❌ Claim data not available. clientId is missing. Please upload the result again.";
-      console.error(errorMsg);
-      console.error("❌ Available data sources:", {
+      const errorMsg = "Claim data not available. clientId is missing. Please upload the result again.";
+      logger.error(errorMsg);
+      logger.error("Available data sources:", {
         claimDataParam: claimDataParam ? { clientId: claimDataParam.clientId } : null,
         currentLabClaimData: currentLabClaimData ? { clientId: currentLabClaimData.clientId } : null,
         windowLabClaimData: typeof window !== 'undefined' && window.labClaimData ? { clientId: window.labClaimData.clientId } : null
@@ -237,7 +238,7 @@ const LabDashboard = () => {
       throw new Error(errorMsg);
     }
 
-    console.log("📤 Using claim data:", {
+    logger.log("Using claim data:", {
       clientId: claimDataToUse.clientId,
       amount: claimDataToUse.amount,
       description: claimDataToUse.description
@@ -284,10 +285,10 @@ const LabDashboard = () => {
 
       return claimResult;
     } catch (error) {
-      console.error("❌ Error submitting claim:", error);
-      console.error("❌ Error response data:", error.response?.data);
-      
-      // ✅ تنظيف currentLabClaimData بعد الفشل
+      logger.error("Error submitting claim:", error);
+      logger.error("Error response data:", error.response?.data);
+
+      // تنظيف currentLabClaimData بعد الفشل
       setCurrentLabClaimData(null);
       
       if (typeof window !== 'undefined') {

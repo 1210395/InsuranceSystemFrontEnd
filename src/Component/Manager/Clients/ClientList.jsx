@@ -23,8 +23,10 @@ import PhoneIcon from "@mui/icons-material/Phone";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import UploadIcon from "@mui/icons-material/Upload";
 import axios from "axios";
+import { useLanguage } from "../../../context/LanguageContext";
 
 const ClientList = () => {
+  const { isRTL } = useLanguage();
   const [clients, setClients] = useState([]);
   const [editClient, setEditClient] = useState(null);
   const [formData, setFormData] = useState({});
@@ -152,11 +154,13 @@ const ClientList = () => {
     <Box sx={{ display: "flex" }}>
       <Sidebar />
       <Box
+        dir={isRTL ? "rtl" : "ltr"}
         sx={{
           flexGrow: 1,
           backgroundColor: "#f4f6f9",
           minHeight: "100vh",
-          marginLeft: "240px",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
         }}
       >
         <Header />
@@ -192,9 +196,6 @@ const ClientList = () => {
                     <Typography variant="body2">
                       <PersonIcon sx={{ fontSize: 18, mr: 0.5 }} />
                       <b>Name:</b> {client.fullName}
-                    </Typography>
-                    <Typography variant="body2">
-                      <b>Username:</b> {client.username}
                     </Typography>
                     <Typography variant="body2">
                       <EmailIcon sx={{ fontSize: 18, mr: 0.5 }} />

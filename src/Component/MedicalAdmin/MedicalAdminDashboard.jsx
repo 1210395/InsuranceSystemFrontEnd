@@ -17,6 +17,7 @@ import { api } from "../../utils/apiService";
 import { API_ENDPOINTS } from "../../config/api";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 const MedicalAdminDashboard = () => {
   const { language, isRTL } = useLanguage();
@@ -51,7 +52,7 @@ const MedicalAdminDashboard = () => {
         });
       }
     } catch (err) {
-      console.error("Failed to load dashboard data:", err);
+      logger.error("Failed to load dashboard data:", err);
     }
   }, []);
 
@@ -65,7 +66,7 @@ const MedicalAdminDashboard = () => {
       );
       setProviders(withLocations);
     } catch (err) {
-      console.error("Failed to load providers:", err);
+      logger.error("Failed to load providers:", err);
     }
   }, []);
 

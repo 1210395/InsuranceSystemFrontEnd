@@ -211,22 +211,6 @@ const EmergencyProfile = () => {
                 <Grid container spacing={3}>
                   <Grid xs={12} md={6}>
                     <TextField
-                      label={t("username", language)}
-                      value={formData.username}
-                      fullWidth
-                      disabled
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <BadgeIcon />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid xs={12} md={6}>
-                    <TextField
                       label={t("fullName", language)}
                       name="fullName"
                       value={formData.fullName || ""}

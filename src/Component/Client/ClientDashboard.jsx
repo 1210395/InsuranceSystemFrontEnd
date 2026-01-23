@@ -5,6 +5,7 @@ import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
 import { ROLES } from "../../config/roles";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 // Sidebar
 import ClientSidebar from "./ClientSidebar";
@@ -98,7 +99,7 @@ const ClientDashboard = () => {
       const count = typeof notifRes.data === 'number' ? notifRes.data : parseInt(notifRes.data) || 0;
       setUnreadCount(count);
     } catch (err) {
-      console.error("Error fetching unread count:", err);
+      logger.error("Error fetching unread count:", err);
       setUnreadCount(0);
     }
   }, []);
@@ -112,18 +113,19 @@ const ClientDashboard = () => {
       );
       setProviders(withLocations);
     } catch (err) {
-      console.error("Failed to fetch providers:", err);
+      logger.error("Failed to fetch providers:", err);
     }
   }, []);
 
   // Fetch All Data
   const fetchData = useCallback(async () => {
     try {
-      const userRes = await api.get(API_ENDPOINTS.AUTH.ME);
-      setUser(userRes.data);
-      localStorage.setItem("clientUser", JSON.stringify(userRes.data));
+      // api.get returns response.data directly
+      const userData = await api.get(API_ENDPOINTS.AUTH.ME);
+      setUser(userData);
+      localStorage.setItem("clientUser", JSON.stringify(userData));
 
-      const imgs = userRes.data.universityCardImages || [];
+      const imgs = userData?.universityCardImages || [];
       const lastImg = imgs[imgs.length - 1];
 
       if (lastImg) {
@@ -132,24 +134,23 @@ const ClientDashboard = () => {
         setProfileImage(null);
       }
 
-      const presRes = await api.get(API_ENDPOINTS.PRESCRIPTIONS.GET);
-      setPrescriptions(presRes.data);
+      const prescriptionsData = await api.get(API_ENDPOINTS.PRESCRIPTIONS.GET);
+      setPrescriptions(prescriptionsData || []);
 
-      const labsRes = await api.get(API_ENDPOINTS.LABS.GET_BY_MEMBER);
-      setLabRequests(labsRes.data);
+      const labsData = await api.get(API_ENDPOINTS.LABS.GET_BY_MEMBER);
+      setLabRequests(labsData || []);
 
-      const radiologyRes = await api.get(API_ENDPOINTS.RADIOLOGY.GET_BY_MEMBER);
-      const radiologyData = radiologyRes.data || [];
-      setRadiologyRequests(radiologyData);
-      localStorage.setItem("clientRadiologyRequests", JSON.stringify(radiologyData));
+      const radiologyData = await api.get(API_ENDPOINTS.RADIOLOGY.GET_BY_MEMBER);
+      setRadiologyRequests(radiologyData || []);
+      localStorage.setItem("clientRadiologyRequests", JSON.stringify(radiologyData || []));
 
-      const claimsRes = await api.get(API_ENDPOINTS.HEALTHCARE_CLAIMS.MY_CLAIMS);
-      setClaims(claimsRes.data);
+      const claimsData = await api.get(API_ENDPOINTS.HEALTHCARE_CLAIMS.MY_CLAIMS);
+      setClaims(claimsData || []);
 
-      const notifRes = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
-      setUnreadCount(notifRes.data);
+      const unreadData = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
+      setUnreadCount(unreadData || 0);
     } catch (err) {
-      console.error("Error fetching client data:", err);
+      logger.error("Error fetching client data:", err);
 
       if (err.response?.status === 401) {
         clearAuthData();

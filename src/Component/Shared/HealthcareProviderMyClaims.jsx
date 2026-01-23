@@ -27,6 +27,7 @@ import { ROLES, normalizeRole } from "../../config/roles";
 import { formatDate, safeJsonParse } from "../../utils/helpers";
 import { sanitizeString } from "../../utils/sanitize";
 import { useLanguage } from "../../context/LanguageContext";
+import logger from "../../utils/logger";
 import { t } from "../../config/translations";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
@@ -90,7 +91,7 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
     const authToken = getToken();
 
     if (!authToken) {
-      console.error("No token found");
+      logger.error("No token found");
       setLoading(false);
       return;
     }
@@ -100,7 +101,7 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
       const res = await api.get(API_ENDPOINTS.HEALTHCARE_CLAIMS.MY_CLAIMS);
       setClaims(res || []);
     } catch (err) {
-      console.error("Error fetching claims:", err);
+      logger.error("Error fetching claims:", err);
       setClaims([]); // Set empty array on error to avoid showing stale data
     } finally {
       setLoading(false);
@@ -112,7 +113,7 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
     if (currentToken) {
       fetchClaims();
     } else {
-      console.error("No token found");
+      logger.error("No token found");
       setLoading(false);
     }
   }, [fetchClaims]);
@@ -565,7 +566,7 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
 
             // ✅ Debug: Log isChronic for each claim
             if (userRole === "PHARMACIST") {
-              console.log(`📋 Claim ${index + 1} (ID: ${claim.id}) - isChronicPrescription:`, isChronicPrescription, "roleData.isChronic:", roleData?.isChronic, "roleData:", roleData);
+              logger.log(`Claim ${index + 1} (ID: ${claim.id}) - isChronicPrescription:`, isChronicPrescription, "roleData.isChronic:", roleData?.isChronic, "roleData:", roleData);
             }
 
             return (

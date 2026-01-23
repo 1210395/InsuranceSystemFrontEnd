@@ -10,6 +10,7 @@ import { api } from "../../utils/apiService";
 import { API_ENDPOINTS } from "../../config/api";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 const CoordinationDashboard = () => {
   const { language, isRTL } = useLanguage();
@@ -29,7 +30,7 @@ const CoordinationDashboard = () => {
         );
         setProviders(withLocations);
       } catch (e) {
-        console.error("Dashboard error", e);
+        logger.error("Dashboard error", e);
       }
     };
 

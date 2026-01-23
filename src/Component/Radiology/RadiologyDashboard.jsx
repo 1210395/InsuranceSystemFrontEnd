@@ -5,6 +5,7 @@ import { API_BASE_URL, API_ENDPOINTS } from "../../config/api";
 import { ROLES } from "../../config/roles";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 import RadiologySidebar from "./RadiologySidebar";
 import RadiologyHeader from "./RadiologyHeader";
@@ -103,7 +104,7 @@ const RadiologyDashboard = () => {
       setUnreadCount(count);
       localStorage.setItem("radiologyUnreadCount", count);
     } catch (err) {
-      console.error("Error fetching unread count:", err);
+      logger.error("Error fetching unread count:", err);
     }
   }, []);
 
@@ -174,7 +175,7 @@ const RadiologyDashboard = () => {
         setStats(calculatedStats);
         localStorage.setItem("radiologyStats", JSON.stringify(calculatedStats));
       } catch (err) {
-        console.error("Error fetching requests:", err);
+        logger.error("Error fetching requests:", err);
         setRequests([]);
         setStats({ pending: 0, completed: 0, total: 0 });
       }
@@ -185,7 +186,7 @@ const RadiologyDashboard = () => {
       setUnreadCount(count);
       localStorage.setItem("radiologyUnreadCount", count);
     } catch (err) {
-      console.error("Error fetching data:", err);
+      logger.error("Error fetching data:", err);
     }
   }, []);
 
@@ -226,11 +227,11 @@ const RadiologyDashboard = () => {
       claimDataToUse = window.radiologyClaimData;
     }
     
-    // ✅ التحقق من وجود claimData صالح قبل المتابعة
+    // التحقق من وجود claimData صالح قبل المتابعة
     if (!claimDataToUse || !claimDataToUse.clientId) {
-      const errorMsg = "❌ Claim data not available. clientId is missing. Please upload the result again.";
-      console.error(errorMsg);
-      console.error("❌ Available data sources:", {
+      const errorMsg = "Claim data not available. clientId is missing. Please upload the result again.";
+      logger.error(errorMsg);
+      logger.error("Available data sources:", {
         claimDataParam: claimDataParam ? { clientId: claimDataParam.clientId } : null,
         currentRadiologyClaimData: currentRadiologyClaimData ? { clientId: currentRadiologyClaimData.clientId } : null,
         windowRadiologyClaimData: typeof window !== 'undefined' && window.radiologyClaimData ? { clientId: window.radiologyClaimData.clientId } : null
@@ -245,9 +246,9 @@ const RadiologyDashboard = () => {
     
     if (document) {
       formData.append("document", document);
-      console.log("📷 Document added:", document.name);
+      logger.log("Document added:", document.name);
     } else {
-      console.log("📋 No document attached, sending claim without document");
+      logger.log("No document attached, sending claim without document");
     }
 
     try {
@@ -278,10 +279,10 @@ const RadiologyDashboard = () => {
 
       return claimResult;
     } catch (error) {
-      console.error("❌ Error submitting claim:", error);
-      console.error("❌ Error response data:", error.response?.data);
-      
-      // ✅ تنظيف currentRadiologyClaimData بعد الفشل
+      logger.error("Error submitting claim:", error);
+      logger.error("Error response data:", error.response?.data);
+
+      // تنظيف currentRadiologyClaimData بعد الفشل
       setCurrentRadiologyClaimData(null);
       
       if (typeof window !== 'undefined') {

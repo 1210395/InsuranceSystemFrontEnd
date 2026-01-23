@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Box,
   Paper,
@@ -10,6 +10,7 @@ import {
   MenuItem,
   FormControlLabel,
   Checkbox,
+  Chip,
 } from "@mui/material";
 import { useLanguage } from "../../../context/LanguageContext";
 import { t } from "../../../config/translations";
@@ -23,12 +24,49 @@ const DiagnosisTreatmentSection = ({
   specializations,
   availableDiagnoses,
   availableTreatments,
+  diagnosisTreatmentMappings = {}, // New prop for mappings
   hasSameSpecializationRestriction,
   specializationRestrictionFailed,
   restrictionFailureReason,
   selectedFamilyMember: _selectedFamilyMember,
 }) => {
   const { language, isRTL } = useLanguage();
+
+  // Filter treatments based on selected diagnosis using mappings
+  const filteredTreatments = useMemo(() => {
+    if (!patientForm.diagnosis) {
+      // No diagnosis selected - show all treatments
+      return availableTreatments;
+    }
+
+    // Check if there are mapped treatments for this diagnosis
+    const mappedTreatments = diagnosisTreatmentMappings[patientForm.diagnosis];
+
+    if (mappedTreatments && mappedTreatments.length > 0) {
+      // Return only treatments that are mapped to this diagnosis AND are in availableTreatments
+      return mappedTreatments.filter(t => availableTreatments.includes(t));
+    }
+
+    // If no mappings exist for this diagnosis, show all treatments
+    return availableTreatments;
+  }, [patientForm.diagnosis, diagnosisTreatmentMappings, availableTreatments]);
+
+  // Check if current treatment is still valid when diagnosis changes
+  const handleDiagnosisChange = (e) => {
+    const newDiagnosis = e.target.value;
+    const mappedTreatments = diagnosisTreatmentMappings[newDiagnosis];
+
+    // Check if current treatment is still valid
+    let newTreatment = patientForm.treatment;
+    if (mappedTreatments && mappedTreatments.length > 0) {
+      // If there are mapped treatments and current treatment is not in them, clear it
+      if (!mappedTreatments.includes(patientForm.treatment)) {
+        newTreatment = "";
+      }
+    }
+
+    setPatientForm({ ...patientForm, diagnosis: newDiagnosis, treatment: newTreatment });
+  };
 
   // If specialization restrictions failed, show error message
   if (specializationRestrictionFailed) {
@@ -93,13 +131,27 @@ const DiagnosisTreatmentSection = ({
             <InputLabel>{t("diagnosisLabel", language)}</InputLabel>
             <Select
               value={patientForm.diagnosis}
-              onChange={(e) => setPatientForm({ ...patientForm, diagnosis: e.target.value })}
+              onChange={handleDiagnosisChange}
               label={t("diagnosisLabel", language)}
               required
             >
               {availableDiagnoses.map((diagnosis, index) => (
                 <MenuItem key={index} value={diagnosis}>
-                  {diagnosis}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {diagnosis}
+                    {diagnosisTreatmentMappings[diagnosis]?.length > 0 && (
+                      <Chip
+                        label={`${diagnosisTreatmentMappings[diagnosis].length} ${t("treatments", language) || "treatments"}`}
+                        size="small"
+                        sx={{
+                          backgroundColor: "#e8f5e9",
+                          color: "#2e7d32",
+                          fontSize: "0.7rem",
+                          height: "20px",
+                        }}
+                      />
+                    )}
+                  </Box>
                 </MenuItem>
               ))}
             </Select>
@@ -114,12 +166,17 @@ const DiagnosisTreatmentSection = ({
               label={t("treatmentPlan", language)}
               required
             >
-              {availableTreatments.map((treatment, index) => (
+              {filteredTreatments.map((treatment, index) => (
                 <MenuItem key={index} value={treatment}>
                   {treatment}
                 </MenuItem>
               ))}
             </Select>
+            {patientForm.diagnosis && diagnosisTreatmentMappings[patientForm.diagnosis]?.length > 0 && (
+              <Typography variant="caption" color="success.main" sx={{ mt: 0.5, ml: 1 }}>
+                {t("treatmentsFilteredByDiagnosis", language) || "Treatments filtered based on selected diagnosis"}
+              </Typography>
+            )}
           </FormControl>
         </>
       )}

@@ -26,6 +26,7 @@ import {
   OutlinedInput,
   Checkbox,
   FormControlLabel,
+  Autocomplete,
 } from "@mui/material";
 
 import Sidebar from "../Manager/Sidebar";
@@ -36,7 +37,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
 
 const ProviderPriceList = () => {
-  const { language } = useLanguage();
+  const { language, isRTL } = useLanguage();
   const [tab, setTab] = useState(0);
   const [prices, setPrices] = useState([]);
 
@@ -59,8 +60,16 @@ const ProviderPriceList = () => {
     maxAge: "",
     gender: "",
   });
-  const [diagnosesText, setDiagnosesText] = useState("");
-  const [treatmentPlansText, setTreatmentPlansText] = useState("");
+  const [selectedDiagnoses, setSelectedDiagnoses] = useState([]);
+  const [selectedTreatmentPlans, setSelectedTreatmentPlans] = useState([]);
+  const [allAvailableDiagnoses, setAllAvailableDiagnoses] = useState([]);
+  const [allAvailableTreatments, setAllAvailableTreatments] = useState([]);
+  const [newDiagnosisInput, setNewDiagnosisInput] = useState("");
+  const [newTreatmentInput, setNewTreatmentInput] = useState("");
+  // Diagnosis-Treatment Mappings: { "Diagnosis A": ["Treatment 1", "Treatment 2"] }
+  const [diagnosisTreatmentMappings, setDiagnosisTreatmentMappings] = useState({});
+  // Global mappings aggregated from all specializations
+  const [globalDiagnosisTreatmentMappings, setGlobalDiagnosisTreatmentMappings] = useState({});
   const [selectedSpecGenders, setSelectedSpecGenders] = useState([]);
   const [allowAllSpecGenders, setAllowAllSpecGenders] = useState(true);
 
@@ -132,6 +141,45 @@ const ProviderPriceList = () => {
       fetchDoctorSpecializations();
     }
   }, [tab, providerTypes, fetchDoctorSpecializations]);
+
+  // Aggregate all available diagnoses, treatments, and mappings from existing specializations
+  useEffect(() => {
+    if (doctorSpecializations && doctorSpecializations.length > 0) {
+      const allDiagnoses = new Set();
+      const allTreatments = new Set();
+      const globalMappings = {};
+
+      doctorSpecializations.forEach((spec) => {
+        if (Array.isArray(spec.diagnoses)) {
+          spec.diagnoses.forEach((d) => allDiagnoses.add(d));
+        }
+        if (Array.isArray(spec.treatmentPlans)) {
+          spec.treatmentPlans.forEach((t) => allTreatments.add(t));
+        }
+        // Aggregate diagnosis-treatment mappings
+        if (spec.diagnosisTreatmentMappings && typeof spec.diagnosisTreatmentMappings === 'object') {
+          Object.entries(spec.diagnosisTreatmentMappings).forEach(([diagnosis, treatments]) => {
+            if (!globalMappings[diagnosis]) {
+              globalMappings[diagnosis] = new Set();
+            }
+            if (Array.isArray(treatments)) {
+              treatments.forEach((t) => globalMappings[diagnosis].add(t));
+            }
+          });
+        }
+      });
+
+      // Convert Sets to Arrays in globalMappings
+      const finalMappings = {};
+      Object.entries(globalMappings).forEach(([diagnosis, treatmentsSet]) => {
+        finalMappings[diagnosis] = Array.from(treatmentsSet).sort();
+      });
+
+      setAllAvailableDiagnoses(Array.from(allDiagnoses).sort());
+      setAllAvailableTreatments(Array.from(allTreatments).sort());
+      setGlobalDiagnosisTreatmentMappings(finalMappings);
+    }
+  }, [doctorSpecializations]);
 
   // Memoized form options
   const formOptions = useMemo(() => [
@@ -356,8 +404,11 @@ const ProviderPriceList = () => {
       maxAge: "",
       gender: "",
     });
-    setDiagnosesText("");
-    setTreatmentPlansText("");
+    setSelectedDiagnoses([]);
+    setSelectedTreatmentPlans([]);
+    setDiagnosisTreatmentMappings({});
+    setNewDiagnosisInput("");
+    setNewTreatmentInput("");
     setSelectedSpecGenders([]);
     setAllowAllSpecGenders(true);
     setOpenSpecDialog(true);
@@ -376,12 +427,16 @@ const ProviderPriceList = () => {
       maxAge: spec.maxAge || "",
       gender: spec.gender || "",
     });
-    setDiagnosesText(
-      Array.isArray(spec.diagnoses) ? spec.diagnoses.join("\n") : ""
+    setSelectedDiagnoses(Array.isArray(spec.diagnoses) ? spec.diagnoses : []);
+    setSelectedTreatmentPlans(Array.isArray(spec.treatmentPlans) ? spec.treatmentPlans : []);
+    // Load existing diagnosis-treatment mappings
+    setDiagnosisTreatmentMappings(
+      spec.diagnosisTreatmentMappings && typeof spec.diagnosisTreatmentMappings === 'object'
+        ? spec.diagnosisTreatmentMappings
+        : {}
     );
-    setTreatmentPlansText(
-      Array.isArray(spec.treatmentPlans) ? spec.treatmentPlans.join("\n") : ""
-    );
+    setNewDiagnosisInput("");
+    setNewTreatmentInput("");
     const specAllowedGenders = spec.allowedGenders || [];
     setSelectedSpecGenders(specAllowedGenders);
     setAllowAllSpecGenders(specAllowedGenders.length === 0);
@@ -395,20 +450,30 @@ const ProviderPriceList = () => {
         return;
       }
 
-      const diagnoses = diagnosesText
-        .split("\n")
-        .map((d) => d.trim())
-        .filter((d) => d.length > 0);
-      const treatmentPlans = treatmentPlansText
-        .split("\n")
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0);
+      // Use the selected diagnoses and treatment plans directly
+      const diagnoses = selectedDiagnoses.filter((d) => d && d.trim().length > 0);
+      const treatmentPlans = selectedTreatmentPlans.filter((t) => t && t.trim().length > 0);
+
+      // Clean up mappings - only include diagnoses that are selected
+      const cleanedMappings = {};
+      diagnoses.forEach((diagnosis) => {
+        if (diagnosisTreatmentMappings[diagnosis]) {
+          // Only include treatments that are in the treatmentPlans list
+          const validTreatments = diagnosisTreatmentMappings[diagnosis].filter(
+            (t) => treatmentPlans.includes(t)
+          );
+          if (validTreatments.length > 0) {
+            cleanedMappings[diagnosis] = validTreatments;
+          }
+        }
+      });
 
       const payload = {
         displayName: specForm.displayName,
         consultationPrice: Number(specForm.consultationPrice),
         diagnoses: diagnoses,
         treatmentPlans: treatmentPlans,
+        diagnosisTreatmentMappings: Object.keys(cleanedMappings).length > 0 ? cleanedMappings : null,
         allowedGenders: allowAllSpecGenders ? [] : selectedSpecGenders,
         minAge: specForm.minAge ? Number(specForm.minAge) : null,
         maxAge: specForm.maxAge ? Number(specForm.maxAge) : null,
@@ -427,7 +492,7 @@ const ProviderPriceList = () => {
       console.error("Error saving specialization:", err);
       alert("Failed to save specialization");
     }
-  }, [specForm, diagnosesText, treatmentPlansText, allowAllSpecGenders, selectedSpecGenders, isEditSpec, fetchDoctorSpecializations]);
+  }, [specForm, selectedDiagnoses, selectedTreatmentPlans, diagnosisTreatmentMappings, allowAllSpecGenders, selectedSpecGenders, isEditSpec, fetchDoctorSpecializations]);
 
   const deleteSpec = useCallback(async (id) => {
     if (!window.confirm("Are you sure you want to delete this specialization?")) {
@@ -452,7 +517,7 @@ const ProviderPriceList = () => {
     <Box sx={{ display: "flex" }}>
       <Sidebar />
 
-      <Box sx={{ flexGrow: 1, background: "#FAF8F5", marginLeft: "240px" }}>
+      <Box dir={isRTL ? "rtl" : "ltr"} sx={{ flexGrow: 1, background: "#FAF8F5", marginLeft: isRTL ? 0 : "240px", marginRight: isRTL ? "240px" : 0, minHeight: "100vh" }}>
         <Header />
 
         <Box sx={{ p: 3 }}>
@@ -1525,27 +1590,337 @@ const ProviderPriceList = () => {
               inputProps={{ step: "0.01", min: "0" }}
             />
 
-            <TextField
-              label={t("diagnosesOnePerLine", language)}
-              multiline
-              rows={4}
-              value={diagnosesText}
-              onChange={(e) => setDiagnosesText(e.target.value)}
-              fullWidth
-              placeholder={t("enterDiagnosesOnePerLine", language)}
-              helperText={t("enterEachDiagnosisNewLine", language)}
-            />
+            {/* Diagnoses Autocomplete with Add New */}
+            <Box>
+              <Autocomplete
+                multiple
+                freeSolo
+                options={allAvailableDiagnoses}
+                value={selectedDiagnoses}
+                onChange={(event, newValue) => {
+                  setSelectedDiagnoses(newValue);
+                  // Auto-populate treatments from global mappings for newly added diagnoses
+                  newValue.forEach((diagnosis) => {
+                    if (!diagnosisTreatmentMappings[diagnosis] && globalDiagnosisTreatmentMappings[diagnosis]) {
+                      // Pre-fill with existing mapped treatments
+                      setDiagnosisTreatmentMappings((prev) => ({
+                        ...prev,
+                        [diagnosis]: globalDiagnosisTreatmentMappings[diagnosis],
+                      }));
+                      // Also add these treatments to selectedTreatmentPlans
+                      globalDiagnosisTreatmentMappings[diagnosis].forEach((treatment) => {
+                        if (!selectedTreatmentPlans.includes(treatment)) {
+                          setSelectedTreatmentPlans((prev) => [...prev, treatment]);
+                        }
+                      });
+                    }
+                  });
+                }}
+                inputValue={newDiagnosisInput}
+                onInputChange={(event, newInputValue) => {
+                  setNewDiagnosisInput(newInputValue);
+                }}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => {
+                    const { key, ...tagProps } = getTagProps({ index });
+                    return (
+                      <Chip
+                        key={key}
+                        label={option}
+                        {...tagProps}
+                        sx={{
+                          backgroundColor: "#e3f2fd",
+                          color: "#1565c0",
+                          fontWeight: 500,
+                          "& .MuiChip-deleteIcon": {
+                            color: "#1565c0",
+                            "&:hover": { color: "#0d47a1" },
+                          },
+                        }}
+                      />
+                    );
+                  })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={t("diagnoses", language)}
+                    placeholder={t("selectOrTypeNewDiagnosis", language) || "Select or type new diagnosis..."}
+                    helperText={t("selectFromListOrTypeNew", language) || "Select from list or type new and press Enter"}
+                  />
+                )}
+                filterOptions={(options, params) => {
+                  const filtered = options.filter((option) =>
+                    option.toLowerCase().includes(params.inputValue.toLowerCase())
+                  );
+                  // Add option to create new if input doesn't match any existing
+                  if (params.inputValue !== "" && !filtered.includes(params.inputValue)) {
+                    filtered.push(params.inputValue);
+                  }
+                  return filtered;
+                }}
+                sx={{
+                  "& .MuiAutocomplete-tag": {
+                    margin: "2px",
+                  },
+                }}
+              />
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <TextField
+                  size="small"
+                  placeholder={t("addNewDiagnosis", language) || "Add new diagnosis..."}
+                  value={newDiagnosisInput}
+                  onChange={(e) => setNewDiagnosisInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && newDiagnosisInput.trim()) {
+                      e.preventDefault();
+                      if (!selectedDiagnoses.includes(newDiagnosisInput.trim())) {
+                        setSelectedDiagnoses([...selectedDiagnoses, newDiagnosisInput.trim()]);
+                      }
+                      setNewDiagnosisInput("");
+                    }
+                  }}
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    if (newDiagnosisInput.trim() && !selectedDiagnoses.includes(newDiagnosisInput.trim())) {
+                      setSelectedDiagnoses([...selectedDiagnoses, newDiagnosisInput.trim()]);
+                      setNewDiagnosisInput("");
+                    }
+                  }}
+                  sx={{
+                    borderColor: "#556B2F",
+                    color: "#556B2F",
+                    "&:hover": { borderColor: "#3D4F23", backgroundColor: "rgba(85, 107, 47, 0.08)" },
+                  }}
+                >
+                  {t("add", language)}
+                </Button>
+              </Stack>
+            </Box>
 
-            <TextField
-              label={t("treatmentPlansOnePerLine", language)}
-              multiline
-              rows={4}
-              value={treatmentPlansText}
-              onChange={(e) => setTreatmentPlansText(e.target.value)}
-              fullWidth
-              placeholder={t("enterTreatmentPlansOnePerLine", language)}
-              helperText={t("enterEachTreatmentPlanNewLine", language)}
-            />
+            {/* Diagnosis-Treatment Mapping Section */}
+            {selectedDiagnoses.length > 0 && (
+              <Box sx={{ mt: 2, p: 2, border: "1px dashed #7B8B5E", borderRadius: 2, backgroundColor: "#fafafa" }}>
+                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: "bold", color: "#556B2F" }}>
+                  {t("linkTreatmentsToDiagnoses", language) || "Link Treatments to Diagnoses"}
+                </Typography>
+
+                {selectedDiagnoses.map((diagnosis) => {
+                  // Get treatments linked to this diagnosis
+                  const linkedTreatments = diagnosisTreatmentMappings[diagnosis] || [];
+                  // Get suggested treatments from global mappings
+                  const suggestedTreatments = globalDiagnosisTreatmentMappings[diagnosis] || [];
+                  // Combine all available treatments with suggested ones first
+                  const treatmentOptions = [
+                    ...suggestedTreatments,
+                    ...allAvailableTreatments.filter((t) => !suggestedTreatments.includes(t)),
+                  ];
+
+                  return (
+                    <Box
+                      key={diagnosis}
+                      sx={{
+                        mb: 2,
+                        p: 1.5,
+                        border: "1px solid #E8EDE0",
+                        borderRadius: 1,
+                        backgroundColor: "#fff",
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: "#1565c0", mb: 1 }}>
+                        {diagnosis}
+                      </Typography>
+                      <Autocomplete
+                        multiple
+                        freeSolo
+                        size="small"
+                        options={treatmentOptions}
+                        value={linkedTreatments}
+                        onChange={(event, newValue) => {
+                          // Update mappings for this diagnosis
+                          setDiagnosisTreatmentMappings((prev) => ({
+                            ...prev,
+                            [diagnosis]: newValue,
+                          }));
+                          // Also ensure these treatments are in selectedTreatmentPlans
+                          newValue.forEach((treatment) => {
+                            if (!selectedTreatmentPlans.includes(treatment)) {
+                              setSelectedTreatmentPlans((prev) => [...prev, treatment]);
+                            }
+                          });
+                        }}
+                        renderTags={(value, getTagProps) =>
+                          value.map((option, index) => {
+                            const { key, ...tagProps } = getTagProps({ index });
+                            return (
+                              <Chip
+                                key={key}
+                                label={option}
+                                size="small"
+                                {...tagProps}
+                                sx={{
+                                  backgroundColor: "#fff3e0",
+                                  color: "#e65100",
+                                  fontWeight: 500,
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "#e65100",
+                                    "&:hover": { color: "#bf360c" },
+                                  },
+                                }}
+                              />
+                            );
+                          })
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            placeholder={t("selectTreatmentsForDiagnosis", language) || "Select treatments for this diagnosis..."}
+                          />
+                        )}
+                        renderOption={(props, option) => {
+                          const { key, ...otherProps } = props;
+                          const isSuggested = suggestedTreatments.includes(option);
+                          return (
+                            <li key={key} {...otherProps}>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                {option}
+                                {isSuggested && (
+                                  <Chip
+                                    label={t("suggested", language) || "Suggested"}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: "#e8f5e9",
+                                      color: "#2e7d32",
+                                      fontSize: "0.7rem",
+                                      height: "20px",
+                                    }}
+                                  />
+                                )}
+                              </Box>
+                            </li>
+                          );
+                        }}
+                        filterOptions={(options, params) => {
+                          const filtered = options.filter((option) =>
+                            option.toLowerCase().includes(params.inputValue.toLowerCase())
+                          );
+                          if (params.inputValue !== "" && !filtered.includes(params.inputValue)) {
+                            filtered.push(params.inputValue);
+                          }
+                          return filtered;
+                        }}
+                      />
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+
+            {/* All Treatment Plans (Combined View) */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold", color: "#556B2F" }}>
+                {t("allTreatmentPlans", language) || "All Treatment Plans"}
+              </Typography>
+              <Autocomplete
+                multiple
+                freeSolo
+                options={allAvailableTreatments}
+                value={selectedTreatmentPlans}
+                onChange={(event, newValue) => {
+                  setSelectedTreatmentPlans(newValue);
+                }}
+                inputValue={newTreatmentInput}
+                onInputChange={(event, newInputValue) => {
+                  setNewTreatmentInput(newInputValue);
+                }}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => {
+                    const { key, ...tagProps } = getTagProps({ index });
+                    // Check if this treatment is linked to any selected diagnosis
+                    const isLinked = selectedDiagnoses.some(
+                      (d) => diagnosisTreatmentMappings[d]?.includes(option)
+                    );
+                    return (
+                      <Chip
+                        key={key}
+                        label={option}
+                        {...tagProps}
+                        sx={{
+                          backgroundColor: isLinked ? "#e8f5e9" : "#fff3e0",
+                          color: isLinked ? "#2e7d32" : "#e65100",
+                          fontWeight: 500,
+                          "& .MuiChip-deleteIcon": {
+                            color: isLinked ? "#2e7d32" : "#e65100",
+                            "&:hover": { color: isLinked ? "#1b5e20" : "#bf360c" },
+                          },
+                        }}
+                      />
+                    );
+                  })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={t("treatmentPlans", language)}
+                    placeholder={t("selectOrTypeNewTreatment", language) || "Select or type new treatment..."}
+                    helperText={t("greenTreatmentsLinkedToDiagnoses", language) || "Green = linked to a diagnosis, Orange = standalone"}
+                  />
+                )}
+                filterOptions={(options, params) => {
+                  const filtered = options.filter((option) =>
+                    option.toLowerCase().includes(params.inputValue.toLowerCase())
+                  );
+                  if (params.inputValue !== "" && !filtered.includes(params.inputValue)) {
+                    filtered.push(params.inputValue);
+                  }
+                  return filtered;
+                }}
+                sx={{
+                  "& .MuiAutocomplete-tag": {
+                    margin: "2px",
+                  },
+                }}
+              />
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <TextField
+                  size="small"
+                  placeholder={t("addNewTreatment", language) || "Add new treatment..."}
+                  value={newTreatmentInput}
+                  onChange={(e) => setNewTreatmentInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && newTreatmentInput.trim()) {
+                      e.preventDefault();
+                      if (!selectedTreatmentPlans.includes(newTreatmentInput.trim())) {
+                        setSelectedTreatmentPlans([...selectedTreatmentPlans, newTreatmentInput.trim()]);
+                      }
+                      setNewTreatmentInput("");
+                    }
+                  }}
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    if (newTreatmentInput.trim() && !selectedTreatmentPlans.includes(newTreatmentInput.trim())) {
+                      setSelectedTreatmentPlans([...selectedTreatmentPlans, newTreatmentInput.trim()]);
+                      setNewTreatmentInput("");
+                    }
+                  }}
+                  sx={{
+                    borderColor: "#556B2F",
+                    color: "#556B2F",
+                    "&:hover": { borderColor: "#3D4F23", backgroundColor: "rgba(85, 107, 47, 0.08)" },
+                  }}
+                >
+                  {t("add", language)}
+                </Button>
+              </Stack>
+            </Box>
 
             <Box>
               <FormControlLabel

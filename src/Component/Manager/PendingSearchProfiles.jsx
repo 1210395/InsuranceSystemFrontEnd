@@ -826,11 +826,13 @@ const PendingSearchProfile = () => {
     <Box sx={{ display: "flex" }}>
       <Sidebar />
       <Box
+        dir={isRTL ? "rtl" : "ltr"}
         sx={{
           flexGrow: 1,
           background: "linear-gradient(180deg, #FAF8F5 0%, #ffffff 100%)",
           minHeight: "100vh",
-          marginLeft: "240px",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
         }}
       >
         <Header />

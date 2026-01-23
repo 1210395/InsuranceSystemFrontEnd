@@ -11,6 +11,7 @@
 import { getToken } from '../utils/apiService';
 import { API_BASE_URL } from '../config/api';
 import { queryClient, queryKeys } from '../config/queryClient';
+import logger from '../utils/logger';
 
 class NotificationService {
   constructor() {
@@ -31,7 +32,7 @@ class NotificationService {
   init() {
     const token = getToken();
     if (!token) {
-      console.warn('NotificationService: No auth token, skipping initialization');
+      logger.log('NotificationService: No auth token, skipping initialization');
       return;
     }
 
@@ -53,7 +54,7 @@ class NotificationService {
       this.socket = new WebSocket(`${wsUrl}?token=${token}`);
 
       this.socket.onopen = () => {
-        console.log('NotificationService: WebSocket connected');
+        logger.log('NotificationService: WebSocket connected');
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.stopPolling();
@@ -64,23 +65,23 @@ class NotificationService {
           const data = JSON.parse(event.data);
           this.handleNotification(data);
         } catch (err) {
-          console.error('NotificationService: Failed to parse message', err);
+          logger.error('NotificationService: Failed to parse message', err);
         }
       };
 
       this.socket.onclose = (event) => {
-        console.log('NotificationService: WebSocket closed', event.code);
+        logger.log('NotificationService: WebSocket closed', event.code);
         this.isConnected = false;
         this.handleDisconnect();
       };
 
       this.socket.onerror = (error) => {
-        console.error('NotificationService: WebSocket error', error);
+        logger.error('NotificationService: WebSocket error', error);
         this.isConnected = false;
       };
 
     } catch (err) {
-      console.error('NotificationService: Failed to connect WebSocket', err);
+      logger.error('NotificationService: Failed to connect WebSocket', err);
       this.fallbackToPolling();
     }
   }
@@ -106,7 +107,7 @@ class NotificationService {
       try {
         listener(data);
       } catch (err) {
-        console.error('NotificationService: Listener error', err);
+        logger.error('NotificationService: Listener error', err);
       }
     });
   }
@@ -117,14 +118,14 @@ class NotificationService {
   handleDisconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
-      console.log(`NotificationService: Reconnecting in ${delay}ms...`);
+      logger.log(`NotificationService: Reconnecting in ${delay}ms...`);
 
       setTimeout(() => {
         this.reconnectAttempts++;
         this.connectWebSocket();
       }, delay);
     } else {
-      console.warn('NotificationService: Max reconnect attempts reached, falling back to polling');
+      logger.log('NotificationService: Max reconnect attempts reached, falling back to polling');
       this.fallbackToPolling();
     }
   }
@@ -154,7 +155,7 @@ class NotificationService {
       });
     }, POLL_INTERVAL);
 
-    console.log('NotificationService: Polling started with 30s interval');
+    logger.log('NotificationService: Polling started with 30s interval');
   }
 
   /**
@@ -164,7 +165,7 @@ class NotificationService {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
-      console.log('NotificationService: Polling stopped');
+      logger.log('NotificationService: Polling stopped');
     }
   }
 
@@ -185,7 +186,7 @@ class NotificationService {
     if (this.isConnected && this.socket) {
       this.socket.send(JSON.stringify(message));
     } else {
-      console.warn('NotificationService: Cannot send, not connected');
+      logger.log('NotificationService: Cannot send, not connected');
     }
   }
 
@@ -227,7 +228,7 @@ class NotificationService {
     this.isConnected = false;
     this.reconnectAttempts = 0;
 
-    console.log('NotificationService: Disconnected');
+    logger.log('NotificationService: Disconnected');
   }
 }
 

@@ -25,7 +25,6 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import MedicalInformationIcon from "@mui/icons-material/MedicalInformation";
-import EmergencyIcon from "@mui/icons-material/LocalHospital";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import PaidIcon from "@mui/icons-material/Paid";
@@ -206,18 +205,6 @@ const DoctorSidebar = memo(function DoctorSidebar({ activeView, setActiveView })
           </Typography>
         )}
 
-        <Tooltip title={t("emergency", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton
-            onClick={() => handleNavClick("emergency-list")}
-            selected={activeView === "emergency-list"}
-            sx={{ "&.Mui-selected": { backgroundColor: "rgba(255,255,255,0.2)" } }}
-          >
-            <ListItemIcon>
-              <EmergencyIcon sx={{ color: "#FF5252", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("emergency", language)} />}
-          </ListItemButton>
-        </Tooltip>
         <Tooltip title={t("myClaims", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
           <ListItemButton
             onClick={() => handleNavClick("my-claims")}

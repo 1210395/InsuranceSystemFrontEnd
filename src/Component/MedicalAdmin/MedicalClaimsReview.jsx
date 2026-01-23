@@ -43,6 +43,7 @@ import { ROLES, PROVIDER_ROLES } from "../../config/roles";
 import { sanitizeString } from "../../utils/sanitize";
 import { timeSince, safeJsonParse } from "../../utils/helpers";
 import { useLanguage } from "../../context/LanguageContext";
+import logger from "../../utils/logger";
 import { t } from "../../config/translations";
 
 const MedicalClaimsReview = () => {
@@ -81,7 +82,7 @@ const MedicalClaimsReview = () => {
         );
         setClaims(sortedClaims);
       } catch (err) {
-        console.error("Failed to load claims:", err);
+        logger.error("Failed to load claims:", err);
         setSnackbar({
           open: true,
           message: t("failedToLoadClaims", language),
@@ -124,7 +125,7 @@ const MedicalClaimsReview = () => {
         severity: "success",
       });
     } catch (err) {
-      console.error("Approve failed:", err);
+      logger.error("Approve failed:", err);
       setSnackbar({
         open: true,
         message: err.response?.data?.message || t("failedToApproveClaim", language),
@@ -172,7 +173,7 @@ const MedicalClaimsReview = () => {
       });
       setOpenRejectDialog(false);
     } catch (err) {
-      console.error("Reject failed:", err);
+      logger.error("Reject failed:", err);
       setSnackbar({
         open: true,
         message: err.response?.data?.message || t("failedToRejectClaim", language),

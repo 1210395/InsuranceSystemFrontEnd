@@ -137,11 +137,13 @@ const Profile = () => {
     <Box sx={{ display: "flex" }}>
       <Sidebar />
       <Box
+        dir={isRTL ? "rtl" : "ltr"}
         sx={{
           flexGrow: 1,
           background: "#f5f7fb",
           minHeight: "100vh",
-          marginLeft: "240px",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
           display: "flex",
           flexDirection: "column",
         }}

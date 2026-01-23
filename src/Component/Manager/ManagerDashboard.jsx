@@ -17,6 +17,7 @@ import { api, getToken } from "../../utils/apiService";
 import { API_ENDPOINTS } from "../../config/api";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 // Memoized StatCard component for performance
 const StatCard = memo(function StatCard({ icon, title, value, gradient }) {
@@ -72,7 +73,7 @@ const ManagerDashboard = () => {
       );
       setProviders(withLocations);
     } catch (err) {
-      console.error("Failed to fetch providers:", err);
+      logger.error("Failed to fetch providers:", err);
     }
   }, []);
 
@@ -81,7 +82,7 @@ const ManagerDashboard = () => {
     try {
       const token = getToken();
       if (!token) {
-        console.warn("No token found, skipping stats fetch");
+        logger.warn("No token found, skipping stats fetch");
         return;
       }
 
@@ -95,7 +96,7 @@ const ManagerDashboard = () => {
         });
       }
     } catch (err) {
-      console.error("Failed to fetch dashboard stats:", err);
+      logger.error("Failed to fetch dashboard stats:", err);
       // Keep default values on error
     }
   }, []);
@@ -138,11 +139,13 @@ const ManagerDashboard = () => {
     <Box sx={{ display: "flex" }}>
       <Sidebar />
       <Box
+        dir={isRTL ? "rtl" : "ltr"}
         sx={{
           flexGrow: 1,
           background: "#FAF8F5",
           minHeight: "100vh",
-          marginLeft: "240px",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
           display: "flex",
           flexDirection: "column",
         }}

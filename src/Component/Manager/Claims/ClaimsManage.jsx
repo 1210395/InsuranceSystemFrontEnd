@@ -25,8 +25,10 @@ import EventIcon from "@mui/icons-material/Event";
 import PersonIcon from "@mui/icons-material/Person";
 import PolicyIcon from "@mui/icons-material/Description";
 import axios from "axios";
+import { useLanguage } from "../../../context/LanguageContext";
 
 const ClaimsManage = () => {
+  const { isRTL } = useLanguage();
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -145,11 +147,13 @@ const ClaimsManage = () => {
     <Box sx={{ display: "flex" }}>
       <Sidebar />
       <Box
+        dir={isRTL ? "rtl" : "ltr"}
         sx={{
           flexGrow: 1,
           backgroundColor: "#f4f6f9",
           minHeight: "100vh",
-          marginLeft: "240px",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
         }}
       >
         <Header />

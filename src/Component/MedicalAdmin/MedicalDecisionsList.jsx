@@ -43,6 +43,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import { api } from "../../utils/apiService";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
 import { useLanguage } from "../../context/LanguageContext";
+import logger from "../../utils/logger";
 import { t } from "../../config/translations";
 import { sanitizeString } from "../../utils/sanitize";
 
@@ -85,8 +86,9 @@ const [_badgesCleared, setBadgesCleared] = useState(false);
   const fetchClaims = async () => {
     try {
       const res = await api.get(API_ENDPOINTS.HEALTHCARE_CLAIMS.FINAL_DECISIONS);
+      const claimsData = res || [];
 
-      const sorted = res.data.sort(
+      const sorted = claimsData.sort(
         (a, b) =>
           new Date(b.approvedAt || b.rejectedAt || b.submittedAt) -
           new Date(a.approvedAt || a.rejectedAt || a.submittedAt)
@@ -98,7 +100,7 @@ const [_badgesCleared, setBadgesCleared] = useState(false);
       setBadgesCleared(true);
 
     } catch (err) {
-      console.error("❌ Failed to load final decisions:", err);
+      logger.error("Failed to load final decisions:", err);
       setSnackbar({
         open: true,
         message: t("failedLoadClaims", language),

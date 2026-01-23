@@ -143,6 +143,7 @@ const UnifiedCreateRequest = () => {
   const [selectedSpecializationData, setSelectedSpecializationData] = useState(null); // Store full specialization data including restrictions
   const [availableDiagnoses, setAvailableDiagnoses] = useState([]);
   const [availableTreatments, setAvailableTreatments] = useState([]);
+  const [diagnosisTreatmentMappings, setDiagnosisTreatmentMappings] = useState({}); // Mappings from diagnosis to treatments
   
   // Track if specialization restrictions are not met
   const [specializationRestrictionFailed, setSpecializationRestrictionFailed] = useState(false);
@@ -252,13 +253,16 @@ const UnifiedCreateRequest = () => {
       setSelectedSpecializationData(selectedSpec);
           setAvailableDiagnoses(selectedSpec.diagnoses || []);
           setAvailableTreatments(selectedSpec.treatmentPlans || []);
+          // Set diagnosis-treatment mappings
+          setDiagnosisTreatmentMappings(selectedSpec.diagnosisTreatmentMappings || {});
           // Clear diagnosis and treatment when specialization changes
           setPatientForm(prev => ({ ...prev, diagnosis: "", treatment: "" }));
-          
+
         } else {
           setSelectedSpecializationData(null);
           setAvailableDiagnoses([]);
           setAvailableTreatments([]);
+          setDiagnosisTreatmentMappings({});
         }
       };
 
@@ -510,6 +514,8 @@ const UnifiedCreateRequest = () => {
           setSelectedSpecializationData(matched);
           setAvailableDiagnoses(matched.diagnoses || []);
           setAvailableTreatments(matched.treatmentPlans || []);
+          // Set diagnosis-treatment mappings
+          setDiagnosisTreatmentMappings(matched.diagnosisTreatmentMappings || {});
         }
       }
     } catch {
@@ -870,6 +876,7 @@ const UnifiedCreateRequest = () => {
               specializations={specializations}
               availableDiagnoses={availableDiagnoses}
               availableTreatments={availableTreatments}
+              diagnosisTreatmentMappings={diagnosisTreatmentMappings}
               hasSameSpecializationRestriction={hasSameSpecializationRestriction}
               specializationRestrictionFailed={specializationRestrictionFailed}
               restrictionFailureReason={restrictionFailureReason}

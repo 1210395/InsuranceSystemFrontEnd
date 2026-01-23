@@ -11,11 +11,9 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import UnifiedIcon from "@mui/icons-material/SpaceBar";
 
 import UnifiedCreateRequest from "./UnifiedCreateRequest";
-import AddEmergency from "./AddEmergency";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
 
@@ -34,13 +32,6 @@ const DoctorCreateCenter = ({ refresh }) => {
       description: t("unifiedRequestDesc", language),
       icon: <UnifiedIcon fontSize="small" />,
       accent: "linear-gradient(135deg, #556B2F 0%, #7B8B5E 100%)",
-    },
-    {
-      value: "emergency",
-      label: t("emergency", language),
-      description: t("emergencyDesc", language),
-      icon: <LocalHospitalIcon fontSize="small" />,
-      accent: "linear-gradient(135deg, #DC2626 0%, #991B1B 100%)",
     },
   ];
 
@@ -186,7 +177,6 @@ const DoctorCreateCenter = ({ refresh }) => {
         }}
       >
         {activeTab === "unified" && <UnifiedCreateRequest refresh={refresh} />}
-        {activeTab === "emergency" && <AddEmergency onAdded={() => refresh?.()} />}
       </Paper>
     </Box>
   );

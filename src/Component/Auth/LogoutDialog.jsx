@@ -17,6 +17,7 @@ import { api, getToken, clearAuthData } from "../../utils/apiService";
 import { API_ENDPOINTS } from "../../config/api";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 const LogoutDialog = memo(function LogoutDialog({ open, onClose }) {
   const { language, isRTL } = useLanguage();
@@ -34,7 +35,7 @@ const LogoutDialog = memo(function LogoutDialog({ open, onClose }) {
       onClose();
       navigate("/LandingPage");
     } catch (err) {
-      console.error("Logout failed:", err.response?.data || err.message);
+      logger.error("Logout failed:", err.response?.data || err.message);
       clearAuthData();
       onClose();
       navigate("/LandingPage");

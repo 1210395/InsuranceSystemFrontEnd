@@ -759,7 +759,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
   ).length;
 
   return (
-    <Box sx={{ px: { xs: 2, md: 4 }, py: 3, backgroundColor: "#FAF8F5", minHeight: "100vh" }}>
+    <Box dir={isRTL ? "rtl" : "ltr"} sx={{ px: { xs: 2, md: 4 }, py: 3, backgroundColor: "#FAF8F5", minHeight: "100vh" }}>
       <Box>
         {/* 📌 Header Section */}
         <Paper

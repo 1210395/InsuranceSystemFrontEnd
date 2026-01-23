@@ -16,6 +16,7 @@ import { api } from "../../utils/apiService";
 import { API_ENDPOINTS } from "../../config/api";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import logger from "../../utils/logger";
 
 const ForgotPassword = memo(function ForgotPassword({ setMode }) {
   const { language, isRTL } = useLanguage();
@@ -28,7 +29,7 @@ const ForgotPassword = memo(function ForgotPassword({ setMode }) {
       await api.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
       setMessage("Check your email for reset instructions");
     } catch (err) {
-      console.error(err.response?.data || err.message);
+      logger.error(err.response?.data || err.message);
       setMessage("Failed to send reset link");
     }
   };
