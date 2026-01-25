@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 const LabRequestsList = () => {
+  const { language, isRTL } = useLanguage();
   const [labRequests, setLabRequests] = useState([]);
   const [editingRow, setEditingRow] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -44,12 +47,12 @@ const LabRequestsList = () => {
       await axios.put(`http://localhost:8080/api/labs/${id}`, editForm, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert("✅ Lab request updated!");
+      alert(t("labRequestUpdated", language));
       setEditingRow(null);
       fetchLabRequests();
     } catch (err) {
       console.error("❌ Error updating lab request:", err);
-      alert("Error updating lab request");
+      alert(t("errorUpdatingLabRequest", language));
     }
   };
 
@@ -59,7 +62,7 @@ const LabRequestsList = () => {
       await axios.delete(`http://localhost:8080/api/labs/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert("🗑️ Lab request deleted!");
+      alert(t("labRequestDeleted", language));
       fetchLabRequests();
     } catch (err) {
       console.error("❌ Error deleting lab request:", err);
@@ -67,22 +70,22 @@ const LabRequestsList = () => {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>🧪 Lab Requests List</h2>
+    <div style={{ padding: "2rem" }} dir={isRTL ? "rtl" : "ltr"}>
+      <h2>{t("labRequestsList", language)}</h2>
       <table
         className="data-table"
         style={{ width: "100%", borderCollapse: "collapse" }}
       >
         <thead>
           <tr>
-            <th>Test Name</th>
-            <th>Notes</th>
-            <th>Member</th>
-            <th>Status</th>
-            <th>Lab Technician</th>
-            <th>Created At</th>
-            <th>Result</th>
-            <th>Actions</th>
+            <th>{t("testName", language)}</th>
+            <th>{t("notes", language)}</th>
+            <th>{t("member", language)}</th>
+            <th>{t("status", language)}</th>
+            <th>{t("labTechnician", language)}</th>
+            <th>{t("createdAt", language)}</th>
+            <th>{t("result", language)}</th>
+            <th>{t("actions", language)}</th>
           </tr>
         </thead>
         <tbody>
@@ -126,10 +129,10 @@ const LabRequestsList = () => {
                       }}
                       download
                     >
-                      <span>⬇️</span> <span>Download</span>
+                      <span>⬇️</span> <span>{t("download", language)}</span>
                     </a>
                   ) : (
-                    <span style={{ color: "#6B7280" }}>No Result</span>
+                    <span style={{ color: "#6B7280" }}>{t("noResult", language)}</span>
                   )}
                 </td>
 
@@ -149,7 +152,7 @@ const LabRequestsList = () => {
         cursor: "pointer",
       }}
     >
-      ✏️ Edit
+      {t("edit", language)}
     </button>
   )}
                {/* ✅ Delete يظهر دائماً، بس يتعطل لو COMPLETED */}
@@ -165,7 +168,7 @@ const LabRequestsList = () => {
       cursor: r.status === "COMPLETED" ? "not-allowed" : "pointer",
     }}
   >
-    🗑️ Delete
+    {t("delete", language)}
   </button>
 </td>
               </tr>
@@ -195,7 +198,7 @@ const LabRequestsList = () => {
                         name="testName"
                         value={editForm.testName}
                         onChange={handleChange}
-                        placeholder="Test Name"
+                        placeholder={t("testName", language)}
                         style={{
                           flex: 1,
                           padding: "8px",
@@ -208,7 +211,7 @@ const LabRequestsList = () => {
                         name="notes"
                         value={editForm.notes}
                         onChange={handleChange}
-                        placeholder="Notes"
+                        placeholder={t("notes", language)}
                         style={{
                           flex: 2,
                           padding: "8px",
@@ -227,7 +230,7 @@ const LabRequestsList = () => {
                           cursor: "pointer",
                         }}
                       >
-                        ✅ Save
+                        {t("save", language)}
                       </button>
                       <button
                         type="button"
@@ -241,7 +244,7 @@ const LabRequestsList = () => {
                           cursor: "pointer",
                         }}
                       >
-                        ❌ Cancel
+                        {t("cancel", language)}
                       </button>
                     </form>
                   </td>

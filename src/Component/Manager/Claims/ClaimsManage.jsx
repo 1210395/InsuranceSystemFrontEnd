@@ -58,7 +58,7 @@ const ClaimsManage = () => {
         console.error("❌ Failed to fetch claims:", err);
         setSnackbar({
           open: true,
-          message: "Failed to load claims",
+          message: t("failedToLoadClaims", language),
           severity: "error",
         });
       } finally {
@@ -82,14 +82,14 @@ const ClaimsManage = () => {
       setClaims(claims.map((c) => (c.id === id ? res.data : c)));
       setSnackbar({
         open: true,
-        message: "Claim approved successfully!",
+        message: t("claimApprovedSuccess", language),
         severity: "success",
       });
     } catch (err) {
       console.error("❌ Approve failed:", err);
       setSnackbar({
         open: true,
-        message: "Failed to approve claim",
+        message: t("failedToApproveClaim", language),
         severity: "error",
       });
     }
@@ -107,7 +107,7 @@ const ClaimsManage = () => {
     if (!rejectReason.trim()) {
       setSnackbar({
         open: true,
-        message: "Rejection reason is required!",
+        message: t("rejectionReasonRequired", language),
         severity: "error",
       });
       return;
@@ -122,14 +122,14 @@ const ClaimsManage = () => {
       setClaims(claims.map((c) => (c.id === selectedClaim.id ? res.data : c)));
       setSnackbar({
         open: true,
-        message: "Claim rejected.",
+        message: t("claimRejectedSuccess", language),
         severity: "warning",
       });
     } catch (err) {
       console.error("❌ Reject failed:", err);
       setSnackbar({
         open: true,
-        message: "Failed to reject claim",
+        message: t("failedToRejectClaim", language),
         severity: "error",
       });
     } finally {
@@ -195,15 +195,15 @@ const ClaimsManage = () => {
                       </Typography>
                       <Stack spacing={1}>
                         <Typography variant="body2">
-                          <PersonIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                          <b>Member:</b> {claim.memberName}
+                          <PersonIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+                          <b>{t("memberLabel", language)}</b> {claim.memberName}
                         </Typography>
                         <Typography variant="body2">
-                          <PolicyIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                          <b>Policy:</b> {claim.policyName}
+                          <PolicyIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+                          <b>{t("policyLabel", language)}</b> {claim.policyName}
                         </Typography>
                         <Typography variant="body2">
-                          <b>Description:</b> {claim.description}
+                          <b>{t("descriptionLabelColon", language)}</b> {claim.description}
                         </Typography>
                       </Stack>
                     </Paper>
@@ -217,20 +217,20 @@ const ClaimsManage = () => {
                         fontWeight="bold"
                         sx={{ mb: 1, color: "#1E8EAB" }}
                       >
-                        Medical Details
+                        {t("medicalDetails", language)}
                       </Typography>
                       <Stack spacing={1}>
                         <Typography variant="body2">
-                          <b>Diagnosis:</b> {claim.diagnosis}
+                          <b>{t("diagnosisLabel", language)}</b> {claim.diagnosis}
                         </Typography>
                         <Typography variant="body2">
-                          <b>Treatment:</b> {claim.treatmentDetails}
+                          <b>{t("treatmentLabel", language)}</b> {claim.treatmentDetails}
                         </Typography>
                         <Typography variant="body2">
-                          <b>Provider:</b> {claim.providerName}
+                          <b>{t("providerLabel", language)}</b> {claim.providerName}
                         </Typography>
                         <Typography variant="body2">
-                          <b>Doctor:</b> {claim.doctorName}
+                          <b>{t("doctorLabel", language)}</b> {claim.doctorName}
                         </Typography>
                       </Stack>
                     </Paper>
@@ -244,20 +244,20 @@ const ClaimsManage = () => {
                         fontWeight="bold"
                         sx={{ mb: 1, color: "#1E8EAB" }}
                       >
-                        Financial & Service Info
+                        {t("financialServiceInfo", language)}
                       </Typography>
                       <Stack spacing={1}>
                         <Typography variant="body2">
                           <MonetizationOnIcon
-                            sx={{ fontSize: 18, mr: 0.5, color: "green" }}
+                            sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0, color: "green" }}
                           />
-                          <b>Amount:</b> ${claim.amount}
+                          <b>{t("amountLabel", language)}</b> ${claim.amount}
                         </Typography>
                         <Typography variant="body2">
                           <EventIcon
-                            sx={{ fontSize: 18, mr: 0.5, color: "orange" }}
+                            sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0, color: "orange" }}
                           />
-                          <b>Service Date:</b> {claim.serviceDate}
+                          <b>{t("serviceDateLabel", language)}</b> {claim.serviceDate}
                         </Typography>
                       </Stack>
                     </Paper>
@@ -271,7 +271,7 @@ const ClaimsManage = () => {
                         fontWeight="bold"
                         sx={{ mb: 1, color: "#1E8EAB" }}
                       >
-                        Status & Metadata
+                        {t("statusMetadata", language)}
                       </Typography>
                       <Stack spacing={1}>
                         <Chip
@@ -286,24 +286,24 @@ const ClaimsManage = () => {
                           sx={{ fontWeight: "bold", width: "fit-content" }}
                         />
                         <Typography variant="body2">
-                          <b>Submitted At:</b>{" "}
+                          <b>{t("submittedAtLabel", language)}</b>{" "}
                           {new Date(claim.submittedAt).toLocaleString()}
                         </Typography>
                         {claim.approvedAt && (
                           <Typography variant="body2" color="success.main">
-                            <b>Approved At:</b>{" "}
+                            <b>{t("approvedAtLabel", language)}</b>{" "}
                             {new Date(claim.approvedAt).toLocaleString()}
                           </Typography>
                         )}
                         {claim.rejectedAt && (
                           <Typography variant="body2" color="error">
-                            <b>Rejected At:</b>{" "}
+                            <b>{t("rejectedAtLabel", language)}</b>{" "}
                             {new Date(claim.rejectedAt).toLocaleString()}
                           </Typography>
                         )}
                         {claim.rejectionReason && (
                           <Typography variant="body2" color="error">
-                            <b>Reason:</b> {claim.rejectionReason}
+                            <b>{t("reasonLabel", language)}</b> {claim.rejectionReason}
                           </Typography>
                         )}
                       </Stack>
@@ -313,14 +313,14 @@ const ClaimsManage = () => {
 
                 {/* Actions */}
                 <Divider sx={{ my: 2 }} />
-                <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+                <Box sx={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 2 }}>
                   <Button
                     variant="contained"
                     color="success"
                     disabled={claim.status === "APPROVED"}
                     onClick={() => handleApprove(claim.id)}
                   >
-                    Approve
+                    {t("approve", language)}
                   </Button>
                   <Button
                     variant="contained"
@@ -328,7 +328,7 @@ const ClaimsManage = () => {
                     disabled={claim.status === "REJECTED"}
                     onClick={() => handleOpenReject(claim)}
                   >
-                    Reject
+                    {t("reject", language)}
                   </Button>
                 </Box>
               </Paper>
@@ -339,11 +339,11 @@ const ClaimsManage = () => {
 
       {/* Reject Dialog */}
       <Dialog open={openRejectDialog} onClose={() => setOpenRejectDialog(false)}>
-        <DialogTitle>Reject Claim</DialogTitle>
+        <DialogTitle>{t("rejectClaim", language)}</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
-            label="Rejection Reason"
+            label={t("rejectionReason", language)}
             multiline
             rows={3}
             value={rejectReason}
@@ -351,13 +351,13 @@ const ClaimsManage = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenRejectDialog(false)}>Cancel</Button>
+          <Button onClick={() => setOpenRejectDialog(false)}>{t("cancel", language)}</Button>
           <Button
             onClick={handleConfirmReject}
             variant="contained"
             color="error"
           >
-            Confirm Reject
+            {t("confirmReject", language)}
           </Button>
         </DialogActions>
       </Dialog>

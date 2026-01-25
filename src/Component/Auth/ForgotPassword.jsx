@@ -27,10 +27,10 @@ const ForgotPassword = memo(function ForgotPassword({ setMode }) {
     e.preventDefault();
     try {
       await api.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
-      setMessage("Check your email for reset instructions");
+      setMessage(t("checkEmailForResetInstructions", language));
     } catch (err) {
       logger.error(err.response?.data || err.message);
-      setMessage("Failed to send reset link");
+      setMessage(t("failedToSendResetLink", language));
     }
   };
 
@@ -96,7 +96,7 @@ const ForgotPassword = memo(function ForgotPassword({ setMode }) {
           </Button>
 
           {message && (
-            <Typography sx={{ mt: 2, color: message.startsWith("Check") ? "green" : "red" }}>
+            <Typography sx={{ mt: 2, color: message === t("checkEmailForResetInstructions", language) ? "green" : "red" }}>
               {message}
             </Typography>
           )}

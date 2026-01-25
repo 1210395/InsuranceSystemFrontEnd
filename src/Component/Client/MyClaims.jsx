@@ -1,6 +1,9 @@
 import React from "react";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 const MyClaims = ({ claims }) => {
+  const { language, isRTL } = useLanguage();
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -17,11 +20,11 @@ const MyClaims = ({ claims }) => {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content" dir={isRTL ? "rtl" : "ltr"}>
       {/* 🔹 العنوان */}
       <div className="page-header">
-        <h1>My Claims</h1>
-        <p>List of all your submitted claims</p>
+        <h1>{t("myClaims", language)}</h1>
+        <p>{t("listOfSubmittedClaims", language)}</p>
       </div>
 
       {/* 🔹 جدول الكليمات */}
@@ -31,21 +34,21 @@ const MyClaims = ({ claims }) => {
             <div
               style={{ padding: "2rem", textAlign: "center", color: "#6B7280" }}
             >
-              No claims found
+              {t("noClaimsFound", language)}
             </div>
           ) : (
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Policy</th>
-                  <th>Member</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                  <th>Provider</th>
-                  <th>Doctor</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th>Invoice</th>
+                  <th>{t("policy", language)}</th>
+                  <th>{t("member", language)}</th>
+                  <th>{t("description", language)}</th>
+                  <th>{t("amount", language)}</th>
+                  <th>{t("provider", language)}</th>
+                  <th>{t("doctor", language)}</th>
+                  <th>{t("date", language)}</th>
+                  <th>{t("status", language)}</th>
+                  <th>{t("invoice", language)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -77,7 +80,7 @@ const MyClaims = ({ claims }) => {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          View Invoice
+                          {t("viewInvoice", language)}
                         </a>
                       ) : (
                         "-"

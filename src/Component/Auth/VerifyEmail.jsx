@@ -33,12 +33,12 @@ const VerifyEmail = memo(function VerifyEmail({ setMode, presetEmail }) {
     setSuccess("");
 
     if (!email.trim()) {
-      setError("Email is required");
+      setError(t("emailIsRequired", language));
       return;
     }
 
     if (!code.trim() || code.length !== 6) {
-      setError("Verification code must be 6 digits");
+      setError(t("verificationCodeMustBe6Digits", language));
       return;
     }
 
@@ -50,7 +50,7 @@ const VerifyEmail = memo(function VerifyEmail({ setMode, presetEmail }) {
         code: code.trim(),
       });
 
-      setSuccess("Email verified successfully. You can now sign in.");
+      setSuccess(t("emailVerifiedSuccessfully", language));
 
       setTimeout(() => {
         setMode("signin");
@@ -58,7 +58,7 @@ const VerifyEmail = memo(function VerifyEmail({ setMode, presetEmail }) {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Verification failed. Please check the code and try again."
+          t("verificationFailedTryAgain", language)
       );
     } finally {
       setLoading(false);
@@ -66,7 +66,7 @@ const VerifyEmail = memo(function VerifyEmail({ setMode, presetEmail }) {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
+    <Container component="main" maxWidth="xs" dir={isRTL ? "rtl" : "ltr"}>
       <CssBaseline />
 
       <Box
@@ -87,13 +87,11 @@ const VerifyEmail = memo(function VerifyEmail({ setMode, presetEmail }) {
         </Avatar>
 
         <Typography component="h1" variant="h5" sx={{ fontWeight: "bold", mb: 2 }}>
-          Verify Email
+          {t("verifyEmail", language)}
         </Typography>
 
         <Typography variant="body2" sx={{ mb: 3, textAlign: "center" }}>
-          We have sent a 6-digit verification code to your email.
-          <br />
-          Please enter it below.
+          {t("verificationCodeSentToEmail", language)}
         </Typography>
 
         {error && (
@@ -112,7 +110,7 @@ const VerifyEmail = memo(function VerifyEmail({ setMode, presetEmail }) {
           <TextField
             margin="normal"
             fullWidth
-            label="Email Address"
+            label={t("emailAddress", language)}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             InputProps={{
@@ -127,7 +125,7 @@ const VerifyEmail = memo(function VerifyEmail({ setMode, presetEmail }) {
           <TextField
             margin="normal"
             fullWidth
-            label="Verification Code"
+            label={t("verificationCode", language)}
             value={code}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "");
@@ -160,7 +158,7 @@ const VerifyEmail = memo(function VerifyEmail({ setMode, presetEmail }) {
               transition: "0.2s",
             }}
           >
-            {loading ? "Verifying..." : "Verify Email"}
+            {loading ? t("verifying", language) : t("verifyEmail", language)}
           </Button>
 
           <Button
@@ -169,7 +167,7 @@ const VerifyEmail = memo(function VerifyEmail({ setMode, presetEmail }) {
             onClick={() => setMode("signin")}
             sx={{ color: "#556B2F", fontWeight: "600" }}
           >
-            Back to Sign In
+            {t("backToSignIn", language)}
           </Button>
         </Box>
       </Box>

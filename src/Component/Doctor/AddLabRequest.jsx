@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 function AddLabRequest({ onAdd }) {
+  const { language, isRTL } = useLanguage();
   const [form, setForm] = useState({
     testName: "",
     notes: "",
@@ -26,7 +29,7 @@ function AddLabRequest({ onAdd }) {
         }
       );
 
-      alert("✅ Lab Request Created Successfully!");
+      alert(t("labRequestCreatedSuccessfully", language));
       console.log("Created Lab Request:", res.data);
 
       // إذا بدك تحدث القائمة بعد الإضافة
@@ -40,53 +43,53 @@ function AddLabRequest({ onAdd }) {
       });
     } catch (err) {
       console.error("❌ Error creating lab request:", err);
-      alert("Failed to create lab request");
+      alert(t("failedToCreateLabRequest", language));
     }
   };
 
   return (
-    <div className="form-container">
-      <h2>➕ Add Lab Request</h2>
+    <div className="form-container" dir={isRTL ? "rtl" : "ltr"}>
+      <h2>{t("addLabRequest", language)}</h2>
       <form onSubmit={handleSubmit} className="form-card">
         <div className="form-grid">
           <div className="form-group">
-            <label>Test Name</label>
+            <label>{t("testName", language)}</label>
             <input
               type="text"
               name="testName"
               value={form.testName}
               onChange={handleChange}
-              placeholder="Enter test name"
+              placeholder={t("enterTestName", language)}
               required
             />
           </div>
 
           <div className="form-group">
-            <label>Member Name</label>
+            <label>{t("memberName", language)}</label>
             <input
               type="text"
-              name="memberName" // 🟢 غيرتها من member → memberName
+              name="memberName"
               value={form.memberName}
               onChange={handleChange}
-              placeholder="Enter member name"
+              placeholder={t("enterMemberName", language)}
               required
             />
           </div>
         </div>
 
         <div className="form-group full-width">
-          <label>Notes</label>
+          <label>{t("notes", language)}</label>
           <textarea
             name="notes"
             value={form.notes}
             onChange={handleChange}
-            placeholder="Enter notes"
+            placeholder={t("enterNotes", language)}
             required
           ></textarea>
         </div>
 
         <button type="submit" className="btn-primary">
-          🧪 Add Lab Request
+          {t("addLabRequest", language)}
         </button>
       </form>
     </div>

@@ -106,7 +106,7 @@ const CoordinationHeader = memo(function CoordinationHeader() {
             <img src={logo} alt="Logo" style={{ height: 40, width: 40, borderRadius: "50%" }} />
 
             <Typography variant="h6" sx={{ fontWeight: "bold", color: "#556B2F" }}>
-              Birzeit Insurance System
+              {t("birzeitInsuranceSystem", language)}
             </Typography>
           </Box>
 

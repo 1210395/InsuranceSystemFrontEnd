@@ -32,7 +32,7 @@ const ResetPassword = memo(function ResetPassword() {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      setMessage("Passwords do not match");
+      setMessage(t("passwordsDoNotMatch", language));
       return;
     }
 
@@ -44,7 +44,7 @@ const ResetPassword = memo(function ResetPassword() {
 
       localStorage.removeItem("authMode");
 
-    setMessage("Password has been reset successfully. Redirecting...");
+    setMessage(t("passwordResetSuccessRedirecting", language));
 setTimeout(() => {
   localStorage.setItem("authMode", "signin");
   navigate("/LandingPage");
@@ -52,7 +52,7 @@ setTimeout(() => {
 
     } catch (err) {
       logger.error(err.response?.data || err.message);
-      setMessage("Failed to reset password. Try again.");
+      setMessage(t("failedToResetPasswordTryAgain", language));
     }
   };
 
@@ -135,7 +135,7 @@ setTimeout(() => {
           </Button>
 
           {message && (
-            <Typography sx={{ mt: 2, color: message.includes("successfully") ? "green" : "red" }}>
+            <Typography sx={{ mt: 2, color: message === t("passwordResetSuccessRedirecting", language) ? "green" : "red" }}>
               {message}
             </Typography>
           )}

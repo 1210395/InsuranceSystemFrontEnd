@@ -144,28 +144,34 @@ const DoctorProfileComponent = ({ userInfo, setUser }) => {
         form.append("universityCard", selectedFile);
       }
 
-      const res = await api.patch(API_ENDPOINTS.MEDICAL_RECORDS.ME_UPDATE, form, {
+      // api.patch returns response.data directly
+      const responseData = await api.patch(API_ENDPOINTS.MEDICAL_RECORDS.ME_UPDATE, form, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
+      // ✅ Check if response data exists
+      if (!responseData) {
+        throw new Error("No data returned from server");
+      }
+
       // ✅ تحديث البيانات
-      setUser(res.data);
-      localStorage.setItem("doctorUserInfo", JSON.stringify(res.data));
+      setUser(responseData);
+      localStorage.setItem("doctorUserInfo", JSON.stringify(responseData));
 
       // Handle both single image (universityCardImage) and array (universityCardImages)
-      let newImagePath = res.data.universityCardImage || "";
-      if (!newImagePath && res.data.universityCardImages && res.data.universityCardImages.length > 0) {
-        newImagePath = res.data.universityCardImages[res.data.universityCardImages.length - 1];
+      let newImagePath = responseData.universityCardImage || "";
+      if (!newImagePath && responseData.universityCardImages && responseData.universityCardImages.length > 0) {
+        newImagePath = responseData.universityCardImages[responseData.universityCardImages.length - 1];
       }
 
       // ✅ تحديث الـ formData (مثل Client Profile)
       setFormData((prev) => ({
         ...prev,
-        fullName: res.data.fullName || prev.fullName,
-        email: res.data.email || prev.email,
-        phone: res.data.phone || prev.phone,
+        fullName: responseData.fullName || prev.fullName,
+        email: responseData.email || prev.email,
+        phone: responseData.phone || prev.phone,
         universityCardImage: newImagePath || prev.universityCardImage,
       }));
 

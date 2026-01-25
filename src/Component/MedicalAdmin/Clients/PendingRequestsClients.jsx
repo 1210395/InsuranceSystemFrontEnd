@@ -119,14 +119,14 @@ const filtered = res.data.filter(
 
       setSnackbar({
         open: true,
-        message: `Request for ${client.fullName} approved.`,
+        message: t("requestApprovedFor", language).replace("{name}", client.fullName),
         severity: "success",
       });
     } catch (err) {
       console.error("❌ Approval failed:", err.response?.data || err.message);
       setSnackbar({
         open: true,
-        message: "Approval failed.",
+        message: t("approvalFailed", language),
         severity: "error",
       });
     } finally {
@@ -164,7 +164,7 @@ const filtered = res.data.filter(
 
       setSnackbar({
         open: true,
-        message: `Request for ${selectedClient.fullName} rejected.`,
+        message: t("requestRejectedFor", language).replace("{name}", selectedClient.fullName),
         severity: "error",
       });
     } catch (err) {
@@ -177,8 +177,8 @@ const filtered = res.data.filter(
         open: true,
         message:
           err.response?.status === 401
-            ? "Unauthorized – login again"
-            : "Reject failed due to server error",
+            ? t("unauthorizedLoginAgain", language)
+            : t("rejectFailedServerError", language),
         severity: "error",
       });
     } finally {
@@ -245,13 +245,13 @@ const fetchClientFamily = async (client) => {
                 letterSpacing: "0.5px",
               }}
             >
-              Requested Role
+              {t("requestedRoleLabel", language)}
             </Typography>
            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
   {[
     {
       role: "INSURANCE_CLIENT",
-      label: "Insurance Client",
+      label: t("insuranceClient", language),
       count: allClients.filter(
         (c) => c.requestedRole?.toUpperCase() === "INSURANCE_CLIENT"
       ).length,
@@ -271,8 +271,8 @@ const fetchClientFamily = async (client) => {
 
           {/* Results Count */}
           <Typography variant="body1" sx={{ mb: 2, color: "text.secondary" }}>
-            Showing <strong>{clients.length}</strong> request{clients.length !== 1 ? 's' : ''}
-            {filterRole !== "ALL" && ` for ${filterRole.replace('_', ' ')}`}
+            {t("showing", language)} <strong>{clients.length}</strong> {clients.length !== 1 ? t("requests", language) : t("request", language)}
+            {filterRole !== "ALL" && ` ${t("forRole", language)} ${t("insuranceClient", language)}`}
           </Typography>
 
           {clients.length === 0 ? (
@@ -312,46 +312,46 @@ const fetchClientFamily = async (client) => {
 <Grid item xs={12} md={6}>
   <Paper sx={{ p: 2, borderRadius: 2 }}>
     <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1, color: "#1E8EAB" }}>
-      General Information
+      {t("generalInformationTitle", language)}
     </Typography>
     <Stack spacing={1}>
       <Typography variant="body2">
-        <PersonIcon sx={{ fontSize: 18, mr: 0.5 }} />
-        <b>Name:</b> {client.fullName}
+        <PersonIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+        <b>{t("nameLabel", language)}</b> {client.fullName}
       </Typography>
 
       <Typography variant="body2">
-        <EmailIcon sx={{ fontSize: 18, mr: 0.5 }} />
-        <b>Email:</b> {client.email}
+        <EmailIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+        <b>{t("emailLabel", language)}</b> {client.email}
       </Typography>
 
       {/* إخفاء الكلية والقسم للجميع إلا العميل */}
       {client.requestedRole === "INSURANCE_CLIENT" && (
         <>
           <Typography variant="body2">
-            <b>Faculty:</b> {client.faculty}
+            <b>{t("facultyLabel", language)}</b> {client.faculty}
           </Typography>
 
           <Typography variant="body2">
-            <b>Department:</b> {client.department}
+            <b>{t("departmentLabel", language)}</b> {client.department}
           </Typography>
         </>
       )}
-      
+
       <Typography variant="body2">
-        <b>Employee ID:</b> {client.employeeId}
+        <b>{t("employeeIdLabel", language)}</b> {client.employeeId}
       </Typography>
 
       <Typography variant="body2">
-        <b>Gender:</b> {client.gender}
+        <b>{t("genderLabel", language)}</b> {client.gender}
       </Typography>
 
       <Typography variant="body2">
-        <b>National ID:</b> {client.nationalId}
+        <b>{t("nationalIdLabel", language)}</b> {client.nationalId}
       </Typography>
 
       <Typography variant="body2">
-        <b>Date of Birth:</b> {client.dateOfBirth ? new Date(client.dateOfBirth).toLocaleDateString() : 'Not available'}
+        <b>{t("dateOfBirthLabel", language)}</b> {client.dateOfBirth ? new Date(client.dateOfBirth).toLocaleDateString() : t("notAvailable", language)}
       </Typography>
     </Stack>
   </Paper>
@@ -362,7 +362,7 @@ const fetchClientFamily = async (client) => {
   {client.requestedRole === "INSURANCE_CLIENT" && (
     <>
       <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#1E8EAB" }}>
-        Chronic Diseases
+        {t("chronicDiseasesSection", language)}
       </Typography>
       <Stack spacing={1}>
         {/* عرض الأمراض المزمنة */}
@@ -377,11 +377,11 @@ const fetchClientFamily = async (client) => {
               {/* Disease Document Images */}
               <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
                 {client.chronicDocumentPaths && client.chronicDocumentPaths.length > 0 ? (
-                  client.chronicDocumentPaths.map((document, docIndex) => (
+                  client.chronicDocumentPaths.map((doc, docIndex) => (
                     <Avatar
                       key={docIndex}
-                      src={`${API_BASE_URL}${document}`}
-                      alt={`Document ${docIndex + 1}`}
+                      src={`${API_BASE_URL}${doc}`}
+                      alt={`${t("document", language)} ${docIndex + 1}`}
                       variant="rounded"
                       sx={{
                         width: 80,
@@ -390,14 +390,14 @@ const fetchClientFamily = async (client) => {
                         border: "1px solid #ddd",
                       }}
                       onClick={() => {
-                        setPreviewImage(`${API_BASE_URL}${document}`);
+                        setPreviewImage(`${API_BASE_URL}${doc}`);
                         setOpenImageDialog(true); // Show the document in a dialog
                       }}
                     />
                   ))
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No documents uploaded
+                    {t("noDocumentsUploaded", language)}
                   </Typography>
                 )}
               </Stack>
@@ -405,7 +405,7 @@ const fetchClientFamily = async (client) => {
           ))
         ) : (
           <Typography variant="body2" color="text.secondary">
-            No chronic diseases listed
+            {t("noChronicDiseases", language)}
           </Typography>
         )}
       </Stack>
@@ -415,19 +415,19 @@ const fetchClientFamily = async (client) => {
 
 {/* Dialog to display enlarged image */}
 <Dialog open={openImageDialog} onClose={() => setOpenImageDialog(false)} maxWidth="md">
-  <DialogTitle>Document Preview</DialogTitle>
+  <DialogTitle>{t("documentPreview", language)}</DialogTitle>
   <DialogContent dividers>
     {previewImage && (
       <img
         src={previewImage}
-        alt="Document Preview"
+        alt={t("documentPreview", language)}
         style={{ width: "100%", height: "auto", borderRadius: "10px" }}
       />
     )}
   </DialogContent>
   <DialogActions>
     <Button onClick={() => setOpenImageDialog(false)} color="primary">
-      Close
+      {t("close", language)}
     </Button>
   </DialogActions>
 </Dialog>
@@ -441,16 +441,16 @@ const fetchClientFamily = async (client) => {
                       fontWeight="bold"
                       sx={{ mb: 1, color: "#1E8EAB" }}
                     >
-                      Contact Info
+                      {t("contactInfoSection", language)}
                     </Typography>
                     <Stack spacing={1}>
                       <Typography variant="body2">
-                        <PhoneIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                        <b>Phone:</b> {client.phone}
+                        <PhoneIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+                        <b>{t("phoneLabel", language)}</b> {client.phone}
                       </Typography>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         <Typography variant="body2">
-                          <b>Status:</b>
+                          <b>{t("statusLabel", language)}</b>
                         </Typography>
                         <Chip
                           label={client.status}
@@ -471,7 +471,7 @@ const fetchClientFamily = async (client) => {
                       fontWeight="bold"
                       sx={{ mb: 1, color: "#1E8EAB" }}
                     >
-                      Requested Role
+                      {t("requestedRoleLabel", language)}
                     </Typography>
                     <Box sx={{ mt: 1 }}>
                       <Chip label={client.requestedRole} color="secondary" />
@@ -487,13 +487,13 @@ const fetchClientFamily = async (client) => {
                       fontWeight="bold"
                       sx={{ mb: 1, color: "#1E8EAB" }}
                     >
-                      University Card
+                      {t("universityCardSection", language)}
                     </Typography>
 
                     {getUniversityCardSrc(client) ? (
                       <Avatar
                         src={getUniversityCardSrc(client)}
-                        alt="University Card"
+                        alt={t("universityCardSection", language)}
                         variant="rounded"
                         sx={{ width: 80, height: 100, cursor: "pointer" }}
                         onClick={() => {
@@ -503,7 +503,7 @@ const fetchClientFamily = async (client) => {
                       />
                     ) : (
                       <Typography variant="body2" color="text.secondary">
-                        No card uploaded
+                        {t("noCardUploaded", language)}
                       </Typography>
                     )}
                   </Paper>
@@ -517,7 +517,7 @@ const fetchClientFamily = async (client) => {
                       fontWeight="bold"
                       sx={{ mb: 1, color: "#1E8EAB" }}
                     >
-                      Request Status
+                      {t("requestStatusLabel", language)}
                     </Typography>
                     <Box sx={{ mt: 1 }}>
                       <Chip
@@ -531,7 +531,7 @@ const fetchClientFamily = async (client) => {
                         color="error"
                         sx={{ mt: 1, fontStyle: "italic" }}
                       >
-                        <b>Reason:</b> {client.rejectReason}
+                        <b>{t("reasonLabel", language)}</b> {client.rejectReason}
                       </Typography>
                     )}
                   </Paper>
@@ -542,13 +542,13 @@ const fetchClientFamily = async (client) => {
   <>
     <Divider sx={{ my: 2 }} />
 
-    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+    <Box sx={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 2 }}>
       <Button
         variant="outlined"
         color="primary"
         onClick={() => fetchClientFamily(client)}
       >
-        👨‍👩‍👧‍👦 View Family
+        👨‍👩‍👧‍👦 {t("viewFamily", language)}
       </Button>
 
       <Button
@@ -560,7 +560,7 @@ const fetchClientFamily = async (client) => {
           loadingId === client.id ? <CircularProgress size={18} /> : null
         }
       >
-        {loadingId === client.id ? "Approving..." : "Approve"}
+        {loadingId === client.id ? t("approving", language) : t("approve", language)}
       </Button>
 
       <Button
@@ -568,7 +568,7 @@ const fetchClientFamily = async (client) => {
         color="error"
         onClick={() => handleRejectClick(client)}
       >
-        Reject
+        {t("reject", language)}
       </Button>
     </Box>
   </>
@@ -582,16 +582,16 @@ const fetchClientFamily = async (client) => {
 
       {/* Reject Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Reject Request</DialogTitle>
+        <DialogTitle>{t("rejectRequest", language)}</DialogTitle>
         <DialogContent>
           <Typography gutterBottom>
-            Please provide a reason for rejecting{" "}
+            {t("pleaseProvideReasonRejecting", language)}{" "}
             <strong>{selectedClient?.fullName}</strong>:
           </Typography>
           <TextField
             autoFocus
             margin="dense"
-            label="Reason"
+            label={t("reasonLabel", language)}
             type="text"
             fullWidth
             variant="outlined"
@@ -600,9 +600,9 @@ const fetchClientFamily = async (client) => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button onClick={() => setOpenDialog(false)}>{t("cancel", language)}</Button>
           <Button color="error" variant="contained" onClick={handleRejectConfirm}>
-            Confirm Reject
+            {t("confirmReject", language)}
           </Button>
         </DialogActions>
       </Dialog>
@@ -628,19 +628,19 @@ const fetchClientFamily = async (client) => {
         onClose={() => setOpenImageDialog(false)}
         maxWidth="md"
       >
-        <DialogTitle>University Card</DialogTitle>
+        <DialogTitle>{t("universityCardSection", language)}</DialogTitle>
         <DialogContent dividers>
           {previewImage && (
             <img
               src={previewImage}
-              alt="University Card"
+              alt={t("universityCardSection", language)}
               style={{ width: "100%", height: "auto", borderRadius: "10px" }}
             />
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenImageDialog(false)} color="primary">
-            Close
+            {t("close", language)}
           </Button>
         </DialogActions>
       </Dialog>
@@ -651,7 +651,7 @@ const fetchClientFamily = async (client) => {
   fullWidth
 >
   <DialogTitle>
-    Family Members of {selectedClient?.fullName}
+    {t("familyMembersOf", language)} {selectedClient?.fullName}
   </DialogTitle>
 
   <DialogContent dividers>
@@ -661,7 +661,7 @@ const fetchClientFamily = async (client) => {
       </Box>
     ) : familyMembers.length === 0 ? (
       <Typography color="text.secondary">
-        No family members registered.
+        {t("noFamilyMembers", language)}
       </Typography>
     ) : (
       <Stack spacing={2}>
@@ -672,21 +672,21 @@ const fetchClientFamily = async (client) => {
   </Typography>
 
   <Typography variant="body2">
-    <b>Relation:</b> {member.relation}
+    <b>{t("relationLabel", language)}</b> {member.relation}
   </Typography>
 
   <Typography variant="body2">
-    <b>National ID:</b> {member.nationalId}
+    <b>{t("nationalIdLabel", language)}</b> {member.nationalId}
   </Typography>
 
   {/* ✅ رقم التأمين */}
   <Typography variant="body2">
-    <b>Insurance Number:</b>{" "}
-    {member.insuranceNumber || "Not assigned"}
+    <b>{t("insuranceNumberLabel", language)}</b>{" "}
+    {member.insuranceNumber || t("notAssigned", language)}
   </Typography>
 
   <Typography variant="body2">
-    <b>Date of Birth:</b> {member.dateOfBirth}
+    <b>{t("dateOfBirthLabel", language)}</b> {member.dateOfBirth}
   </Typography>
 
   {/* ✅ الحالة */}
@@ -728,7 +728,7 @@ const fetchClientFamily = async (client) => {
     </Stack>
   ) : (
     <Typography variant="body2" color="text.secondary">
-      No documents uploaded
+      {t("noDocumentsUploaded", language)}
     </Typography>
   )}
 </Paper>
@@ -739,7 +739,7 @@ const fetchClientFamily = async (client) => {
   </DialogContent>
 
   <DialogActions>
-    <Button onClick={() => setOpenFamilyDialog(false)}>Close</Button>
+    <Button onClick={() => setOpenFamilyDialog(false)}>{t("close", language)}</Button>
   </DialogActions>
 </Dialog>
 

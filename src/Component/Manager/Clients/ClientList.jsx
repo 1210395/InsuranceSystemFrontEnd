@@ -39,7 +39,7 @@ const ClientList = () => {
     const fetchClients = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("⚠️ Please login again.");
+        alert(t("pleaseLoginAgain", language));
         return;
       }
 
@@ -63,11 +63,11 @@ const ClientList = () => {
 
   // ✅ Delete
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this client?")) return;
+    if (!window.confirm(t("confirmDeleteClient", language))) return;
 
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("⚠️ Please login again.");
+      alert(t("pleaseLoginAgain", language));
       return;
     }
 
@@ -79,7 +79,7 @@ const ClientList = () => {
       setClients((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
       console.error("❌ Delete failed:", err.response?.data || err.message);
-      alert("Delete failed, check console.");
+      alert(t("deleteFailedCheckConsole", language));
     }
   };
 
@@ -105,7 +105,7 @@ const ClientList = () => {
   const handleEditSave = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("⚠️ Please login again.");
+      alert(t("pleaseLoginAgain", language));
       return;
     }
 
@@ -147,7 +147,7 @@ const ClientList = () => {
       handleEditClose();
     } catch (err) {
       console.error("❌ Update failed:", err.response?.data || err.message);
-      alert("Update failed, check console.");
+      alert(t("updateFailedCheckConsole", language));
     }
   };
 
@@ -197,12 +197,12 @@ const ClientList = () => {
                   </Typography>
                   <Stack spacing={1}>
                     <Typography variant="body2">
-                      <PersonIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                      <b>Name:</b> {client.fullName}
+                      <PersonIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+                      <b>{t("nameLabel", language)}</b> {client.fullName}
                     </Typography>
                     <Typography variant="body2">
-                      <EmailIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                      <b>Email:</b> {client.email}
+                      <EmailIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+                      <b>{t("emailLabel", language)}</b> {client.email}
                     </Typography>
                   </Stack>
                 </Grid>
@@ -214,16 +214,16 @@ const ClientList = () => {
                     fontWeight="bold"
                     sx={{ color: "#1E8EAB" }}
                   >
-                    Contact Info
+                    {t("contactInfoSection", language)}
                   </Typography>
                   <Stack spacing={1}>
                     <Typography variant="body2">
-                      <PhoneIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                      <b>Phone:</b> {client.phone}
+                      <PhoneIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+                      <b>{t("phoneLabel", language)}</b> {client.phone}
                     </Typography>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Typography variant="body2">
-                        <b>Status:</b>
+                        <b>{t("statusLabel", language)}</b>
                       </Typography>
                       <Chip
                         label={client.status}
@@ -237,17 +237,17 @@ const ClientList = () => {
                 {/* Extra Info */}
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2">
-                    <b>Requested Role:</b> {client.requestedRole || "None"}
+                    <b>{t("requestedRoleLabel", language)}:</b> {client.requestedRole || t("none", language)}
                   </Typography>
                   <Typography variant="subtitle2">
-                    <b>Role Request Status:</b> {client.roleRequestStatus}
+                    <b>{t("roleRequestStatusLabel", language)}:</b> {client.roleRequestStatus}
                   </Typography>
                   <Typography variant="body2" color="gray">
-                    <b>Created At:</b>{" "}
+                    <b>{t("createdAtLabel", language)}:</b>{" "}
                     {new Date(client.createdAt).toLocaleString()}
                   </Typography>
                   <Typography variant="body2" color="gray">
-                    <b>Updated At:</b>{" "}
+                    <b>{t("updatedAtLabel", language)}:</b>{" "}
                     {new Date(client.updatedAt).toLocaleString()}
                   </Typography>
                 </Grid>
@@ -259,7 +259,7 @@ const ClientList = () => {
                     fontWeight="bold"
                     sx={{ color: "#1E8EAB" }}
                   >
-                    University Card
+                    {t("universityCardSection", language)}
                   </Typography>
                   {client.universityCardImage ? (
                     <>
@@ -278,7 +278,7 @@ const ClientList = () => {
                     </>
                   ) : (
                     <Typography variant="body2" color="text.secondary">
-                      No card uploaded
+                      {t("noCardUploaded", language)}
                     </Typography>
                   )}
                 </Grid>
@@ -286,20 +286,20 @@ const ClientList = () => {
 
               {/* Actions */}
               <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+              <Box sx={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 2 }}>
                 <Button
                   variant="contained"
                   color="primary"
                   onClick={() => handleEditOpen(client)}
                 >
-                  Edit
+                  {t("edit", language)}
                 </Button>
                 <Button
                   variant="contained"
                   color="error"
                   onClick={() => handleDelete(client.id)}
                 >
-                  Delete
+                  {t("delete", language)}
                 </Button>
               </Box>
             </Paper>
@@ -309,11 +309,11 @@ const ClientList = () => {
 
       {/* Edit Dialog */}
       <Dialog open={!!editClient} onClose={handleEditClose}>
-        <DialogTitle>Edit Client</DialogTitle>
+        <DialogTitle>{t("editClient", language)}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Full Name"
+              label={t("fullName", language)}
               value={formData.fullName || ""}
               onChange={(e) =>
                 setFormData({ ...formData, fullName: e.target.value })
@@ -321,7 +321,7 @@ const ClientList = () => {
               fullWidth
             />
             <TextField
-              label="Email"
+              label={t("email", language)}
               value={formData.email || ""}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
@@ -329,7 +329,7 @@ const ClientList = () => {
               fullWidth
             />
             <TextField
-              label="Phone"
+              label={t("phone", language)}
               value={formData.phone || ""}
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
@@ -343,7 +343,7 @@ const ClientList = () => {
               component="label"
               startIcon={<UploadIcon />}
             >
-              Upload University Card
+              {t("uploadUniversityCard", language)}
               <input
                 type="file"
                 hidden
@@ -368,16 +368,16 @@ const ClientList = () => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleEditClose}>Cancel</Button>
+          <Button onClick={handleEditClose}>{t("cancel", language)}</Button>
           <Button onClick={handleEditSave} variant="contained" color="success">
-            Save
+            {t("save", language)}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Image Preview Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md">
-        <DialogTitle>University Card</DialogTitle>
+        <DialogTitle>{t("universityCardSection", language)}</DialogTitle>
         <DialogContent dividers>
           {previewImage && (
             <img
@@ -393,7 +393,7 @@ const ClientList = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)} color="primary">
-            Close
+            {t("close", language)}
           </Button>
         </DialogActions>
       </Dialog>

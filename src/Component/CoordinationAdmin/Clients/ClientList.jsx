@@ -155,7 +155,7 @@ setClients(sorted);
       handleEditClose();
     } catch (err) {
       console.error("❌ Update failed:", err.response?.data || err.message);
-      alert("Update failed, check console.");
+      alert(t("updateFailedCheckConsole", language));
     }
   };
 
@@ -190,11 +190,11 @@ setClients(sorted);
     prev.map((c) => (c.id === selectedClient.id ? updatedClient : c))
   );
 
-  alert(`✅ ${selectedClient.fullName} has been deactivated.`);
+  alert(t("clientDeactivatedSuccess", language).replace("{name}", selectedClient.fullName));
   handleDeactivateClose();
 } catch (err) {
   console.error("❌ Deactivate failed:", err.response?.data || err.message);
-  alert("Deactivate failed, check console.");
+  alert(t("deactivateFailedCheckConsole", language));
 }
 
   };
@@ -212,10 +212,10 @@ setClients(sorted);
         prev.map((c) => (c.id === client.id ? updatedClient : c))
       );
 
-      alert(`✅ ${client.fullName} has been reactivated.`);
+      alert(t("clientReactivatedSuccess", language).replace("{name}", client.fullName));
     } catch (err) {
       console.error("❌ Reactivate failed:", err.response?.data || err.message);
-      alert("Reactivate failed, check console.");
+      alert(t("reactivateFailedCheckConsole", language));
     }
   };
 
@@ -356,42 +356,42 @@ setClients(sorted);
                 <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
   <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#1E8EAB" }}>
-    General Info
+    {t("generalInformationTitle", language)}
   </Typography>
   <Stack spacing={1}>
     {/* عرض البيانات العامة */}
     <Typography variant="body2">
-      <PersonIcon sx={{ fontSize: 18, mr: 0.5 }} />
-      <b>Name:</b> {client.fullName}
+      <PersonIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+      <b>{t("nameLabel", language)}</b> {client.fullName}
     </Typography>
     <Typography variant="body2">
-      <EmailIcon sx={{ fontSize: 18, mr: 0.5 }} />
-      <b>Email:</b> {client.email}
+      <EmailIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+      <b>{t("emailLabel", language)}</b> {client.email}
     </Typography>
     <Typography variant="body2">
-      <b>Gender:</b> {client.gender}
+      <b>{t("genderLabel", language)}</b> {client.gender}
     </Typography>
     <Typography variant="body2">
-      <b>Date of Birth:</b> {client.dateOfBirth ? new Date(client.dateOfBirth).toLocaleDateString() : 'Not available'}
+      <b>{t("dateOfBirthLabel", language)}</b> {client.dateOfBirth ? new Date(client.dateOfBirth).toLocaleDateString() : t("notAvailable", language)}
     </Typography>
     <Typography variant="body2">
-      <b>National ID:</b> {client.nationalId}
+      <b>{t("nationalIdLabel", language)}</b> {client.nationalId}
     </Typography>
     <Typography variant="body2">
-      <b>Employee ID:</b> {client.employeeId}
+      <b>{t("employeeIdLabel", language)}</b> {client.employeeId}
     </Typography>
 
     {/* عرض بيانات إضافية بناءً على الدور */}
     {client.roles && client.roles.includes("DOCTOR") && (
       <>
         <Typography variant="body2">
-          <b>Specialization:</b> {client.specialization || "N/A"}
+          <b>{t("specializationLabel", language)}</b> {client.specialization || t("notAvailable", language)}
         </Typography>
         <Typography variant="body2">
-          <b>Doctor Specialization:</b> {client.doctorSpecialization?.name || "N/A"}
+          <b>{t("doctorSpecializationLabel", language)}</b> {client.doctorSpecialization?.name || t("notAvailable", language)}
         </Typography>
         <Typography variant="body2">
-          <b>Clinic Location:</b> {client.clinicLocation || "N/A"}
+          <b>{t("clinicLocationLabel", language)}</b> {client.clinicLocation || t("notAvailable", language)}
         </Typography>
       </>
     )}
@@ -399,13 +399,13 @@ setClients(sorted);
     {client.roles && client.roles.includes("RADIOLOGIST") && (
       <>
         <Typography variant="body2">
-          <b>Radiology Code:</b> {client.radiologyCode || "N/A"}
+          <b>{t("radiologyCodeLabel", language)}</b> {client.radiologyCode || t("notAvailable", language)}
         </Typography>
         <Typography variant="body2">
-          <b>Radiology Name:</b> {client.radiologyName || "N/A"}
+          <b>{t("radiologyNameLabel", language)}</b> {client.radiologyName || t("notAvailable", language)}
         </Typography>
         <Typography variant="body2">
-          <b>Radiology Location:</b> {client.radiologyLocation || "N/A"}
+          <b>{t("radiologyLocationLabel", language)}</b> {client.radiologyLocation || t("notAvailable", language)}
         </Typography>
       </>
     )}
@@ -413,13 +413,13 @@ setClients(sorted);
     {client.roles && client.roles.includes("LAB_TECH") && (
       <>
         <Typography variant="body2">
-          <b>Lab Code:</b> {client.labCode || "N/A"}
+          <b>{t("labCodeLabel", language)}</b> {client.labCode || t("notAvailable", language)}
         </Typography>
         <Typography variant="body2">
-          <b>Lab Name:</b> {client.labName || "N/A"}
+          <b>{t("labNameLabel", language)}</b> {client.labName || t("notAvailable", language)}
         </Typography>
         <Typography variant="body2">
-          <b>Lab Location:</b> {client.labLocation || "N/A"}
+          <b>{t("labLocationLabel", language)}</b> {client.labLocation || t("notAvailable", language)}
         </Typography>
       </>
     )}
@@ -427,18 +427,18 @@ setClients(sorted);
     {client.roles && client.roles.includes("PHARMACIST") && (
       <>
         <Typography variant="body2">
-          <b>Pharmacy Code:</b> {client.pharmacyCode || "N/A"}
+          <b>{t("pharmacyCodeLabel", language)}</b> {client.pharmacyCode || t("notAvailable", language)}
         </Typography>
         <Typography variant="body2">
-          <b>Pharmacy Name:</b> {client.pharmacyName || "N/A"}
+          <b>{t("pharmacyNameLabel", language)}</b> {client.pharmacyName || t("notAvailable", language)}
         </Typography>
         <Typography variant="body2">
-          <b>Pharmacy Location:</b> {client.pharmacyLocation || "N/A"}
+          <b>{t("pharmacyLocationLabel", language)}</b> {client.pharmacyLocation || t("notAvailable", language)}
         </Typography>
       </>
     )}
 
-    
+
   </Stack>
 </Grid>
 
@@ -450,18 +450,18 @@ setClients(sorted);
                       fontWeight="bold"
                       sx={{ color: "#1E8EAB" }}
                     >
-                      Contact Info
+                      {t("contactInfoSection", language)}
                     </Typography>
                     <Stack spacing={1}>
                       <Typography variant="body2">
-                        <PhoneIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                        <b>Phone:</b> {client.phone}
+                        <PhoneIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+                        <b>{t("phoneLabel", language)}</b> {client.phone}
                       </Typography>
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >
                         <Typography variant="body2">
-                          <b>Status:</b>
+                          <b>{t("statusLabel", language)}</b>
                         </Typography>
                         <Chip
                           label={client.status}
@@ -482,7 +482,7 @@ setClients(sorted);
                         fontWeight="bold"
                         sx={{ mb: 1, color: "#1E8EAB" }}
                       >
-                        Roles
+                        {t("roles", language)}
                       </Typography>
                       <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 1 }}>
                         {client.roles && client.roles.length > 0 ? (
@@ -491,27 +491,27 @@ setClients(sorted);
                           ))
                         ) : (
                           <Typography variant="body2" color="text.secondary">
-                            No roles assigned
+                            {t("noRolesAssigned", language)}
                           </Typography>
                         )}
                       </Stack>
                       <Divider sx={{ my: 1 }} />
                       <Typography variant="subtitle2">
-                        <b>Requested Role:</b> {client.requestedRole || "None"}
+                        <b>{t("requestedRoleLabel", language)}:</b> {client.requestedRole || t("none", language)}
                       </Typography>
                       <Typography variant="subtitle2">
-                        <b>Role Request Status:</b> {client.roleRequestStatus || "N/A"}
+                        <b>{t("roleRequestStatusLabel", language)}</b> {client.roleRequestStatus || t("notAvailable", language)}
                       </Typography>
                       <Typography variant="body2" color="gray" sx={{ mt: 1 }}>
-                        <b>Created At:</b>{" "}
+                        <b>{t("createdAtLabel", language)}</b>{" "}
                         {new Date(client.createdAt).toLocaleString()}
                       </Typography>
                       <Typography variant="body2" color="gray">
-                        <b>Updated At:</b>{" "}
+                        <b>{t("updatedAtLabel", language)}</b>{" "}
                         {new Date(client.updatedAt).toLocaleString()}
                       </Typography>
                     </Paper>
-                    
+
                   </Grid>
 
                   {/* University Card */}
@@ -521,12 +521,12 @@ setClients(sorted);
                       fontWeight="bold"
                       sx={{ color: "#1E8EAB" }}
                     >
-                      University Card
+                      {t("universityCardSection", language)}
                     </Typography>
                    {getUniversityCardSrc(client) ? (
   <Avatar
     src={getUniversityCardSrc(client)}
-    alt="University Card"
+    alt={t("universityCardSection", language)}
     variant="rounded"
     sx={{ width: 80, height: 100, cursor: "pointer" }}
     onClick={() => {
@@ -536,7 +536,7 @@ setClients(sorted);
   />
 ) : (
   <Typography variant="body2" color="text.secondary">
-    No card uploaded
+    {t("noCardUploaded", language)}
   </Typography>
 )}
 
@@ -545,8 +545,8 @@ setClients(sorted);
 
                 <Divider sx={{ my: 2 }} />
 
-<Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
-  
+<Box sx={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 2 }}>
+
 
   {client.status === "ACTIVE" ? (
     <>
@@ -555,7 +555,7 @@ setClients(sorted);
         color="primary"
         onClick={() => handleEditOpen(client)}
       >
-        Edit
+        {t("edit", language)}
       </Button>
 
       <Button
@@ -563,7 +563,7 @@ setClients(sorted);
         color="warning"
         onClick={() => handleDeactivateOpen(client)}
       >
-        Deactivate
+        {t("deactivate", language)}
       </Button>
     </>
   ) : (
@@ -572,7 +572,7 @@ setClients(sorted);
       color="success"
       onClick={() => handleReactivate(client)}
     >
-      Reactivate
+      {t("reactivate", language)}
     </Button>
   )}
 </Box>
@@ -585,11 +585,11 @@ setClients(sorted);
 
       {/* باقي النوافذ بدون تغيير */}
       <Dialog open={!!editClient} onClose={handleEditClose}>
-        <DialogTitle>Edit Client</DialogTitle>
+        <DialogTitle>{t("editClient", language)}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Full Name"
+              label={t("fullName", language)}
               value={formData.fullName || ""}
               onChange={(e) =>
                 setFormData({ ...formData, fullName: e.target.value })
@@ -597,7 +597,7 @@ setClients(sorted);
               fullWidth
             />
             <TextField
-              label="Email"
+              label={t("email", language)}
               value={formData.email || ""}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
@@ -605,7 +605,7 @@ setClients(sorted);
               fullWidth
             />
             <TextField
-              label="Phone"
+              label={t("phone", language)}
               value={formData.phone || ""}
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
@@ -618,7 +618,7 @@ setClients(sorted);
               component="label"
               startIcon={<UploadIcon />}
             >
-              Upload University Card
+              {t("uploadUniversityCard", language)}
               <input
                 type="file"
                 hidden
@@ -644,44 +644,44 @@ setPreviewImage(URL.createObjectURL(file));
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleEditClose}>Cancel</Button>
+          <Button onClick={handleEditClose}>{t("cancel", language)}</Button>
           <Button onClick={handleEditSave} variant="contained" color="success">
-            Save
+            {t("save", language)}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* عرض البطاقة */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md">
-        <DialogTitle>University Card</DialogTitle>
+        <DialogTitle>{t("universityCardSection", language)}</DialogTitle>
         <DialogContent dividers>
           {previewImage && (
             <img
               src={previewImage}
-              alt="University Card Full"
+              alt={t("universityCardSection", language)}
               style={{ width: "100%", height: "auto", borderRadius: "10px" }}
             />
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)} color="primary">
-            Close
+            {t("close", language)}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* نافذة سبب التعطيل */}
       <Dialog open={openDeactivateDialog} onClose={handleDeactivateClose}>
-        <DialogTitle>Deactivate Client</DialogTitle>
+        <DialogTitle>{t("deactivateClient", language)}</DialogTitle>
         <DialogContent>
           <Typography gutterBottom>
-            Please enter a reason for deactivating{" "}
+            {t("enterDeactivateReason", language)}{" "}
             <strong>{selectedClient?.fullName}</strong>:
           </Typography>
           <TextField
             autoFocus
             margin="dense"
-            label="Reason"
+            label={t("reasonLabel", language)}
             type="text"
             fullWidth
             variant="outlined"
@@ -690,13 +690,13 @@ setPreviewImage(URL.createObjectURL(file));
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeactivateClose}>Cancel</Button>
+          <Button onClick={handleDeactivateClose}>{t("cancel", language)}</Button>
           <Button
             color="warning"
             variant="contained"
             onClick={handleDeactivateConfirm}
           >
-            Confirm Deactivate
+            {t("confirmDeactivate", language)}
           </Button>
         </DialogActions>
       </Dialog>

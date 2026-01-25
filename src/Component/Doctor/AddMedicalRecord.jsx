@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 import "./DoctorDashboard.md.css";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 function AddMedicalRecord() {
+  const { language, isRTL } = useLanguage();
   const [form, setForm] = useState({
     diagnosis: "",
     treatment: "",
@@ -33,7 +36,7 @@ function AddMedicalRecord() {
         }
       );
 
-      alert("✅ Medical record created successfully!");
+      alert(t("medicalRecordCreatedSuccessfully", language));
       setForm({
         diagnosis: "",
         treatment: "",
@@ -42,30 +45,30 @@ function AddMedicalRecord() {
       });
     } catch (err) {
       console.error("❌ Error creating medical record:", err.response || err);
-      alert("Failed to create medical record ❌");
+      alert(t("failedToCreateMedicalRecord", language));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="card">
-      <h2 className="form-title">➕ Add New Medical Record</h2>
+    <div className="card" dir={isRTL ? "rtl" : "ltr"}>
+      <h2 className="form-title">{t("addNewMedicalRecord", language)}</h2>
       <form onSubmit={handleSubmit} className="form-grid">
         <div className="form-group">
-          <label>Member Name</label>
+          <label>{t("memberName", language)}</label>
           <input
             type="text"
             name="memberName"
             value={form.memberName}
             onChange={handleChange}
-            placeholder="Enter patient's full name"
+            placeholder={t("enterPatientFullName", language)}
             required
           />
         </div>
 
         <div className="form-group">
-          <label>Diagnosis</label>
+          <label>{t("diagnosis", language)}</label>
           <input
             type="text"
             name="diagnosis"
@@ -76,7 +79,7 @@ function AddMedicalRecord() {
         </div>
 
         <div className="form-group">
-          <label>Treatment</label>
+          <label>{t("treatment", language)}</label>
           <input
             type="text"
             name="treatment"
@@ -87,7 +90,7 @@ function AddMedicalRecord() {
         </div>
 
         <div className="form-group">
-          <label>Notes</label>
+          <label>{t("notes", language)}</label>
           <textarea
             name="notes"
             value={form.notes}
@@ -97,7 +100,7 @@ function AddMedicalRecord() {
         </div>
 
         <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? "Saving..." : "💾 Add Medical Record"}
+          {loading ? t("saving", language) : t("addMedicalRecord", language)}
         </button>
       </form>
     </div>

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../utils/apiService";
 import { API_ENDPOINTS, API_BASE_URL } from "../../config/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 import {
   Typography,
@@ -41,6 +43,7 @@ const relations = ["WIFE", "SON", "DAUGHTER", "FATHER", "MOTHER"];
 const genders = ["MALE", "FEMALE"];
 
 const ClientFamily = () => {
+  const { language, isRTL } = useLanguage();
   const [family, setFamily] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openAdd, setOpenAdd] = useState(false);
@@ -82,7 +85,7 @@ documents: [], // Array<File>
         return (
           <Chip
             icon={<VerifiedUserIcon />}
-            label="ACTIVE"
+            label={t("active", language)}
             color="success"
             size="small"
           />
@@ -90,7 +93,7 @@ documents: [], // Array<File>
       case "PENDING":
         return (
           <Chip
-            label="PENDING MEDICAL REVIEW"
+            label={t("pendingMedicalReview", language)}
             color="warning"
             size="small"
           />
@@ -98,7 +101,7 @@ documents: [], // Array<File>
       case "REJECTED":
         return (
           <Chip
-            label="REJECTED"
+            label={t("rejected", language)}
             color="error"
             size="small"
           />
@@ -134,7 +137,7 @@ const validateAge = () => {
     (formData.relation === "SON" || formData.relation === "DAUGHTER") &&
     age > 22
   ) {
-    alert("❌ Children are allowed up to 22 years old only");
+    alert(t("childrenAgeLimit", language));
     return false;
   }
 
@@ -142,7 +145,7 @@ const validateAge = () => {
     (formData.relation === "FATHER" || formData.relation === "MOTHER") &&
     age > 100
   ) {
-    alert("❌ Parents are allowed up to 100 years old only");
+    alert(t("parentsAgeLimit", language));
     return false;
   }
 
@@ -193,13 +196,13 @@ documents: [],
 
       fetchFamily();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to add family member");
+      alert(err.response?.data?.message || t("failedToAddFamilyMember", language));
     }
   };
 
   /* ================= UI ================= */
   return (
-    <Box sx={{ mt: 2 }}>
+    <Box sx={{ mt: 2 }} dir={isRTL ? "rtl" : "ltr"}>
   <Stack
     direction="row"
     justifyContent="space-between"
@@ -207,7 +210,7 @@ documents: [],
     mb={4}
   >
             <Typography variant="h4" fontWeight="bold">
-              👨‍👩‍👧‍👦 Family Members
+              👨‍👩‍👧‍👦 {t("familyMembers", language)}
             </Typography>
             <Button
               startIcon={<AddIcon />}
@@ -217,7 +220,7 @@ documents: [],
                 background: "linear-gradient(90deg,#150380,#1E8EAB)",
               }}
             >
-              Add Member
+              {t("addMember", language)}
             </Button>
           </Stack>
 
@@ -256,7 +259,7 @@ documents: [],
             }}
           >
             <Chip
-              label="⏳ Pending Medical Review"
+              label={`⏳ ${t("pendingMedicalReview", language)}`}
               color="warning"
               sx={{ fontWeight: "bold", fontSize: 14 }}
             />
@@ -294,23 +297,23 @@ documents: [],
             <>
               <Typography variant="body2">
                 <BadgeIcon fontSize="small" />{" "}
-                <strong>National ID:</strong> {member.nationalId}
+                <strong>{t("nationalIdLabel", language)}</strong> {member.nationalId}
               </Typography>
 
               <Typography variant="body2">
                 <CalendarMonthIcon fontSize="small" />{" "}
-                <strong>Date of Birth:</strong> {member.dateOfBirth}
+                <strong>{t("dateOfBirthLabel", language)}</strong> {member.dateOfBirth}
               </Typography>
 
               <Typography variant="body2">
                 {member.gender === "MALE" ? <MaleIcon /> : <FemaleIcon />}{" "}
-                <strong>Gender:</strong> {member.gender}
+                <strong>{t("genderLabel", language)}</strong> {member.gender}
               </Typography>
 
               <Chip
                 sx={{ mt: 1 }}
                 color="info"
-                label={`Insurance #: ${member.insuranceNumber}`}
+                label={`${t("insuranceNumberLabel", language)} ${member.insuranceNumber}`}
               />
 
             {member.documentImages?.map((img, i) => (
@@ -322,7 +325,7 @@ documents: [],
     href={`${API_BASE_URL}${img}`}
     target="_blank"
   >
-    View Document {i + 1}
+    {t("viewDocument", language)} {i + 1}
   </Button>
 ))}
 
@@ -337,9 +340,9 @@ documents: [],
                 textAlign: "center",
               }}
             >
-              ⏳ Waiting for medical approval.
+              {t("waitingForMedicalApproval", language)}
               <br />
-              Details will be visible after approval.
+              {t("detailsVisibleAfterApproval", language)}
             </Typography>
           )}
         </Box>
@@ -353,42 +356,42 @@ documents: [],
 
       {/* ADD DIALOG */}
       <Dialog open={openAdd} onClose={() => setOpenAdd(false)} fullWidth>
-        <DialogTitle>➕ Add Family Member</DialogTitle>
+        <DialogTitle>➕ {t("addFamilyMember", language)}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
 <TextField
-  label="First Name"
+  label={t("firstName", language)}
   name="firstName"
   onChange={handleChange}
   required
 />
 
 <TextField
-  label="Middle Name"
+  label={t("middleName", language)}
   name="middleName"
   onChange={handleChange}
 />
 
 <TextField
-  label="Last Name"
+  label={t("lastName", language)}
   name="lastName"
   onChange={handleChange}
   required
 />
-            <TextField label="National ID" name="nationalId" onChange={handleChange} />
+            <TextField label={t("nationalId", language)} name="nationalId" onChange={handleChange} />
             <TextField type="date" name="dateOfBirth" onChange={handleChange} />
-            <TextField select name="gender" label="Gender" onChange={handleChange}>
+            <TextField select name="gender" label={t("gender", language)} onChange={handleChange}>
               {genders.map((g) => (
                 <MenuItem key={g} value={g}>{g}</MenuItem>
               ))}
             </TextField>
-            <TextField select name="relation" label="Relation" onChange={handleChange}>
+            <TextField select name="relation" label={t("relation", language)} onChange={handleChange}>
               {relations.map((r) => (
                 <MenuItem key={r} value={r}>{r}</MenuItem>
               ))}
             </TextField>
             <Button component="label" startIcon={<UploadFileIcon />}>
-              Upload Document
+              {t("uploadDocument", language)}
              <input
   hidden
   type="file"
@@ -420,7 +423,7 @@ documents: [],
             })
           }
         >
-          Delete
+          {t("delete", language)}
         </Button>
       </Box>
     ))}
@@ -431,8 +434,8 @@ documents: [],
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenAdd(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit}>Submit</Button>
+          <Button onClick={() => setOpenAdd(false)}>{t("cancel", language)}</Button>
+          <Button variant="contained" onClick={handleSubmit}>{t("submit", language)}</Button>
         </DialogActions>
       </Dialog>
     </Box>

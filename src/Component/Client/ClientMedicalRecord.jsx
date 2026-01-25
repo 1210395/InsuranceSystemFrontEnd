@@ -3,6 +3,8 @@ import React, { useEffect, useState, useCallback, memo } from "react";
 import PropTypes from "prop-types";
 import { api, getToken } from "../../utils/apiService";
 import { API_ENDPOINTS } from "../../config/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 import {
   Box,
   Paper,
@@ -23,6 +25,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 
 const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
+  const { language, isRTL } = useLanguage();
   const [records, setRecords] = useState(
     JSON.parse(localStorage.getItem("clientMedicalRecords")) || []
   );
@@ -67,16 +70,16 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
 
   if (!records || records.length === 0) {
     return (
-      <Box sx={{ textAlign: "center", py: 6, color: "gray" }}>
+      <Box sx={{ textAlign: "center", py: 6, color: "gray" }} dir={isRTL ? "rtl" : "ltr"}>
         <Typography variant="h5" fontWeight="bold">
-          No medical records found
+          {t("noMedicalRecordsFound", language)}
         </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ px: { xs: 2, md: 4 }, py: 3, backgroundColor: "#FAF8F5", minHeight: "100vh" }}>
+    <Box sx={{ px: { xs: 2, md: 4 }, py: 3, backgroundColor: "#FAF8F5", minHeight: "100vh" }} dir={isRTL ? "rtl" : "ltr"}>
       {/* 📌 Header Section */}
       <Paper
         elevation={0}
@@ -100,10 +103,10 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
           </Avatar>
           <Box>
             <Typography variant="h4" fontWeight="700" sx={{ mb: 0.5 }}>
-              My Medical Records
+              {t("myMedicalRecords", language)}
             </Typography>
             <Typography variant="body1" sx={{ opacity: 0.9 }}>
-              Complete history of your medical diagnoses and treatments
+              {t("completeHistoryOfMedicalRecords", language)}
             </Typography>
           </Box>
         </Stack>
@@ -122,7 +125,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
               <Typography variant="h4" fontWeight="700">
                 {records.length}
               </Typography>
-              <Typography variant="body2">Total Records</Typography>
+              <Typography variant="body2">{t("totalRecords", language)}</Typography>
             </Box>
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -137,7 +140,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
               <Typography variant="h4" fontWeight="700">
                 {new Set(records.map((r) => r.doctorName)).size}
               </Typography>
-              <Typography variant="body2">Doctors</Typography>
+              <Typography variant="body2">{t("doctors", language)}</Typography>
             </Box>
           </Grid>
         </Grid>
@@ -147,7 +150,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
       <Card elevation={0} sx={{ borderRadius: 4, border: "1px solid #E8EDE0", mb: 4 }}>
         <CardContent sx={{ p: 3 }}>
           <TextField
-            placeholder="Search by diagnosis, treatment, doctor, or notes..."
+            placeholder={t("searchMedicalRecords", language)}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             fullWidth
@@ -170,8 +173,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
 
       {/* Results Count */}
       <Typography variant="body1" sx={{ mb: 3, color: "text.secondary" }}>
-        Showing <strong>{filteredRecords.length}</strong> medical record
-        {filteredRecords.length !== 1 ? "s" : ""}
+        {t("showing", language)} <strong>{filteredRecords.length}</strong> {t("medicalRecordCount", language)}
       </Typography>
 
       <Box
@@ -233,7 +235,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                           fontSize: "0.95rem",
                         }}
                       >
-                        {rec.diagnosis || "Medical Record"}
+                        {rec.diagnosis || t("medicalRecord", language)}
                       </Typography>
                       <Typography
                         variant="caption"
@@ -243,12 +245,12 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                           fontSize: "0.72rem",
                         }}
                       >
-                        Diagnosis
+                        {t("diagnosis", language)}
                       </Typography>
                     </Box>
                   </Stack>
                   <Chip
-                    label="Recorded"
+                    label={t("recorded", language)}
                     sx={{
                       bgcolor: "#556B2F",
                       color: "white",
@@ -314,7 +316,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                               textTransform: "uppercase",
                             }}
                           >
-                            Doctor
+                            {t("doctor", language)}
                           </Typography>
                           <Typography
                             variant="body2"
@@ -324,7 +326,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                               fontSize: "0.8rem",
                             }}
                           >
-                            Dr. {rec.doctorName || "Unknown"}
+                            {t("dr", language)} {rec.doctorName || t("unknown", language)}
                           </Typography>
                         </Box>
                       </Stack>
@@ -370,7 +372,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                                 textTransform: "uppercase",
                               }}
                             >
-                              Treatment
+                              {t("treatment", language)}
                             </Typography>
                             <Typography
                               variant="body2"
@@ -415,7 +417,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                             textTransform: "uppercase",
                           }}
                         >
-                          Diagnosis
+                          {t("diagnosis", language)}
                         </Typography>
                       </Stack>
                       <Typography
@@ -426,7 +428,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                           fontSize: "0.8rem",
                         }}
                       >
-                        {rec.diagnosis || "Not specified"}
+                        {rec.diagnosis || t("notSpecified", language)}
                       </Typography>
                     </Paper>
                   </Grid>
@@ -455,7 +457,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                             textTransform: "uppercase",
                           }}
                         >
-                          Record Date
+                          {t("recordDate", language)}
                         </Typography>
                       </Stack>
                       <Typography
@@ -496,7 +498,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                         mb: 0.5,
                       }}
                     >
-                      Notes
+                      {t("notes", language)}
                     </Typography>
                     <Typography
                       variant="body2"
@@ -533,7 +535,7 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
                         mb: 0.6,
                       }}
                     >
-                      Files
+                      {t("files", language)}
                     </Typography>
                     <Stack direction="row" spacing={0.5}>
                       {rec.files.map((file, index) => (
@@ -569,10 +571,10 @@ const ClientMedicalRecord = memo(function ClientMedicalRecord({ user }) {
         >
           <SearchIcon sx={{ fontSize: 64, color: "#cbd5e0", mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No medical records found
+            {t("noMedicalRecordsFound", language)}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Try adjusting your search terms
+            {t("tryAdjustingSearchTerms", language)}
           </Typography>
         </Paper>
       )}

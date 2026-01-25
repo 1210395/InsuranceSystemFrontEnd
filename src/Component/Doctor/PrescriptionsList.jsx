@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 const PrescriptionsList = () => {
+  const { language, isRTL } = useLanguage();
   const [prescriptions, setPrescriptions] = useState([]);
   const [editingRow, setEditingRow] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -47,12 +50,12 @@ const PrescriptionsList = () => {
         editForm,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert("✅ Prescription updated!");
+      alert(t("prescriptionUpdated", language));
       setEditingRow(null);
       fetchPrescriptions();
     } catch (err) {
       console.error("❌ Error updating prescription:", err);
-      alert("Error updating prescription");
+      alert(t("errorUpdatingPrescription", language));
     }
   };
 
@@ -62,7 +65,7 @@ const PrescriptionsList = () => {
       await axios.delete(`http://localhost:8080/api/prescriptions/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert("🗑️ Prescription deleted!");
+      alert(t("prescriptionDeleted", language));
       fetchPrescriptions();
     } catch (err) {
       console.error("❌ Error deleting prescription:", err);
@@ -70,17 +73,17 @@ const PrescriptionsList = () => {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>💊 Prescriptions List</h2>
+    <div style={{ padding: "2rem" }} dir={isRTL ? "rtl" : "ltr"}>
+      <h2>{t("prescriptionsList", language)}</h2>
       <table className="data-table">
         <thead>
           <tr>
-            <th>Medicine</th>
-            <th>Dosage</th>
-            <th>Instructions</th>
-            <th>Member</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>{t("medicine", language)}</th>
+            <th>{t("dosage", language)}</th>
+            <th>{t("instructions", language)}</th>
+            <th>{t("member", language)}</th>
+            <th>{t("status", language)}</th>
+            <th>{t("actions", language)}</th>
           </tr>
         </thead>
         <tbody>
@@ -107,7 +110,7 @@ const PrescriptionsList = () => {
                         cursor: "pointer",
                       }}
                     >
-                      ✏️ Edit
+                      {t("edit", language)}
                     </button>
                   )}
                   <button
@@ -121,7 +124,7 @@ const PrescriptionsList = () => {
                       cursor: "pointer",
                     }}
                   >
-                    🗑️ Delete
+                    {t("delete", language)}
                   </button>
                 </td>
               </tr>
@@ -151,7 +154,7 @@ const PrescriptionsList = () => {
                         name="medicine"
                         value={editForm.medicine}
                         onChange={handleChange}
-                        placeholder="Medicine"
+                        placeholder={t("medicine", language)}
                         style={{
                           flex: 1,
                           padding: "8px",
@@ -164,7 +167,7 @@ const PrescriptionsList = () => {
                         name="dosage"
                         value={editForm.dosage}
                         onChange={handleChange}
-                        placeholder="Dosage"
+                        placeholder={t("dosage", language)}
                         style={{
                           flex: 1,
                           padding: "8px",
@@ -177,7 +180,7 @@ const PrescriptionsList = () => {
                         name="instructions"
                         value={editForm.instructions}
                         onChange={handleChange}
-                        placeholder="Instructions"
+                        placeholder={t("instructions", language)}
                         style={{
                           flex: 2,
                           padding: "8px",
@@ -196,7 +199,7 @@ const PrescriptionsList = () => {
                           cursor: "pointer",
                         }}
                       >
-                        ✅ Save
+                        {t("save", language)}
                       </button>
                       <button
                         type="button"
@@ -210,7 +213,7 @@ const PrescriptionsList = () => {
                           cursor: "pointer",
                         }}
                       >
-                        ❌ Cancel
+                        {t("cancel", language)}
                       </button>
                     </form>
                   </td>

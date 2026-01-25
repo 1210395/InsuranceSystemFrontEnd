@@ -159,7 +159,7 @@ const getUniversityCardSrc = (client) => {
       handleEditClose();
     } catch (err) {
       console.error("❌ Update failed:", err.response?.data || err.message);
-      alert("Update failed, check console.");
+      alert(t("updateFailedCheckConsole", language));
     }
   };
 
@@ -203,11 +203,11 @@ const updatedClient = { ...selectedClient, status: "INACTIVE" };
     prev.map((c) => (c.id === selectedClient.id ? updatedClient : c))
   );
 
-  alert(`✅ ${selectedClient.fullName} has been deactivated.`);
+  alert(t("clientDeactivatedSuccess", language).replace("{name}", selectedClient.fullName));
   handleDeactivateClose();
 } catch (err) {
   console.error("❌ Deactivate failed:", err.response?.data || err.message);
-  alert("Deactivate failed, check console.");
+  alert(t("deactivateFailedCheckConsole", language));
 }
 
   };
@@ -225,10 +225,10 @@ const updatedClient = { ...selectedClient, status: "INACTIVE" };
         prev.map((c) => (c.id === client.id ? updatedClient : c))
       );
 
-      alert(`✅ ${client.fullName} has been reactivated.`);
+      alert(t("clientReactivatedSuccess", language).replace("{name}", client.fullName));
     } catch (err) {
       console.error("❌ Reactivate failed:", err.response?.data || err.message);
-      alert("Reactivate failed, check console.");
+      alert(t("reactivateFailedCheckConsole", language));
     }
   };
 
@@ -329,13 +329,13 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                 letterSpacing: "0.5px",
               }}
             >
-              Filter by Role
+              {t("filterByRole", language)}
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
   {[
     {
       role: "INSURANCE_CLIENT",
-      label: "Insurance Client",
+      label: t("insuranceClient", language),
       count: allClients.length,
     },
   ].map(({ role, label, count }) => (
@@ -354,8 +354,8 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
 
           {/* Results Count */}
           <Typography variant="body1" sx={{ mb: 2, color: "text.secondary" }}>
-            Showing <strong>{clients.length}</strong> client{clients.length !== 1 ? 's' : ''}
-            {filterRole !== "ALL" && ` with ${filterRole.replace('_', ' ')} role`}
+            {t("showingClients", language)} <strong>{clients.length}</strong> {clients.length !== 1 ? t("clientsCount", language) : t("clientCount", language)}
+            {filterRole !== "ALL" && ` ${t("withRole", language)} ${filterRole.replace('_', ' ')} ${t("role", language)}`}
           </Typography>
 
           {/* ✅ التبويبين */}
@@ -491,40 +491,40 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                 <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
   <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#1E8EAB" }}>
-    General Info
+    {t("generalInformationTitle", language)}
   </Typography>
   <Stack spacing={1}>
     {/* عرض البيانات العامة */}
     <Typography variant="body2">
-      <PersonIcon sx={{ fontSize: 18, mr: 0.5 }} />
-      <b>Name:</b> {client.fullName}
+      <PersonIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+      <b>{t("nameLabel", language)}</b> {client.fullName}
     </Typography>
     <Typography variant="body2">
-      <EmailIcon sx={{ fontSize: 18, mr: 0.5 }} />
-      <b>Email:</b> {client.email}
+      <EmailIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+      <b>{t("emailLabel", language)}</b> {client.email}
     </Typography>
     <Typography variant="body2">
-      <b>Gender:</b> {client.gender}
+      <b>{t("genderLabel", language)}</b> {client.gender}
     </Typography>
     <Typography variant="body2">
-      <b>Date of Birth:</b> {client.dateOfBirth ? new Date(client.dateOfBirth).toLocaleDateString() : 'Not available'}
+      <b>{t("dateOfBirthLabel", language)}</b> {client.dateOfBirth ? new Date(client.dateOfBirth).toLocaleDateString() : t("notAvailable", language)}
     </Typography>
     <Typography variant="body2">
-      <b>National ID:</b> {client.nationalId}
+      <b>{t("nationalIdLabel", language)}</b> {client.nationalId}
     </Typography>
     <Typography variant="body2">
-      <b>Employee ID:</b> {client.employeeId}
+      <b>{t("employeeIdLabel", language)}</b> {client.employeeId}
     </Typography>
 
-   
+
 
     {client.roles && client.roles.includes("INSURANCE_CLIENT") && (
       <>
         <Typography variant="body2">
-          <b>Department:</b> {client.department || "N/A"}
+          <b>{t("departmentLabel", language)}</b> {client.department || t("notAvailable", language)}
         </Typography>
         <Typography variant="body2">
-          <b>Faculty:</b> {client.faculty || "N/A"}
+          <b>{t("facultyLabel", language)}</b> {client.faculty || t("notAvailable", language)}
         </Typography>
       </>
     )}
@@ -536,7 +536,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
 {client.roles && client.roles.includes('INSURANCE_CLIENT') && (
   <Grid item xs={12} md={6}>
     <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#1E8EAB" }}>
-      Chronic Diseases
+      {t("chronicDiseases", language)}
     </Typography>
     <Stack spacing={1}>
       {client.chronicDiseases && client.chronicDiseases.length > 0 ? (
@@ -554,7 +554,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                   <Avatar
                     key={docIndex}
                     src={`${API_BASE_URL}${document}`}
-                    alt={`Document ${docIndex + 1}`}
+                    alt={`${t("document", language)} ${docIndex + 1}`}
                     variant="rounded"
                     sx={{
                       width: 80,
@@ -570,7 +570,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                 ))
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  No documents uploaded
+                  {t("noDocumentsUploaded", language)}
                 </Typography>
               )}
             </Stack>
@@ -578,7 +578,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
         ))
       ) : (
         <Typography variant="body2" color="text.secondary">
-          No chronic diseases listed
+          {t("noChronicDiseases", language)}
         </Typography>
       )}
     </Stack>
@@ -593,18 +593,18 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                       fontWeight="bold"
                       sx={{ color: "#1E8EAB" }}
                     >
-                      Contact Info
+                      {t("contactInfoSection", language)}
                     </Typography>
                     <Stack spacing={1}>
                       <Typography variant="body2">
-                        <PhoneIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                        <b>Phone:</b> {client.phone}
+                        <PhoneIcon sx={{ fontSize: 18, mr: isRTL ? 0 : 0.5, ml: isRTL ? 0.5 : 0 }} />
+                        <b>{t("phoneLabel", language)}</b> {client.phone}
                       </Typography>
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >
                         <Typography variant="body2">
-                          <b>Status:</b>
+                          <b>{t("statusLabel", language)}</b>
                         </Typography>
                         <Chip
                           label={client.status}
@@ -625,7 +625,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                         fontWeight="bold"
                         sx={{ mb: 1, color: "#1E8EAB" }}
                       >
-                        Roles
+                        {t("roles", language)}
                       </Typography>
                       <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 1 }}>
                         {client.roles && client.roles.length > 0 ? (
@@ -634,27 +634,27 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                           ))
                         ) : (
                           <Typography variant="body2" color="text.secondary">
-                            No roles assigned
+                            {t("noRolesAssigned", language)}
                           </Typography>
                         )}
                       </Stack>
                       <Divider sx={{ my: 1 }} />
                       <Typography variant="subtitle2">
-                        <b>Requested Role:</b> {client.requestedRole || "None"}
+                        <b>{t("requestedRoleLabel", language)}:</b> {client.requestedRole || t("none", language)}
                       </Typography>
                       <Typography variant="subtitle2">
-                        <b>Role Request Status:</b> {client.roleRequestStatus || "N/A"}
+                        <b>{t("roleRequestStatusLabel", language)}</b> {client.roleRequestStatus || t("notAvailable", language)}
                       </Typography>
                       <Typography variant="body2" color="gray" sx={{ mt: 1 }}>
-                        <b>Created At:</b>{" "}
+                        <b>{t("createdAtLabel", language)}</b>{" "}
                         {new Date(client.createdAt).toLocaleString()}
                       </Typography>
                       <Typography variant="body2" color="gray">
-                        <b>Updated At:</b>{" "}
+                        <b>{t("updatedAtLabel", language)}</b>{" "}
                         {new Date(client.updatedAt).toLocaleString()}
                       </Typography>
                     </Paper>
-                    
+
                   </Grid>
 
                   {/* University Card */}
@@ -664,12 +664,12 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                       fontWeight="bold"
                       sx={{ color: "#1E8EAB" }}
                     >
-                      University Card
+                      {t("universityCardSection", language)}
                     </Typography>
                    {getUniversityCardSrc(client) ? (
   <Avatar
     src={getUniversityCardSrc(client)}
-    alt="University Card"
+    alt={t("universityCardSection", language)}
     variant="rounded"
     sx={{ width: 80, height: 100, cursor: "pointer" }}
     onClick={() => {
@@ -679,7 +679,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
   />
 ) : (
   <Typography variant="body2" color="text.secondary">
-    No card uploaded
+    {t("noCardUploaded", language)}
   </Typography>
 )}
 
@@ -688,14 +688,14 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
 
                 <Divider sx={{ my: 2 }} />
 
-<Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+<Box sx={{ display: "flex", justifyContent: isRTL ? "flex-start" : "flex-end", gap: 2 }}>
   {/* ✅ زر عرض العائلة */}
   <Button
     variant="outlined"
     color="primary"
     onClick={() => fetchClientFamily(client)}
   >
-    👨‍👩‍👧‍👦 View Family
+    👨‍👩‍👧‍👦 {t("viewFamily", language)}
   </Button>
 
   {client.status === "ACTIVE" ? (
@@ -739,7 +739,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Full Name"
+              label={t("fullName", language)}
               value={formData.fullName || ""}
               onChange={(e) =>
                 setFormData({ ...formData, fullName: e.target.value })
@@ -747,7 +747,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
               fullWidth
             />
             <TextField
-              label="Email"
+              label={t("email", language)}
               value={formData.email || ""}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
@@ -755,7 +755,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
               fullWidth
             />
             <TextField
-              label="Phone"
+              label={t("phone", language)}
               value={formData.phone || ""}
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
@@ -768,7 +768,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
               component="label"
               startIcon={<UploadIcon />}
             >
-              Upload University Card
+              {t("uploadUniversityCard", language)}
               <input
                 type="file"
                 hidden
@@ -825,13 +825,13 @@ setPreviewImage(URL.createObjectURL(file));
         <DialogTitle>{t("deactivateClient", language)}</DialogTitle>
         <DialogContent>
           <Typography gutterBottom>
-            Please enter a reason for deactivating{" "}
+            {t("enterDeactivateReason", language)}{" "}
             <strong>{selectedClient?.fullName}</strong>:
           </Typography>
           <TextField
             autoFocus
             margin="dense"
-            label="Reason"
+            label={t("reasonLabel", language)}
             type="text"
             fullWidth
             variant="outlined"
@@ -876,21 +876,21 @@ setPreviewImage(URL.createObjectURL(file));
   </Typography>
 
   <Typography variant="body2">
-    <b>Relation:</b> {member.relation}
+    <b>{t("relationLabel", language)}</b> {member.relation}
   </Typography>
 
   <Typography variant="body2">
-    <b>National ID:</b> {member.nationalId}
+    <b>{t("nationalIdLabel", language)}</b> {member.nationalId}
   </Typography>
 
   {/* ✅ رقم التأمين */}
   <Typography variant="body2">
-    <b>Insurance Number:</b>{" "}
-    {member.insuranceNumber || "Not assigned"}
+    <b>{t("insuranceNumberLabel", language)}</b>{" "}
+    {member.insuranceNumber || t("notAssigned", language)}
   </Typography>
 
   <Typography variant="body2">
-    <b>Date of Birth:</b> {member.dateOfBirth}
+    <b>{t("dateOfBirthLabel", language)}</b> {member.dateOfBirth}
   </Typography>
 
   {/* ✅ الحالة */}
@@ -932,7 +932,7 @@ setPreviewImage(URL.createObjectURL(file));
   </Stack>
 ) : (
   <Typography variant="body2" color="text.secondary">
-    No documents uploaded
+    {t("noDocumentsUploaded", language)}
   </Typography>
 )}
 

@@ -92,7 +92,7 @@ const ClientHeader = ({
             variant="h6"
             sx={{ fontWeight: "bold", color: "#150380" }}
           >
-            Birzeit Insurance System
+            {t("birzeitInsuranceSystem", language)}
           </Typography>
         </Box>
 

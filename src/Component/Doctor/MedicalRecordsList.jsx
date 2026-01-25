@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 const MedicalRecordsList = () => {
+  const { language, isRTL } = useLanguage();
   const [records, setRecords] = useState([]);
   const [editingRow, setEditingRow] = useState(null);
   const [editForm, setEditForm] = useState({ diagnosis: "", treatment: "", notes: "" });
@@ -46,7 +49,7 @@ const MedicalRecordsList = () => {
         editForm,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert("✅ Record updated!");
+      alert(t("recordUpdated", language));
       setEditingRow(null);
       fetchRecords();
     } catch (err) {
@@ -60,7 +63,7 @@ const MedicalRecordsList = () => {
       await axios.delete(`http://localhost:8080/api/medical-records/delete/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert("🗑️ Record deleted!");
+      alert(t("recordDeleted", language));
       fetchRecords();
     } catch (err) {
       console.error("❌ Error deleting record:", err);
@@ -80,19 +83,19 @@ const MedicalRecordsList = () => {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>📄 Medical Records List</h2>
+    <div style={{ padding: "2rem" }} dir={isRTL ? "rtl" : "ltr"}>
+      <h2>{t("medicalRecordsList", language)}</h2>
       <table className="data-table" style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr style={{ backgroundColor: "#f3f4f6" }}>
-            <th>Diagnosis</th>
-            <th>Treatment</th>
-            <th>Notes</th>
-            <th>Member</th>
-            <th>Doctor</th>
-            <th>Created At</th>
-            <th>Updated At</th>
-            <th>Actions</th>
+            <th>{t("diagnosis", language)}</th>
+            <th>{t("treatment", language)}</th>
+            <th>{t("notes", language)}</th>
+            <th>{t("member", language)}</th>
+            <th>{t("doctor", language)}</th>
+            <th>{t("createdAt", language)}</th>
+            <th>{t("updatedAt", language)}</th>
+            <th>{t("actions", language)}</th>
           </tr>
         </thead>
         <tbody>
@@ -119,7 +122,7 @@ const MedicalRecordsList = () => {
                       cursor: "pointer",
                     }}
                   >
-                    ✏️ Edit
+                    {t("edit", language)}
                   </button>
                   <button
                     onClick={() => handleDelete(r.id)}
@@ -132,7 +135,7 @@ const MedicalRecordsList = () => {
                       cursor: "pointer",
                     }}
                   >
-                    🗑️ Delete
+                    {t("delete", language)}
                   </button>
                 </td>
               </tr>
@@ -162,7 +165,7 @@ const MedicalRecordsList = () => {
                         name="diagnosis"
                         value={editForm.diagnosis}
                         onChange={handleChange}
-                        placeholder="Diagnosis"
+                        placeholder={t("diagnosis", language)}
                         style={{
                           padding: "8px",
                           border: "1px solid #D1D5DB",
@@ -174,7 +177,7 @@ const MedicalRecordsList = () => {
                         name="treatment"
                         value={editForm.treatment}
                         onChange={handleChange}
-                        placeholder="Treatment"
+                        placeholder={t("treatment", language)}
                         style={{
                           padding: "8px",
                           border: "1px solid #D1D5DB",
@@ -185,7 +188,7 @@ const MedicalRecordsList = () => {
                         name="notes"
                         value={editForm.notes}
                         onChange={handleChange}
-                        placeholder="Notes"
+                        placeholder={t("notes", language)}
                         rows="3"
                         style={{
                           padding: "8px",
@@ -205,7 +208,7 @@ const MedicalRecordsList = () => {
                             cursor: "pointer",
                           }}
                         >
-                          ✅ Save
+                          {t("save", language)}
                         </button>
                         <button
                           type="button"
@@ -219,7 +222,7 @@ const MedicalRecordsList = () => {
                             cursor: "pointer",
                           }}
                         >
-                          ❌ Cancel
+                          {t("cancel", language)}
                         </button>
                       </div>
                     </form>

@@ -92,7 +92,7 @@ const RadiologyHeader = memo(function RadiologyHeader({
             variant="h6"
             sx={{ fontWeight: "bold", color: "#556B2F" }}
           >
-            Birzeit Insurance System
+            {t("birzeitInsuranceSystem", language)}
           </Typography>
         </Box>
 

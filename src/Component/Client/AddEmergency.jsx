@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 const AddEmergency = ({ onAdded }) => {
+  const { language, isRTL } = useLanguage();
   const [newRequest, setNewRequest] = useState({
     description: "",
     location: "",
@@ -28,7 +31,7 @@ const AddEmergency = ({ onAdded }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert("✅ Emergency Request Submitted Successfully!");
+      alert(t("emergencyRequestSubmittedSuccessfully", language));
 
       if (onAdded) {
         onAdded(res.data); // تحديث القائمة إذا حابب
@@ -43,17 +46,17 @@ const AddEmergency = ({ onAdded }) => {
       });
     } catch (err) {
       console.error("❌ Error submitting emergency:", err);
-      alert("❌ Failed to submit emergency request");
+      alert(t("failedToSubmitEmergencyRequest", language));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content" dir={isRTL ? "rtl" : "ltr"}>
       <div className="page-header">
-        <h1>Add Emergency Request</h1>
-        <p>Fill in the details below to submit a new emergency request</p>
+        <h1>{t("addEmergencyRequest", language)}</h1>
+        <p>{t("fillEmergencyRequestDetails", language)}</p>
       </div>
 
       <form
@@ -63,7 +66,7 @@ const AddEmergency = ({ onAdded }) => {
       >
         <div className="claim-form">
           <div className="form-group">
-            <label>Description</label>
+            <label>{t("description", language)}</label>
             <input
               type="text"
               name="description"
@@ -74,7 +77,7 @@ const AddEmergency = ({ onAdded }) => {
           </div>
 
           <div className="form-group">
-            <label>Location</label>
+            <label>{t("location", language)}</label>
             <input
               type="text"
               name="location"
@@ -85,7 +88,7 @@ const AddEmergency = ({ onAdded }) => {
           </div>
 
           <div className="form-group">
-            <label>Contact Phone</label>
+            <label>{t("contactPhone", language)}</label>
             <input
               type="text"
               name="contactPhone"
@@ -96,7 +99,7 @@ const AddEmergency = ({ onAdded }) => {
           </div>
 
           <div className="form-group">
-            <label>Incident Date</label>
+            <label>{t("incidentDate", language)}</label>
             <input
               type="date"
               name="incidentDate"
@@ -107,7 +110,7 @@ const AddEmergency = ({ onAdded }) => {
           </div>
 
           <div className="form-group" style={{ gridColumn: "span 2" }}>
-            <label>Notes</label>
+            <label>{t("notes", language)}</label>
             <textarea
               name="notes"
               value={newRequest.notes}
@@ -132,7 +135,7 @@ const AddEmergency = ({ onAdded }) => {
             marginTop: "1rem",
           }}
         >
-          {loading ? "Submitting..." : "🚨 Submit Emergency Request"}
+          {loading ? t("submitting", language) : t("submitEmergencyRequest", language)}
         </button>
       </form>
     </div>

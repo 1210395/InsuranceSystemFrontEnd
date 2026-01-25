@@ -422,43 +422,43 @@ const Sidebar = () => {
             variant="body2"
             sx={{ ml: 1, mb: 0.7, color: "rgba(255,255,255,0.7)", fontSize: { xs: "0.9rem", sm: "0.8rem" } }}
           >
-            {language === "ar" ? "إدارة البيانات" : "Data Management"}
+            {t("dataManagement", language)}
           </Typography>
         )}
 
-        <Tooltip title={language === "ar" ? "استيراد البيانات" : "Data Import"} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
+        <Tooltip title={t("dataImport", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
           <ListItemButton component={Link} to="/Manager/DataImport">
             <ListItemIcon>
               <CloudUploadIcon sx={{ color: "#2196F3", fontSize: { xs: 26, sm: 22 } }} />
             </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={language === "ar" ? "استيراد البيانات" : "Data Import"} />}
+            {(open || isDrawer) && <ListItemText primary={t("dataImport", language)} />}
           </ListItemButton>
         </Tooltip>
 
-        <Tooltip title={language === "ar" ? "إدارة التغطية" : "Coverage Management"} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
+        <Tooltip title={t("coverageManagement", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
           <ListItemButton component={Link} to="/Manager/CoverageManagement">
             <ListItemIcon>
               <VerifiedUserIcon sx={{ color: "#4CAF50", fontSize: { xs: 26, sm: 22 } }} />
             </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={language === "ar" ? "إدارة التغطية" : "Coverage Management"} />}
+            {(open || isDrawer) && <ListItemText primary={t("coverageManagement", language)} />}
           </ListItemButton>
         </Tooltip>
 
-        <Tooltip title={language === "ar" ? "تعيين أدوية الأطباء" : "Doctor Medicine Assignment"} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
+        <Tooltip title={t("doctorMedicineAssignment", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
           <ListItemButton component={Link} to="/Manager/DoctorMedicineAssignment">
             <ListItemIcon>
               <MedicationIcon sx={{ color: "#E91E63", fontSize: { xs: 26, sm: 22 } }} />
             </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={language === "ar" ? "تعيين أدوية الأطباء" : "Doctor Medicines"} />}
+            {(open || isDrawer) && <ListItemText primary={t("doctorMedicines", language)} />}
           </ListItemButton>
         </Tooltip>
 
-        <Tooltip title={language === "ar" ? "تعيين فحوصات الأطباء" : "Doctor Test Assignment"} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
+        <Tooltip title={t("doctorTestAssignment", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
           <ListItemButton component={Link} to="/Manager/DoctorTestAssignment">
             <ListItemIcon>
               <BiotechIcon sx={{ color: "#9C27B0", fontSize: { xs: 26, sm: 22 } }} />
             </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={language === "ar" ? "تعيين الفحوصات" : "Doctor Tests"} />}
+            {(open || isDrawer) && <ListItemText primary={t("doctorTests", language)} />}
           </ListItemButton>
         </Tooltip>
 

@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 import "./DoctorDashboard.md.css";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 function AddPrescription() {
+  const { language, isRTL } = useLanguage();
   const [form, setForm] = useState({
     medicine: "",
     dosage: "",
@@ -33,7 +36,7 @@ function AddPrescription() {
         }
       );
 
-      alert("✅ Prescription created successfully!");
+      alert(t("prescriptionCreatedSuccessfully", language));
       setForm({
         medicine: "",
         dosage: "",
@@ -42,18 +45,18 @@ function AddPrescription() {
       });
     } catch (err) {
       console.error("❌ Error creating prescription:", err.response || err);
-      alert("Failed to create prescription ❌");
+      alert(t("failedToCreatePrescription", language));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="card">
-      <h2 className="form-title">➕ Add New Prescription</h2>
+    <div className="card" dir={isRTL ? "rtl" : "ltr"}>
+      <h2 className="form-title">{t("addNewPrescription", language)}</h2>
       <form onSubmit={handleSubmit} className="form-grid">
         <div className="form-group">
-          <label>Medicine</label>
+          <label>{t("medicine", language)}</label>
           <input
             type="text"
             name="medicine"
@@ -64,7 +67,7 @@ function AddPrescription() {
         </div>
 
         <div className="form-group">
-          <label>Dosage</label>
+          <label>{t("dosage", language)}</label>
           <input
             type="text"
             name="dosage"
@@ -75,7 +78,7 @@ function AddPrescription() {
         </div>
 
         <div className="form-group">
-          <label>Instructions</label>
+          <label>{t("instructions", language)}</label>
           <textarea
             name="instructions"
             value={form.instructions}
@@ -85,19 +88,19 @@ function AddPrescription() {
         </div>
 
         <div className="form-group">
-          <label>Member Name</label>
+          <label>{t("memberName", language)}</label>
           <input
             type="text"
             name="memberName"
             value={form.memberName}
             onChange={handleChange}
-            placeholder="Enter patient's full name"
+            placeholder={t("enterPatientFullName", language)}
             required
           />
         </div>
 
         <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? "Saving..." : "💊  Add Prescription"}
+          {loading ? t("saving", language) : t("addPrescription", language)}
         </button>
       </form>
     </div>

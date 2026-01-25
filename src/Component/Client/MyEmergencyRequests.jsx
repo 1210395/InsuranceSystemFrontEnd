@@ -1,6 +1,9 @@
 import React from "react";
+import { useLanguage } from "../../context/LanguageContext";
+import { t } from "../../config/translations";
 
 const MyEmergencyRequests = ({ emergencyRequests = [] }) => {
+  const { language, isRTL } = useLanguage();
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -21,28 +24,28 @@ const MyEmergencyRequests = ({ emergencyRequests = [] }) => {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content" dir={isRTL ? "rtl" : "ltr"}>
       <div className="page-header">
-        <h1>Emergency Requests</h1>
-        <p>Overview of your emergency activities</p>
+        <h1>{t("emergencyRequests", language)}</h1>
+        <p>{t("emergencyRequestsOverview", language)}</p>
       </div>
 
       <div className="table-section">
         <div className="table-container">
           {!emergencyRequests || emergencyRequests.length === 0 ? (
             <div style={{ padding: "2rem", textAlign: "center", color: "#6B7280" }}>
-              No emergency requests found
+              {t("noEmergencyRequestsFound", language)}
             </div>
           ) : (
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Description</th>
-                  <th>Location</th>
-                  <th>Phone</th>
-                  <th>Date</th>
-                  <th>Notes</th>
-                  <th>Status</th>
+                  <th>{t("description", language)}</th>
+                  <th>{t("location", language)}</th>
+                  <th>{t("phone", language)}</th>
+                  <th>{t("date", language)}</th>
+                  <th>{t("notes", language)}</th>
+                  <th>{t("status", language)}</th>
                 </tr>
               </thead>
               <tbody>
