@@ -16,9 +16,15 @@ import {
   Avatar,
   InputAdornment,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  IconButton,
 } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import SearchIcon from "@mui/icons-material/Search";
+import BadgeIcon from "@mui/icons-material/Badge";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import ClearIcon from "@mui/icons-material/Clear";
 import PrescriptionCard from "./PrescriptionCard";
 import PrescriptionDialogs from "./PrescriptionDialogs";
 
@@ -26,11 +32,17 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
   const { language, isRTL } = useLanguage();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // "all", "pending", "verified"
+  const [statusFilter, setStatusFilter] = useState("pending"); // "all", "pending", "verified" - Default to pending only
   const [_employeeIdToNameMap, setEmployeeIdToNameMap] = useState({});
   const [nameToEmployeeIdMap, setNameToEmployeeIdMap] = useState({}); // Map patient names to employee IDs
   const [_clientInfoMap, _setClientInfoMap] = useState({}); // Map member names to client info (age, gender)
   const _token = getToken();
+
+  // New state for search functionality
+  const [searchType, setSearchType] = useState("employeeId"); // "employeeId" or "nationalId"
+  const [searchInput, setSearchInput] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -610,25 +622,77 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
   };
 
 
+  // Handler for searching patient
+  const handleSearch = async () => {
+    if (!searchInput.trim()) {
+      setSnackbar({
+        open: true,
+        message: t("pleaseEnterSearchTerm", language),
+        severity: "warning",
+      });
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      // Lookup the client to verify they exist
+      const endpoint = searchType === "employeeId"
+        ? `/api/clients/search/employeeId/${searchInput.trim()}`
+        : `/api/clients/search/nationalId/${searchInput.trim()}`;
+
+      const clientData = await api.get(endpoint);
+
+      if (clientData) {
+        setSearchTerm(searchInput.trim());
+        setHasSearched(true);
+        setSnackbar({
+          open: true,
+          message: language === "ar" ? `تم العثور على وصفات للعميل: ${clientData.fullName}` : `Found prescriptions for: ${clientData.fullName}`,
+          severity: "success",
+        });
+      }
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: language === "ar" ? "لم يتم العثور على عميل بهذا المعرف" : "Client not found with this ID",
+        severity: "error",
+      });
+      setHasSearched(false);
+      setSearchTerm("");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearchTerm("");
+    setHasSearched(false);
+  };
+
   const filteredPrescriptions = sortedPrescriptions.filter(
     (p) => {
-      // Filter by search term: full name, employee ID, and insurance number
-      if (!searchTerm.trim()) return true;
-      
+      // Only show prescriptions if search has been performed
+      if (!hasSearched || !searchTerm.trim()) return false;
+
       const searchLower = searchTerm.toLowerCase();
-      
+
       // Search by patient name (main client)
       const matchesName = p.memberName?.toLowerCase().includes(searchLower);
-      
+
       // Search by Employee ID (main client)
       const matchesEmployeeId = p.employeeId?.toLowerCase().includes(searchLower);
-      
+
+      // Search by National ID (main client)
+      const matchesNationalId = p.nationalId?.toLowerCase().includes(searchLower);
+
       // Search by family member info if exists
       const familyMemberInfo = getFamilyMemberInfo(p);
       const matchesFamilyMemberName = familyMemberInfo?.name?.toLowerCase().includes(searchLower);
       const matchesFamilyMemberInsuranceNumber = familyMemberInfo?.insuranceNumber?.toLowerCase().includes(searchLower);
-      
-      return matchesName || matchesEmployeeId || matchesFamilyMemberName || matchesFamilyMemberInsuranceNumber;
+      const matchesFamilyMemberNationalId = familyMemberInfo?.nationalId?.toLowerCase().includes(searchLower);
+
+      return matchesName || matchesEmployeeId || matchesNationalId || matchesFamilyMemberName || matchesFamilyMemberInsuranceNumber || matchesFamilyMemberNationalId;
     }
   );
 
@@ -645,105 +709,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
     );
   }
 
-  // Show message when filtered list is empty
-  if (filteredPrescriptions.length === 0 && activePrescriptions.length > 0) {
-    return (
-      <Box sx={{ px: { xs: 2, md: 4 }, py: 3 }} dir={isRTL ? "rtl" : "ltr"}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: 4,
-            mb: 4,
-            borderRadius: 4,
-            background: "linear-gradient(135deg, #556B2F 0%, #7B8B5E 100%)",
-            color: "white",
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={2} mb={2}>
-            <Avatar
-              sx={{
-                bgcolor: "rgba(255,255,255,0.2)",
-                width: 56,
-                height: 56,
-              }}
-            >
-              <DescriptionIcon sx={{ fontSize: 32 }} />
-            </Avatar>
-            <Box>
-              <Typography variant="h4" fontWeight="700" sx={{ mb: 0.5 }}>
-                {t("pendingPrescriptions", language)}
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                {t("prescriptionList", language)}
-              </Typography>
-            </Box>
-          </Stack>
-        </Paper>
-
-        <Card elevation={0} sx={{ borderRadius: 4, border: "1px solid #E8EDE0", mb: 4 }}>
-          <CardContent sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              <TextField
-                placeholder={t("searchPlaceholder", language)}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => {
-                  // If Enter is pressed and search term looks like employee ID, lookup
-                  if (e.key === 'Enter') {
-                    const trimmedSearch = searchTerm.trim();
-                    const looksLikeEmployeeId = /^[A-Za-z0-9]{3,}$/.test(trimmedSearch);
-                    if (looksLikeEmployeeId) {
-                      handleEmployeeIdLookup(trimmedSearch);
-                    }
-                  }
-                }}
-                onBlur={() => {
-                  // When user leaves the field, if search term looks like employee ID, lookup
-                  const trimmedSearch = searchTerm.trim();
-                  const looksLikeEmployeeId = /^[A-Za-z0-9]{3,}$/.test(trimmedSearch);
-                  if (looksLikeEmployeeId) {
-                    handleEmployeeIdLookup(trimmedSearch);
-                  }
-                }}
-                fullWidth
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: "text.secondary" }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                    bgcolor: "#FAF8F5",
-                  },
-                }}
-              />
-            </Stack>
-          </CardContent>
-        </Card>
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: 6,
-            textAlign: "center",
-            borderRadius: 3,
-            border: "1px dashed #d1d5db",
-          }}
-        >
-          <SearchIcon sx={{ fontSize: 64, color: "#cbd5e0", mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            {t("noPrescriptionsFound", language)}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {t("noData", language)}
-          </Typography>
-        </Paper>
-      </Box>
-    );
-  }
+  // Remove the old search interface - we always show the new one with toggle buttons
 
   const pendingCount = prescriptions.filter(
     (p) => p.status?.toLowerCase() === "pending"
@@ -827,7 +793,139 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
           </Grid>
         </Paper>
 
-        {/* Filter & Search Section */}
+        {/* Patient Search Section */}
+        <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2, bgcolor: "#f0f9ff" }} dir={isRTL ? "rtl" : "ltr"}>
+          <Typography variant="h6" fontWeight={600} mb={3} color="#0284c7">
+            {language === "ar" ? "بحث عن وصفات العميل" : "Search Patient Prescriptions"}
+          </Typography>
+
+          {/* Search Type Toggle */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" fontWeight={600} mb={1.5} color="#0284c7">
+              {language === "ar" ? "اختر نوع البحث:" : "Select Search Type:"}
+            </Typography>
+            <ToggleButtonGroup
+              value={searchType}
+              exclusive
+              onChange={(event, newSearchType) => {
+                if (newSearchType !== null) {
+                  setSearchType(newSearchType);
+                  setSearchInput("");
+                }
+              }}
+              fullWidth
+              sx={{
+                "& .MuiToggleButton-root": {
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.5,
+                  fontSize: "1rem",
+                  border: "2px solid #cbd5e1",
+                  "&.Mui-selected": {
+                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    color: "#fff",
+                    border: "2px solid #667eea",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)",
+                    },
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="employeeId">
+                <BadgeIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0, fontSize: 22 }} />
+                {t("employeeId", language)}
+              </ToggleButton>
+              <ToggleButton value="nationalId">
+                <CreditCardIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0, fontSize: 22 }} />
+                {t("nationalId", language)}
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={hasSearched ? 8 : 10}>
+              <TextField
+                label={searchType === "employeeId" ? `🆔 ${t("employeeId", language)}` : `🪪 ${t("nationalId", language)}`}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !searchLoading && searchInput.trim()) {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
+                placeholder={searchType === "employeeId" ? t("enterEmployeeId", language) : t("enterNationalId", language)}
+                fullWidth
+                required
+                disabled={searchLoading}
+                InputProps={{
+                  endAdornment: hasSearched && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={handleClearSearch}
+                        edge="end"
+                        size="small"
+                        sx={{ color: "#dc2626" }}
+                      >
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            {hasSearched && (
+              <Grid item xs={12} md={2}>
+                <Button
+                  onClick={handleClearSearch}
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    borderColor: "#dc2626",
+                    color: "#dc2626",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: "0.95rem",
+                    padding: "12px 16px",
+                    borderRadius: 2.5,
+                    "&:hover": {
+                      borderColor: "#b91c1c",
+                      bgcolor: "#fee2e2",
+                    },
+                  }}
+                >
+                  {language === "ar" ? "مسح" : "Clear"}
+                </Button>
+              </Grid>
+            )}
+
+            <Grid item xs={12} md={hasSearched ? 2 : 2} sx={{ display: "flex", alignItems: "flex-end" }}>
+              <Button
+                onClick={handleSearch}
+                variant="contained"
+                fullWidth
+                disabled={searchLoading || !searchInput}
+                sx={{
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "#ffffff !important",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  padding: "12px 16px",
+                  borderRadius: 2.5,
+                }}
+              >
+                {searchLoading ? (language === "ar" ? "جاري البحث..." : "Searching...") : `🔍 ${language === "ar" ? "بحث" : "Search"}`}
+              </Button>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {/* Filter & Search Section - Only show if search has been performed */}
+        {hasSearched && (
         <Card elevation={0} sx={{ borderRadius: 4, border: "1px solid #E8EDE0", mb: 4 }}>
           <CardContent sx={{ p: 3 }}>
             <Stack spacing={2}>
@@ -919,16 +1017,21 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
             </Stack>
           </CardContent>
         </Card>
+        )}
 
-        {/* Results Count */}
+        {/* Results Count - Only show if search has been performed */}
+        {hasSearched && (
         <Typography variant="body1" sx={{ mb: 3, color: "text.secondary" }}>
           {t("showing", language)} <strong>{filteredPrescriptions.length}</strong> {t("prescriptionsLabel", language)}
           {statusFilter === "all" && ` (${pendingCount} ${t("pending", language)}, ${verifiedCount} ${t("verified", language)}, ${billedCount} ${t("billed", language)})`}
           {statusFilter === "pending" && ` (${pendingCount} ${t("pending", language)})`}
           {statusFilter === "verified" && ` (${verifiedCount} ${t("verified", language)} - ${t("availableToBill", language)})`}
         </Typography>
+        )}
 
-        {/* Grid of Cards */}
+        {/* Grid of Cards - Only show if search has been performed */}
+        {hasSearched && (
+        <>
         <Box
           sx={{
             display: "grid",
@@ -1010,7 +1113,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
         </Box>
 
         {/* No Results Message */}
-        {filteredPrescriptions.length === 0 && searchTerm && (
+        {filteredPrescriptions.length === 0 && (
           <Paper
             elevation={0}
             sx={{
@@ -1022,12 +1125,14 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
           >
             <SearchIcon sx={{ fontSize: 64, color: "#cbd5e0", mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              {t("noPrescriptionsFound", language)}
+              {language === "ar" ? "لا توجد وصفات لهذا العميل" : "No prescriptions found for this patient"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {t("tryAdjustingSearchTerms", language)}
+              {language === "ar" ? "قد لا يكون لدى هذا العميل أي وصفات معلقة" : "This patient may not have any prescriptions"}
             </Typography>
           </Paper>
+        )}
+        </>
         )}
       </Box>
 

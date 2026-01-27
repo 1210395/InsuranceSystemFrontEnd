@@ -23,7 +23,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import MedicalInformationIcon from "@mui/icons-material/MedicalInformation";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import ReceiptIcon from "@mui/icons-material/Receipt";
@@ -247,18 +246,6 @@ const DoctorSidebar = memo(function DoctorSidebar({ activeView, setActiveView })
               <MedicalInformationIcon sx={{ color: "#4CAF50", fontSize: { xs: 26, sm: 22 } }} />
             </ListItemIcon>
             {(open || isDrawer) && <ListItemText primary={t("myProfiles", language)} />}
-          </ListItemButton>
-        </Tooltip>
-        <Tooltip title={t("addProfile", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton
-            onClick={() => handleNavClick("doctor-searchprofile-add")}
-            selected={activeView === "doctor-searchprofile-add"}
-            sx={{ "&.Mui-selected": { backgroundColor: "rgba(255,255,255,0.2)" } }}
-          >
-            <ListItemIcon>
-              <PersonAddIcon sx={{ color: "#00E5FF", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("addProfile", language)} />}
           </ListItemButton>
         </Tooltip>
         <Divider sx={{ my: 1, borderColor: "rgba(255,255,255,0.2)" }} />

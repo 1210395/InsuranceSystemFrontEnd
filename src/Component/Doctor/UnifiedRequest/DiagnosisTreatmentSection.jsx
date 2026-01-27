@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Paper,
@@ -11,6 +11,8 @@ import {
   FormControlLabel,
   Checkbox,
   Chip,
+  TextField,
+  Grid,
 } from "@mui/material";
 import { useLanguage } from "../../../context/LanguageContext";
 import { t } from "../../../config/translations";
@@ -32,41 +34,9 @@ const DiagnosisTreatmentSection = ({
 }) => {
   const { language, isRTL } = useLanguage();
 
-  // Filter treatments based on selected diagnosis using mappings
-  const filteredTreatments = useMemo(() => {
-    if (!patientForm.diagnosis) {
-      // No diagnosis selected - show all treatments
-      return availableTreatments;
-    }
-
-    // Check if there are mapped treatments for this diagnosis
-    const mappedTreatments = diagnosisTreatmentMappings[patientForm.diagnosis];
-
-    if (mappedTreatments && mappedTreatments.length > 0) {
-      // Return only treatments that are mapped to this diagnosis AND are in availableTreatments
-      return mappedTreatments.filter(t => availableTreatments.includes(t));
-    }
-
-    // If no mappings exist for this diagnosis, show all treatments
-    return availableTreatments;
-  }, [patientForm.diagnosis, diagnosisTreatmentMappings, availableTreatments]);
-
-  // Check if current treatment is still valid when diagnosis changes
-  const handleDiagnosisChange = (e) => {
-    const newDiagnosis = e.target.value;
-    const mappedTreatments = diagnosisTreatmentMappings[newDiagnosis];
-
-    // Check if current treatment is still valid
-    let newTreatment = patientForm.treatment;
-    if (mappedTreatments && mappedTreatments.length > 0) {
-      // If there are mapped treatments and current treatment is not in them, clear it
-      if (!mappedTreatments.includes(patientForm.treatment)) {
-        newTreatment = "";
-      }
-    }
-
-    setPatientForm({ ...patientForm, diagnosis: newDiagnosis, treatment: newTreatment });
-  };
+  // State for selected diagnoses (multiple)
+  const [selectedDiagnoses, setSelectedDiagnoses] = useState([]);
+  const [customDiagnosis, setCustomDiagnosis] = useState("");
 
   // If specialization restrictions failed, show error message
   if (specializationRestrictionFailed) {
@@ -122,62 +92,73 @@ const DiagnosisTreatmentSection = ({
             </Box>
           )}
 
-          {/* Diagnosis Selection */}
-          <FormControl
-            fullWidth
-            sx={{ mb: 2 }}
-            disabled={!selectedSpecialization || hasSameSpecializationRestriction}
-          >
-            <InputLabel>{t("diagnosisLabel", language)}</InputLabel>
-            <Select
-              value={patientForm.diagnosis}
-              onChange={handleDiagnosisChange}
-              label={t("diagnosisLabel", language)}
-              required
-            >
+          {/* Diagnosis Selection - Multiple Checkboxes */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" fontWeight={600} color="#0284c7" mb={1}>
+              {t("diagnosisLabel", language)} *
+            </Typography>
+            <Grid container spacing={1}>
               {availableDiagnoses.map((diagnosis, index) => (
-                <MenuItem key={index} value={diagnosis}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {diagnosis}
-                    {diagnosisTreatmentMappings[diagnosis]?.length > 0 && (
-                      <Chip
-                        label={`${diagnosisTreatmentMappings[diagnosis].length} ${t("treatments", language) || "treatments"}`}
-                        size="small"
-                        sx={{
-                          backgroundColor: "#e8f5e9",
-                          color: "#2e7d32",
-                          fontSize: "0.7rem",
-                          height: "20px",
-                        }}
-                      />
-                    )}
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                <Grid item xs={12} sm={6} key={index}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={selectedDiagnoses.includes(diagnosis)}
+                        onChange={(e) => {
+                          const newSelected = e.target.checked
+                            ? [...selectedDiagnoses, diagnosis]
+                            : selectedDiagnoses.filter((d) => d !== diagnosis);
+                          setSelectedDiagnoses(newSelected);
 
-          {/* Treatment Plan Selection */}
-          <FormControl fullWidth disabled={!selectedSpecialization || hasSameSpecializationRestriction}>
-            <InputLabel>{t("treatmentPlan", language)}</InputLabel>
-            <Select
-              value={patientForm.treatment}
-              onChange={(e) => setPatientForm({ ...patientForm, treatment: e.target.value })}
-              label={t("treatmentPlan", language)}
-              required
-            >
-              {filteredTreatments.map((treatment, index) => (
-                <MenuItem key={index} value={treatment}>
-                  {treatment}
-                </MenuItem>
+                          // Update patientForm with comma-separated diagnoses
+                          const allDiagnoses = [...newSelected];
+                          if (customDiagnosis.trim()) {
+                            allDiagnoses.push(customDiagnosis.trim());
+                          }
+                          setPatientForm({ ...patientForm, diagnosis: allDiagnoses.join(", ") });
+                        }}
+                        disabled={!selectedSpecialization || hasSameSpecializationRestriction}
+                      />
+                    }
+                    label={diagnosis}
+                  />
+                </Grid>
               ))}
-            </Select>
-            {patientForm.diagnosis && diagnosisTreatmentMappings[patientForm.diagnosis]?.length > 0 && (
-              <Typography variant="caption" color="success.main" sx={{ mt: 0.5, ml: 1 }}>
-                {t("treatmentsFilteredByDiagnosis", language) || "Treatments filtered based on selected diagnosis"}
-              </Typography>
-            )}
-          </FormControl>
+            </Grid>
+
+            {/* Custom Diagnosis Input */}
+            <TextField
+              fullWidth
+              label={t("customDiagnosis", language) || "Custom Diagnosis"}
+              value={customDiagnosis}
+              onChange={(e) => {
+                setCustomDiagnosis(e.target.value);
+
+                // Update patientForm with comma-separated diagnoses
+                const allDiagnoses = [...selectedDiagnoses];
+                if (e.target.value.trim()) {
+                  allDiagnoses.push(e.target.value.trim());
+                }
+                setPatientForm({ ...patientForm, diagnosis: allDiagnoses.join(", ") });
+              }}
+              placeholder={t("enterCustomDiagnosis", language) || "Enter custom diagnosis..."}
+              disabled={!selectedSpecialization || hasSameSpecializationRestriction}
+              sx={{ mt: 2 }}
+            />
+          </Box>
+
+          {/* Treatment Plan - Free Text Field */}
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label={t("treatmentPlan", language)}
+            value={patientForm.treatment}
+            onChange={(e) => setPatientForm({ ...patientForm, treatment: e.target.value })}
+            placeholder={t("enterTreatmentPlan", language) || "Enter treatment plan..."}
+            disabled={!selectedSpecialization || hasSameSpecializationRestriction}
+            required
+          />
         </>
       )}
 

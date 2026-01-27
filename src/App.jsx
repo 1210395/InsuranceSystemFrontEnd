@@ -45,7 +45,7 @@ const ManageNotifications = lazy(() => import("./Component/Manager/Notifications
 const ClaimsReport = lazy(() => import("./Component/Manager/Reports/ClaimsReport"));
 const FinancialReport = lazy(() => import("./Component/Manager/Reports/FinancialReport"));
 const Profile = lazy(() => import("./Component/Manager/Profile"));
-const PendingSearchProfiles = lazy(() => import("./Component/Manager/PendingSearchProfiles"));
+const PendingProviderRegistrations = lazy(() => import("./Component/Manager/PendingProviderRegistrations"));
 const ManagerPendingRequests = lazy(() => import("./Component/Manager/Clients/PendingRequests"));
 const AdminRegisterAccounts = lazy(() => import("./Component/Manager/Accounts/AdminRegisterAccounts"));
 const ProviderPriceList = lazy(() => import("./Component/Manager/ProviderPriceList"));
@@ -150,10 +150,10 @@ function App() {
           }
         />
         <Route
-          path="/PendingSearchProfiles"
+          path="/PendingProviderRegistrations"
           element={
             <PrivateRoute role={ROLES.INSURANCE_MANAGER}>
-              <PendingSearchProfiles />
+              <PendingProviderRegistrations />
             </PrivateRoute>
           }
         />

@@ -218,15 +218,15 @@ const Sidebar = () => {
           </Typography>
         )}
         <Tooltip
-          title={t("pendingSearchProfilesTitle", language)}
+          title={t("pendingProviderRegistrations", language) || "Pending Provider Registrations"}
           placement={isRTL ? "left" : "right"}
           disableHoverListener={open || isDrawer}
         >
-          <ListItemButton component={Link} to="/PendingSearchProfiles">
+          <ListItemButton component={Link} to="/PendingProviderRegistrations">
             <ListItemIcon>
               <PendingActionsIcon sx={{ color: "#FF8C00", fontSize: { xs: 26, sm: 22 } }} />
             </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("pendingProfiles", language)} />}
+            {(open || isDrawer) && <ListItemText primary={t("pendingProviderRegistrations", language) || "Provider Registrations"} />}
           </ListItemButton>
         </Tooltip>
 

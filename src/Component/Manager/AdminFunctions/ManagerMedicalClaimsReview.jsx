@@ -1,6 +1,6 @@
 // src/Component/Manager/AdminFunctions/ManagerMedicalClaimsReview.jsx
 // Manager wrapper for MedicalClaimsReview with Manager Sidebar and Header
-// Enhanced with advanced filtering, search, and sorting capabilities
+// Table view with View Details, Approve, and Reject actions
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Box,
@@ -33,6 +33,12 @@ import {
   Slider,
   Card,
   CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from "@mui/material";
 
 // Manager-specific imports
@@ -62,6 +68,9 @@ import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import InfoIcon from "@mui/icons-material/Info";
 
 // Import utilities
 import api from "../../../utils/apiService";
@@ -87,6 +96,7 @@ const ManagerMedicalClaimsReview = () => {
     severity: "success",
   });
 
+  const [openDetailsModal, setOpenDetailsModal] = useState(false);
   const [openFilesModal, setOpenFilesModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
 
@@ -178,7 +188,7 @@ const ManagerMedicalClaimsReview = () => {
 
   // Check if claim is returned by coordinator
   const isReturnedByCoordinator = useCallback((claim) => {
-    return claim.status === CLAIM_STATUS.RETURNED_FOR_REVIEW;
+    return claim?.status === CLAIM_STATUS.RETURNED_FOR_REVIEW;
   }, []);
 
   // Clear all filters
@@ -325,11 +335,11 @@ const ManagerMedicalClaimsReview = () => {
   }, [claims, selectedTab, claimTabs, isReturnedByCoordinator]);
 
   // Approve claim with confirmation
-  const handleApprove = useCallback(async (id, currentStatus) => {
-    if (!isValidTransition(currentStatus, CLAIM_STATUS.APPROVED_MEDICAL)) {
+  const handleApprove = useCallback(async (claim) => {
+    if (!isValidTransition(claim.status, CLAIM_STATUS.APPROVED_MEDICAL)) {
       setSnackbar({
         open: true,
-        message: `${t("cannotApproveFromStatus", language)} ${currentStatus}`,
+        message: `${t("cannotApproveFromStatus", language)} ${claim.status}`,
         severity: "error",
       });
       return;
@@ -339,13 +349,15 @@ const ManagerMedicalClaimsReview = () => {
     setIsSubmitting(true);
 
     try {
-      await api.patch(API_ENDPOINTS.HEALTHCARE_CLAIMS.APPROVE_MEDICAL(id));
-      setClaims((prev) => prev.filter((c) => c.id !== id));
+      await api.patch(API_ENDPOINTS.HEALTHCARE_CLAIMS.APPROVE_MEDICAL(claim.id));
+      setClaims((prev) => prev.filter((c) => c.id !== claim.id));
       setSnackbar({
         open: true,
         message: t("medicalApprovalSuccess", language),
         severity: "success",
       });
+      // Close details modal if open
+      if (openDetailsModal) setOpenDetailsModal(false);
     } catch (err) {
       console.error("Approve failed:", err);
       setSnackbar({
@@ -356,7 +368,7 @@ const ManagerMedicalClaimsReview = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, language]);
+  }, [isSubmitting, language, openDetailsModal]);
 
   // Open reject dialog
   const handleOpenReject = useCallback((claim) => {
@@ -394,6 +406,8 @@ const ManagerMedicalClaimsReview = () => {
         severity: "warning",
       });
       setOpenRejectDialog(false);
+      // Close details modal if open
+      if (openDetailsModal) setOpenDetailsModal(false);
     } catch (err) {
       console.error("Reject failed:", err);
       setSnackbar({
@@ -404,7 +418,13 @@ const ManagerMedicalClaimsReview = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [rejectReason, selectedClaim, isSubmitting, language]);
+  }, [rejectReason, selectedClaim, isSubmitting, language, openDetailsModal]);
+
+  // Open details modal
+  const handleViewDetails = useCallback((claim) => {
+    setSelectedClaim(claim);
+    setOpenDetailsModal(true);
+  }, []);
 
   // Parse role-specific data safely
   const parseRoleSpecificData = useCallback((roleSpecificData) => {
@@ -417,6 +437,20 @@ const ManagerMedicalClaimsReview = () => {
       return `0 ${CURRENCY.SYMBOL}`;
     }
     return `${(amount || 0).toFixed(2)} ${CURRENCY.SYMBOL}`;
+  }, []);
+
+  // Get status chip color
+  const getStatusChipProps = useCallback((status) => {
+    switch (status) {
+      case "RETURNED_FOR_REVIEW":
+        return { color: "error", label: "Returned" };
+      case "PENDING_MEDICAL":
+        return { color: "warning", label: "Pending Medical" };
+      case "PENDING":
+        return { color: "info", label: "Pending" };
+      default:
+        return { color: "default", label: status?.replace(/_/g, " ") };
+    }
   }, []);
 
   return (
@@ -931,258 +965,312 @@ const ManagerMedicalClaimsReview = () => {
               )}
             </Paper>
           ) : (
-            filteredClaims.map((claim) => {
-              const roleData = parseRoleSpecificData(claim.roleSpecificData);
-              const isReturned = isReturnedByCoordinator(claim);
-              const isFollowUp = claim.isFollowUp || (claim.providerRole === ROLES.DOCTOR && claim.amount === 0);
+            <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "#556B2F" }}>
+                    <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>Client</TableCell>
+                    <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>Provider</TableCell>
+                    <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>Diagnosis</TableCell>
+                    <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>Amount</TableCell>
+                    <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>Status</TableCell>
+                    <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>Date</TableCell>
+                    <TableCell sx={{ color: "#fff", fontWeight: "bold", textAlign: "center" }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredClaims.map((claim) => {
+                    const isReturned = isReturnedByCoordinator(claim);
+                    const isFollowUp = claim.isFollowUp || (claim.providerRole === ROLES.DOCTOR && claim.amount === 0);
+                    const statusProps = getStatusChipProps(claim.status);
 
-              return (
-                <Paper
-                  key={claim.id}
-                  sx={{
-                    p: 4,
-                    mb: 3,
-                    borderLeft: isReturned ? "12px solid #D32F2F" : "8px solid #556B2F",
-                    background: isReturned
-                      ? "linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%)"
-                      : "#FFFFFF",
-                    boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
-                    borderRadius: 2,
-                    transition: "0.25s ease",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: "0 12px 40px rgba(0,0,0,0.15)",
-                    },
-                  }}
-                >
-                  {/* RETURNED WARNING */}
-                  {isReturned && (
-                    <Chip
-                      label={t("returnedForReview", language).toUpperCase()}
-                      color="error"
-                      sx={{
-                        mb: 2,
-                        fontWeight: "bold",
-                        fontSize: "0.95rem",
-                        letterSpacing: 0.5,
-                      }}
-                    />
-                  )}
-
-                  <Grid container spacing={3}>
-                    {/* MEDICAL DETAILS */}
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <Typography fontWeight="bold" sx={{ color: "#3D4F23", mb: 1 }}>
-                        {t("medicalDetails", language)}
-                      </Typography>
-
-                      <Stack spacing={1.2}>
-                        <Typography>
-                          <b>{t("diagnosis", language)}:</b> {claim.diagnosis || t("notAvailable", language)}
-                        </Typography>
-                        <Typography>
-                          <b>{t("treatment", language)}:</b> {claim.treatmentDetails || t("notAvailable", language)}
-                        </Typography>
-
-                        {/* Provider Information */}
-                        <Box sx={{ mb: 1.5 }}>
-                          <Typography sx={{ fontWeight: "bold", mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
-                            <ScienceIcon fontSize="small" />
-                            {t("providerInformation", language)}
-                            {claim.providerRole === ROLES.INSURANCE_CLIENT && (
-                              <Chip
-                                label={t("outsideInsuranceNetwork", language)}
-                                size="small"
-                                color="warning"
-                                sx={{ ml: 1, fontWeight: "bold", fontSize: "0.7rem", height: 22 }}
-                              />
-                            )}
-                          </Typography>
-                          <Box sx={{ ml: 3, pl: 2, borderLeft: claim.providerRole === ROLES.INSURANCE_CLIENT ? "2px solid #FFA500" : "2px solid #556B2F" }}>
-                            {claim.providerRole === ROLES.INSURANCE_CLIENT ? (
-                              <>
-                                <Typography>
-                                  <b>Provider Name:</b> {claim.providerName || "N/A"}
-                                </Typography>
-                                {claim.doctorName && (
-                                  <Typography sx={{ mt: 0.5 }}>
-                                    <b>Doctor Name:</b> {claim.doctorName}
-                                  </Typography>
-                                )}
-                                <Typography sx={{ mt: 0.5, fontStyle: "italic", color: "#f59e0b" }}>
-                                  <b>Note:</b> This claim is from a provider outside the insurance network
-                                </Typography>
-                              </>
-                            ) : (
-                              <>
-                                <Typography>
-                                  <b>Name:</b> {claim.providerName || "N/A"}
-                                </Typography>
-                                {claim.providerRole && (
-                                  <Box sx={{ mt: 0.5, display: "flex", alignItems: "center", gap: 0.5 }}>
-                                    <Typography component="span"><b>Role:</b></Typography>
-                                    <Chip
-                                      label={claim.providerRole}
-                                      size="small"
-                                      color="primary"
-                                      sx={{ fontWeight: "bold", textTransform: "uppercase", height: 20, fontSize: "0.7rem" }}
-                                    />
-                                  </Box>
-                                )}
-                                <Typography sx={{ mt: 0.5 }}>
-                                  <b>Employee ID:</b> {claim.providerEmployeeId || "N/A"}
-                                </Typography>
-                              </>
-                            )}
-                          </Box>
-                        </Box>
-
-                        {/* Description */}
-                        {claim.description && (
-                          <Box sx={{ mt: 1 }}>
-                            <Box
-                              component="div"
-                              sx={{
-                                mt: 1,
-                                p: 2,
-                                borderRadius: 2,
-                                whiteSpace: "pre-wrap",
-                                fontSize: "0.95rem",
-                                color: "#333",
-                                bgcolor: "#E8EDE0",
-                              }}
-                            >
-                              <b>Description:</b> {sanitizeString(claim.description)}
-                            </Box>
-                          </Box>
-                        )}
-
-                        {/* Patient/Client Information */}
-                        <Box sx={{ mt: 2 }}>
-                          <Typography sx={{ fontWeight: "bold", mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
-                            <PersonIcon fontSize="small" />
-                            {t("patientClientInformation", language)}
-                          </Typography>
-                          <Box sx={{ ml: 3, pl: 2, borderLeft: "2px solid #8B9A46" }}>
-                            <Typography sx={{ fontWeight: "600", mb: 0.5 }}>{claim.clientName || "N/A"}</Typography>
-                            <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ ml: 1 }}>
-                              {claim.clientAge && <Typography sx={{ color: "#666", fontSize: "0.9rem" }}><b>Age:</b> {claim.clientAge}</Typography>}
-                              {claim.clientGender && <Typography sx={{ color: "#666", fontSize: "0.9rem" }}><b>Gender:</b> {claim.clientGender}</Typography>}
-                              {(claim.clientEmployeeId || claim.employeeId) && <Typography sx={{ color: "#666", fontSize: "0.9rem" }}><b>Employee ID:</b> {claim.clientEmployeeId || claim.employeeId}</Typography>}
-                            </Stack>
-                          </Box>
-                        </Box>
-                      </Stack>
-                    </Grid>
-
-                    {/* BASIC DETAILS */}
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <Typography fontWeight="bold" sx={{ color: "#3D4F23", mb: 1 }}>
-                        {t("basicDetails", language)}
-                      </Typography>
-
-                      <Stack spacing={1.2}>
-                        <Typography>
-                          <EventIcon sx={{ mr: 0.5, verticalAlign: "middle" }} />
-                          <b>Service Date:</b> {claim.serviceDate}
-                        </Typography>
-                        <Typography>
-                          <AccessTimeIcon sx={{ mr: 0.5, verticalAlign: "middle" }} />
-                          <b>Submitted:</b> {timeSince(claim.submittedAt)}
-                        </Typography>
-                        <Box>
-                          <Typography>
-                            <b>Amount:</b>{" "}
-                            {isFollowUp ? (
-                              <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
-                                <span style={{ color: "#dc2626", fontWeight: "bold" }}>{formatAmount(0, true)}</span>
-                                <Chip
-                                  label="Follow-up"
-                                  size="small"
-                                  sx={{
-                                    bgcolor: "#fef3c7",
-                                    color: "#92400e",
-                                    fontWeight: "bold",
-                                    fontSize: "0.7rem",
-                                    height: 20,
-                                    border: "1px solid #f59e0b",
-                                  }}
-                                />
-                              </Box>
-                            ) : (
-                              <span>{formatAmount(claim.amount)}</span>
-                            )}
-                          </Typography>
-                        </Box>
-                        <Typography sx={{ color: "#6B7280", fontSize: "0.85rem" }}>
-                          <b>Claim ID:</b> {claim.id?.substring(0, 8)}...
-                        </Typography>
-                        <Chip
-                          label={claim.status?.replace(/_/g, " ")}
-                          size="small"
-                          sx={{
-                            width: "fit-content",
-                            bgcolor: claim.status === "RETURNED_FOR_REVIEW" ? "#FFEBEE" : "#E8F5E9",
-                            color: claim.status === "RETURNED_FOR_REVIEW" ? "#C62828" : "#2E7D32",
-                            fontWeight: "bold",
-                          }}
-                        />
-                      </Stack>
-                    </Grid>
-
-                    {/* ATTACHMENTS */}
-                    <Grid size={12}>
-                      <Divider sx={{ my: 2 }} />
-                      <Button
-                        variant="outlined"
-                        startIcon={<VisibilityIcon />}
-                        onClick={() => {
-                          setSelectedClaim(claim);
-                          setOpenFilesModal(true);
+                    return (
+                      <TableRow
+                        key={claim.id}
+                        hover
+                        sx={{
+                          bgcolor: isReturned ? "#FFF5F5" : "inherit",
+                          "&:hover": { bgcolor: isReturned ? "#FFEBEE" : "#F5F5F5" },
                         }}
-                        sx={{ textTransform: "none", borderRadius: 2 }}
                       >
-                        {t("viewAttachments", language)}
-                      </Button>
-                    </Grid>
-                  </Grid>
-
-                  {/* ACTIONS */}
-                  <Divider sx={{ my: 3 }} />
-
-                  <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
-                    <Button
-                      variant="contained"
-                      color={isReturned ? "warning" : "success"}
-                      onClick={() => handleApprove(claim.id, claim.status)}
-                      disabled={isSubmitting}
-                      sx={{ textTransform: "none", px: 3, borderRadius: 2 }}
-                    >
-                      {isSubmitting ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : isReturned ? (
-                        t("reApprove", language)
-                      ) : (
-                        t("approveMedical", language)
-                      )}
-                    </Button>
-
-                    <Button
-                      variant="contained"
-                      color="error"
-                      onClick={() => handleOpenReject(claim)}
-                      disabled={isSubmitting}
-                      sx={{ textTransform: "none", px: 3, borderRadius: 2 }}
-                    >
-                      {t("reject", language)}
-                    </Button>
-                  </Box>
-                </Paper>
-              );
-            })
+                        <TableCell>
+                          <Typography fontWeight="500" sx={{ color: "#3D4F23" }}>
+                            {claim.clientName || "N/A"}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ID: {claim.id?.substring(0, 8)}...
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography>{claim.providerName || "N/A"}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {claim.providerRole}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 200 }}>
+                          <Typography noWrap title={claim.diagnosis || "N/A"}>
+                            {claim.diagnosis || "N/A"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {isFollowUp ? (
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <Typography fontWeight="bold" color="text.secondary">0 {CURRENCY.SYMBOL}</Typography>
+                              <Chip label="Follow-up" size="small" sx={{ bgcolor: "#fef3c7", color: "#92400e", fontSize: "0.65rem", height: 18 }} />
+                            </Stack>
+                          ) : (
+                            <Typography fontWeight="bold">{formatAmount(claim.amount)}</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Chip label={statusProps.label} color={statusProps.color} size="small" />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{claim.serviceDate || "N/A"}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {timeSince(claim.submittedAt)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={0.5} justifyContent="center">
+                            <Tooltip title="View Details">
+                              <IconButton size="small" onClick={() => handleViewDetails(claim)} sx={{ color: "#1976D2" }}>
+                                <InfoIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={isReturned ? "Re-Approve" : "Approve"}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleApprove(claim)}
+                                disabled={isSubmitting}
+                                sx={{ color: "#4CAF50" }}
+                              >
+                                <CheckCircleIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Reject">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenReject(claim)}
+                                disabled={isSubmitting}
+                                sx={{ color: "#F44336" }}
+                              >
+                                <CancelIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </Box>
       </Box>
+
+      {/* ==================== DETAILS MODAL ==================== */}
+      <Dialog open={openDetailsModal} onClose={() => setOpenDetailsModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ bgcolor: "#556B2F", color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <AssignmentIcon />
+            Claim Details
+          </Box>
+          {selectedClaim && isReturnedByCoordinator(selectedClaim) && (
+            <Chip label="RETURNED FOR REVIEW" color="error" sx={{ fontWeight: "bold" }} />
+          )}
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedClaim && (
+            <Box>
+              {/* Returned Warning */}
+              {isReturnedByCoordinator(selectedClaim) && selectedClaim.rejectionReason && (
+                <Box sx={{ mb: 3, p: 2, bgcolor: "#FFEBEE", borderRadius: 2, border: "2px solid #F44336" }}>
+                  <Typography fontWeight="bold" color="error.dark" sx={{ mb: 1 }}>
+                    Coordination Admin Note:
+                  </Typography>
+                  <Typography>{sanitizeString(selectedClaim.rejectionReason)}</Typography>
+                </Box>
+              )}
+
+              <Grid container spacing={3}>
+                {/* Client Information */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#3D4F23", mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                    <PersonIcon /> Client Information
+                  </Typography>
+                  <Stack spacing={1} sx={{ pl: 2, borderLeft: "3px solid #556B2F" }}>
+                    <Typography><b>Name:</b> {selectedClaim.clientName || "N/A"}</Typography>
+                    {selectedClaim.clientAge && <Typography><b>Age:</b> {selectedClaim.clientAge}</Typography>}
+                    {selectedClaim.clientGender && <Typography><b>Gender:</b> {selectedClaim.clientGender}</Typography>}
+                    {(selectedClaim.clientEmployeeId || selectedClaim.employeeId) && <Typography><b>Employee ID:</b> {selectedClaim.clientEmployeeId || selectedClaim.employeeId}</Typography>}
+                    {selectedClaim.clientNationalId && <Typography><b>National ID:</b> {selectedClaim.clientNationalId}</Typography>}
+                    {selectedClaim.clientFaculty && <Typography><b>Faculty:</b> {selectedClaim.clientFaculty}</Typography>}
+                    {selectedClaim.clientDepartment && <Typography><b>Department:</b> {selectedClaim.clientDepartment}</Typography>}
+                  </Stack>
+
+                  {/* Family Member Info if exists */}
+                  {selectedClaim.familyMemberName && (
+                    <Box sx={{ mt: 2, p: 2, bgcolor: "#FFF8E1", borderRadius: 2 }}>
+                      <Typography variant="subtitle2" fontWeight="bold" sx={{ color: "#F57C00", mb: 1 }}>
+                        Family Member Claim
+                      </Typography>
+                      <Typography><b>Member:</b> {selectedClaim.familyMemberName}</Typography>
+                      {selectedClaim.familyMemberRelation && <Typography><b>Relation:</b> {selectedClaim.familyMemberRelation}</Typography>}
+                      {selectedClaim.familyMemberAge && <Typography><b>Age:</b> {selectedClaim.familyMemberAge}</Typography>}
+                      {selectedClaim.familyMemberGender && <Typography><b>Gender:</b> {selectedClaim.familyMemberGender}</Typography>}
+                    </Box>
+                  )}
+                </Grid>
+
+                {/* Provider Information */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#3D4F23", mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                    <ScienceIcon /> Provider Information
+                  </Typography>
+                  <Stack spacing={1} sx={{ pl: 2, borderLeft: "3px solid #556B2F" }}>
+                    <Typography><b>Name:</b> {selectedClaim.providerName || "N/A"}</Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography><b>Role:</b></Typography>
+                      <Chip label={selectedClaim.providerRole} size="small" color="primary" />
+                    </Box>
+                    {selectedClaim.providerEmployeeId && <Typography><b>Employee ID:</b> {selectedClaim.providerEmployeeId}</Typography>}
+                    {selectedClaim.providerSpecialization && <Typography><b>Specialization:</b> {selectedClaim.providerSpecialization}</Typography>}
+                  </Stack>
+                </Grid>
+
+                {/* Medical Details */}
+                <Grid size={12}>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#3D4F23", mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                    <LocalHospitalIcon /> Medical Details
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography><b>Diagnosis:</b> {selectedClaim.diagnosis || "N/A"}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Typography><b>Treatment:</b> {selectedClaim.treatmentDetails || "N/A"}</Typography>
+                    </Grid>
+                    {selectedClaim.description && (
+                      <Grid size={12}>
+                        <Typography><b>Description:</b> {sanitizeString(selectedClaim.description)}</Typography>
+                      </Grid>
+                    )}
+                  </Grid>
+
+                  {/* Role-specific data */}
+                  {(() => {
+                    const roleData = parseRoleSpecificData(selectedClaim.roleSpecificData);
+                    if (!roleData) return null;
+
+                    // Lab/Radiology Test
+                    if ((selectedClaim.providerRole === ROLES.LAB_TECH || selectedClaim.providerRole === ROLES.RADIOLOGIST) && roleData.testName) {
+                      return (
+                        <Box sx={{ mt: 2, p: 2, bgcolor: "#E3F2FD", borderRadius: 2 }}>
+                          <Typography><b>Test Name:</b> {roleData.testName}</Typography>
+                        </Box>
+                      );
+                    }
+
+                    // Pharmacy Items
+                    if (selectedClaim.providerRole === ROLES.PHARMACIST && roleData.items?.length > 0) {
+                      return (
+                        <Box sx={{ mt: 2, p: 2, bgcolor: "#E8F5E9", borderRadius: 2 }}>
+                          <Typography fontWeight="bold" sx={{ mb: 1 }}>Medicines:</Typography>
+                          {roleData.items.map((item, idx) => (
+                            <Box key={idx} sx={{ mb: 1, pl: 2 }}>
+                              <Typography fontWeight="500">{item.name}</Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {item.form && `Form: ${item.form}`}
+                                {item.calculatedQuantity && ` | Qty: ${item.calculatedQuantity}`}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      );
+                    }
+
+                    return null;
+                  })()}
+                </Grid>
+
+                {/* Claim Details */}
+                <Grid size={12}>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#3D4F23", mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                    <EventIcon /> Claim Details
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 6, md: 3 }}>
+                      <Typography variant="body2" color="text.secondary">Amount</Typography>
+                      <Typography fontWeight="bold" variant="h6">
+                        {formatAmount(selectedClaim.amount, selectedClaim.isFollowUp || (selectedClaim.providerRole === ROLES.DOCTOR && selectedClaim.amount === 0))}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6, md: 3 }}>
+                      <Typography variant="body2" color="text.secondary">Service Date</Typography>
+                      <Typography fontWeight="bold">{selectedClaim.serviceDate || "N/A"}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6, md: 3 }}>
+                      <Typography variant="body2" color="text.secondary">Submitted</Typography>
+                      <Typography fontWeight="bold">{timeSince(selectedClaim.submittedAt)}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6, md: 3 }}>
+                      <Typography variant="body2" color="text.secondary">Status</Typography>
+                      <Chip label={getStatusChipProps(selectedClaim.status).label} color={getStatusChipProps(selectedClaim.status).color} size="small" />
+                    </Grid>
+                  </Grid>
+                </Grid>
+
+                {/* Attachments */}
+                {selectedClaim.invoiceImagePath && (
+                  <Grid size={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#3D4F23", mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                      <VisibilityIcon /> Attachments
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      startIcon={<VisibilityIcon />}
+                      onClick={() => setOpenFilesModal(true)}
+                      sx={{ textTransform: "none" }}
+                    >
+                      View Attachment
+                    </Button>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setOpenDetailsModal(false)} sx={{ textTransform: "none" }}>
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<CheckCircleIcon />}
+            onClick={() => selectedClaim && handleApprove(selectedClaim)}
+            disabled={isSubmitting}
+            sx={{ textTransform: "none" }}
+          >
+            {isSubmitting ? <CircularProgress size={20} color="inherit" /> : (selectedClaim && isReturnedByCoordinator(selectedClaim) ? "Re-Approve" : "Approve")}
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<CancelIcon />}
+            onClick={() => selectedClaim && handleOpenReject(selectedClaim)}
+            disabled={isSubmitting}
+            sx={{ textTransform: "none" }}
+          >
+            Reject
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ATTACHMENTS MODAL */}
       <Dialog

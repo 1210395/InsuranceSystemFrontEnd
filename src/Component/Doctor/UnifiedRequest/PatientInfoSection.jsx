@@ -37,6 +37,8 @@ const PatientInfoSection = ({
   handleEmployeeIdLookup,
   handleNationalIdLookup,
   onPatientChange,
+  validatePatient,
+  showError,
 }) => {
   const { language, isRTL } = useLanguage();
   const [searchType, setSearchType] = useState("employeeId");
@@ -89,8 +91,9 @@ const PatientInfoSection = ({
     } else {
       const member = familyMembers.find((m) => m.id === e.target.value);
       if (member) {
-        setSelectedFamilyMember(member);
         const memberAge = member.dateOfBirth ? calculateAge(member.dateOfBirth) : "";
+
+        setSelectedFamilyMember(member);
         setPatientForm((prev) => ({
           ...prev,
           memberId: member.id,

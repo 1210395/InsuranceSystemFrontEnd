@@ -210,7 +210,7 @@ const fetchClientFamily = async (client) => {
       <Box
         sx={{
           flexGrow: 1,
-          backgroundColor: "#f4f6f9",
+          backgroundColor: "#FAF8F5",
           minHeight: "100vh",
           marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
           marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
@@ -223,9 +223,9 @@ const fetchClientFamily = async (client) => {
           <Typography
             variant="h4"
             fontWeight="bold"
-            sx={{ color: "#120460", display: "flex", alignItems: "center" }}
+            sx={{ color: "#3D4F23", display: "flex", alignItems: "center" }}
           >
-            <GroupAddIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0, fontSize: 35, color: "#1E8EAB" }} />
+            <GroupAddIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0, fontSize: 35, color: "#556B2F" }} />
             {t("clientRoleRequests", language)}
           </Typography>
           <Typography variant="body1" color="text.secondary" gutterBottom>
@@ -311,7 +311,7 @@ const fetchClientFamily = async (client) => {
 {/* General Info */}
 <Grid item xs={12} md={6}>
   <Paper sx={{ p: 2, borderRadius: 2 }}>
-    <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1, color: "#1E8EAB" }}>
+    <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1, color: "#556B2F" }}>
       {t("generalInformationTitle", language)}
     </Typography>
     <Stack spacing={1}>
@@ -361,7 +361,7 @@ const fetchClientFamily = async (client) => {
   {/* فقط عرض هذا القسم للعميل الذي يمتلك دور INSURANCE_CLIENT */}
   {client.requestedRole === "INSURANCE_CLIENT" && (
     <>
-      <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#1E8EAB" }}>
+      <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#556B2F" }}>
         {t("chronicDiseasesSection", language)}
       </Typography>
       <Stack spacing={1}>
@@ -439,7 +439,7 @@ const fetchClientFamily = async (client) => {
                     <Typography
                       variant="subtitle1"
                       fontWeight="bold"
-                      sx={{ mb: 1, color: "#1E8EAB" }}
+                      sx={{ mb: 1, color: "#556B2F" }}
                     >
                       {t("contactInfoSection", language)}
                     </Typography>
@@ -469,7 +469,7 @@ const fetchClientFamily = async (client) => {
                     <Typography
                       variant="subtitle1"
                       fontWeight="bold"
-                      sx={{ mb: 1, color: "#1E8EAB" }}
+                      sx={{ mb: 1, color: "#556B2F" }}
                     >
                       {t("requestedRoleLabel", language)}
                     </Typography>
@@ -485,7 +485,7 @@ const fetchClientFamily = async (client) => {
                     <Typography
                       variant="subtitle1"
                       fontWeight="bold"
-                      sx={{ mb: 1, color: "#1E8EAB" }}
+                      sx={{ mb: 1, color: "#556B2F" }}
                     >
                       {t("universityCardSection", language)}
                     </Typography>
@@ -515,7 +515,7 @@ const fetchClientFamily = async (client) => {
                     <Typography
                       variant="subtitle1"
                       fontWeight="bold"
-                      sx={{ mb: 1, color: "#1E8EAB" }}
+                      sx={{ mb: 1, color: "#556B2F" }}
                     >
                       {t("requestStatusLabel", language)}
                     </Typography>

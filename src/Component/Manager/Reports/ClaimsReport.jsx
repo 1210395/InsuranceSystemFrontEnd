@@ -190,30 +190,30 @@ const ClaimsReport = () => {
 
   // Provider type options for filter
   const providerTypeOptions = useMemo(() => [
-    { value: "all", label: t("allProviders", language) || "All Providers", icon: null },
-    { value: "DOCTOR", label: t("doctorClaims", language) || "Doctor Claims", icon: <LocalHospitalIcon sx={{ fontSize: 18 }} /> },
-    { value: "PHARMACIST", label: t("pharmacistClaims", language) || "Pharmacy Claims", icon: <LocalPharmacyIcon sx={{ fontSize: 18 }} /> },
-    { value: "LAB_TECH", label: t("labClaims", language) || "Lab Claims", icon: <ScienceIcon sx={{ fontSize: 18 }} /> },
-    { value: "RADIOLOGIST", label: t("radiologyClaims", language) || "Radiology Claims", icon: <RadiologyIcon sx={{ fontSize: 18 }} /> },
-    { value: "INSURANCE_CLIENT", label: t("clientClaims", language) || "Client Claims", icon: <PersonOutlineIcon sx={{ fontSize: 18 }} /> },
-    { value: "OTHER", label: t("otherClaims", language) || "Other/Unregistered", icon: <HelpOutlineIcon sx={{ fontSize: 18 }} /> },
+    { value: "all", label: t("allProviders", language) || "جميع مقدمي الخدمات", icon: null },
+    { value: "DOCTOR", label: t("doctorClaims", language) || "مطالبات الأطباء", icon: <LocalHospitalIcon sx={{ fontSize: 18 }} /> },
+    { value: "PHARMACIST", label: t("pharmacistClaims", language) || "مطالبات الصيدليات", icon: <LocalPharmacyIcon sx={{ fontSize: 18 }} /> },
+    { value: "LAB_TECH", label: t("labClaims", language) || "مطالبات المختبرات", icon: <ScienceIcon sx={{ fontSize: 18 }} /> },
+    { value: "RADIOLOGIST", label: t("radiologyClaims", language) || "مطالبات الأشعة", icon: <RadiologyIcon sx={{ fontSize: 18 }} /> },
+    { value: "INSURANCE_CLIENT", label: t("clientClaims", language) || "مطالبات العملاء", icon: <PersonOutlineIcon sx={{ fontSize: 18 }} /> },
+    { value: "OTHER", label: t("otherClaims", language) || "أخرى/غير مسجل", icon: <HelpOutlineIcon sx={{ fontSize: 18 }} /> },
   ], [language]);
 
   // Status options for filter
   const statusOptions = useMemo(() => [
-    { value: "all", label: t("allStatuses", language) || "All Statuses" },
-    { value: "approved", label: t("approved", language) || "Approved" },
-    { value: "rejected", label: t("rejected", language) || "Rejected" },
-    { value: "pending", label: t("pending", language) || "Pending" },
+    { value: "all", label: t("allStatuses", language) || "جميع الحالات" },
+    { value: "approved", label: t("approved", language) || "موافق عليها" },
+    { value: "rejected", label: t("rejected", language) || "مرفوضة" },
+    { value: "pending", label: t("pending", language) || "معلقة" },
   ], [language]);
 
   // Sort options
   const sortOptions = useMemo(() => [
-    { value: "dateDesc", label: t("newestFirst", language) || "Newest First" },
-    { value: "dateAsc", label: t("oldestFirst", language) || "Oldest First" },
-    { value: "amountDesc", label: t("highestAmount", language) || "Highest Amount" },
-    { value: "amountAsc", label: t("lowestAmount", language) || "Lowest Amount" },
-    { value: "memberName", label: t("memberNameAZ", language) || "Member Name (A-Z)" },
+    { value: "dateDesc", label: t("newestFirst", language) || "الأحدث أولاً" },
+    { value: "dateAsc", label: t("oldestFirst", language) || "الأقدم أولاً" },
+    { value: "amountDesc", label: t("highestAmount", language) || "الأعلى مبلغاً" },
+    { value: "amountAsc", label: t("lowestAmount", language) || "الأقل مبلغاً" },
+    { value: "memberName", label: t("memberNameAZ", language) || "اسم العضو (أ-ي)" },
   ], [language]);
 
   useEffect(() => {
@@ -372,7 +372,8 @@ const ClaimsReport = () => {
             flexGrow: 1,
             backgroundColor: "#FAF8F5",
             minHeight: "100vh",
-            marginLeft: "240px",
+            marginLeft: isRTL ? 0 : "240px",
+            marginRight: isRTL ? "240px" : 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -393,7 +394,8 @@ const ClaimsReport = () => {
             flexGrow: 1,
             backgroundColor: "#FAF8F5",
             minHeight: "100vh",
-            marginLeft: "240px",
+            marginLeft: isRTL ? 0 : "240px",
+            marginRight: isRTL ? "240px" : 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -413,7 +415,8 @@ const ClaimsReport = () => {
           flexGrow: 1,
           backgroundColor: "#FAF8F5",
           minHeight: "100vh",
-          marginLeft: "240px",
+          marginLeft: isRTL ? 0 : "240px",
+          marginRight: isRTL ? "240px" : 0,
         }}
       >
         <Header />
@@ -427,14 +430,14 @@ const ClaimsReport = () => {
                 sx={{ color: "#3D4F23", display: "flex", alignItems: "center" }}
               >
                 <AssignmentIcon sx={{ mr: 1, fontSize: 35, color: "#556B2F" }} />
-                {t("claimsReport", language)}
+                {t("claimsReport", language) || "تقرير المطالبات"}
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                {t("claimsReportDescription", language)}
+                {t("claimsReportDescription", language) || "عرض وإدارة جميع مطالبات التأمين الصحي"}
               </Typography>
             </Box>
             <Stack direction="row" spacing={1}>
-              <Tooltip title={t("refresh", language) || "Refresh"}>
+              <Tooltip title={t("refresh", language) || "تحديث"}>
                 <IconButton onClick={fetchReport} sx={{ color: "#556B2F" }}>
                   <RefreshIcon />
                 </IconButton>
@@ -450,7 +453,7 @@ const ClaimsReport = () => {
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder={t("searchClaims", language) || "Search claims..."}
+                  placeholder={t("searchClaims", language) || "البحث في المطالبات..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   InputProps={{
@@ -473,10 +476,10 @@ const ClaimsReport = () => {
               {/* Status Filter */}
               <Grid item xs={6} md={2}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>{t("status", language) || "Status"}</InputLabel>
+                  <InputLabel>{t("status", language) || "الحالة"}</InputLabel>
                   <Select
                     value={statusFilter}
-                    label={t("status", language) || "Status"}
+                    label={t("status", language) || "الحالة"}
                     onChange={(e) => setStatusFilter(e.target.value)}
                   >
                     {statusOptions.map((option) => (
@@ -491,10 +494,10 @@ const ClaimsReport = () => {
               {/* Provider Type Filter */}
               <Grid item xs={6} md={2.5}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>{t("providerType", language) || "Provider Type"}</InputLabel>
+                  <InputLabel>{t("providerType", language) || "نوع مقدم الخدمة"}</InputLabel>
                   <Select
                     value={providerTypeFilter}
-                    label={t("providerType", language) || "Provider Type"}
+                    label={t("providerType", language) || "نوع مقدم الخدمة"}
                     onChange={(e) => setProviderTypeFilter(e.target.value)}
                   >
                     {providerTypeOptions.map((option) => (
@@ -512,10 +515,10 @@ const ClaimsReport = () => {
               {/* Sort By */}
               <Grid item xs={6} md={2}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>{t("sortBy", language) || "Sort By"}</InputLabel>
+                  <InputLabel>{t("sortBy", language) || "ترتيب حسب"}</InputLabel>
                   <Select
                     value={sortBy}
-                    label={t("sortBy", language) || "Sort By"}
+                    label={t("sortBy", language) || "ترتيب حسب"}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
                     {sortOptions.map((option) => (
@@ -549,7 +552,7 @@ const ClaimsReport = () => {
                     },
                   }}
                 >
-                  {t("filters", language) || "Filters"}
+                  {t("filters", language) || "الفلاتر"}
                 </Button>
               </Grid>
             </Grid>
@@ -562,13 +565,13 @@ const ClaimsReport = () => {
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" sx={{ mb: 1, color: "#556B2F", display: "flex", alignItems: "center" }}>
                     <DateRangeIcon sx={{ mr: 1, fontSize: 18 }} />
-                    {t("dateRange", language) || "Date Range"}
+                    {t("dateRange", language) || "نطاق التاريخ"}
                   </Typography>
                   <Stack direction="row" spacing={2}>
                     <TextField
                       type="date"
                       size="small"
-                      label={t("from", language) || "From"}
+                      label={t("from", language) || "من"}
                       value={dateFrom}
                       onChange={(e) => setDateFrom(e.target.value)}
                       InputLabelProps={{ shrink: true }}
@@ -577,7 +580,7 @@ const ClaimsReport = () => {
                     <TextField
                       type="date"
                       size="small"
-                      label={t("to", language) || "To"}
+                      label={t("to", language) || "إلى"}
                       value={dateTo}
                       onChange={(e) => setDateTo(e.target.value)}
                       InputLabelProps={{ shrink: true }}
@@ -590,7 +593,7 @@ const ClaimsReport = () => {
                 <Grid item xs={12} md={3}>
                   <Typography variant="subtitle2" sx={{ mb: 1, color: "#556B2F", display: "flex", alignItems: "center" }}>
                     <DescriptionIcon sx={{ mr: 1, fontSize: 18 }} />
-                    {t("policy", language) || "Policy"}
+                    {t("policy", language) || "البوليصة"}
                   </Typography>
                   <FormControl fullWidth size="small">
                     <Select
@@ -598,7 +601,7 @@ const ClaimsReport = () => {
                       onChange={(e) => setPolicyFilter(e.target.value)}
                       displayEmpty
                     >
-                      <MenuItem value="all">{t("allPolicies", language) || "All Policies"}</MenuItem>
+                      <MenuItem value="all">{t("allPolicies", language) || "جميع البوليصات"}</MenuItem>
                       {availablePolicies.map((policy) => (
                         <MenuItem key={policy} value={policy}>
                           {policy}
@@ -612,7 +615,7 @@ const ClaimsReport = () => {
                 <Grid item xs={12} md={3}>
                   <Typography variant="subtitle2" sx={{ mb: 1, color: "#556B2F", display: "flex", alignItems: "center" }}>
                     <AttachMoneyIcon sx={{ mr: 1, fontSize: 18 }} />
-                    {t("amountRange", language) || "Amount Range"}: ${amountRange[0]} - ${amountRange[1]}
+                    {t("amountRange", language) || "نطاق المبلغ"}: ${amountRange[0]} - ${amountRange[1]}
                   </Typography>
                   <Box sx={{ px: 2 }}>
                     <Slider
@@ -649,7 +652,7 @@ const ClaimsReport = () => {
                         },
                       }}
                     >
-                      {t("clearFilters", language) || "Clear All Filters"}
+                      {t("clearFilters", language) || "مسح جميع الفلاتر"}
                     </Button>
                   </Box>
                 </Grid>
@@ -662,7 +665,7 @@ const ClaimsReport = () => {
             <Paper sx={{ p: 1.5, mb: 2, backgroundColor: "#E8EDE0" }}>
               <Typography variant="body2" sx={{ color: "#3D4F23", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
                 <FilterListIcon sx={{ fontSize: 16, verticalAlign: "middle" }} />
-                {t("showingFilteredResults", language) || "Showing filtered results"}: {filteredStats.totalClaims} {t("claims", language) || "claims"}
+                {t("showingFilteredResults", language) || "عرض النتائج المفلترة"}: {filteredStats.totalClaims} {t("claims", language) || "مطالبة"}
                 {statusFilter !== "all" && (
                   <Chip size="small" label={statusOptions.find(o => o.value === statusFilter)?.label} sx={{ backgroundColor: "#556B2F", color: "#fff" }} />
                 )}
@@ -685,37 +688,37 @@ const ClaimsReport = () => {
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={2}>
               <Paper sx={{ p: 2, textAlign: "center", backgroundColor: "#F5F5DC" }}>
-                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("totalClaims", language)}</Typography>
+                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("totalClaims", language) || "إجمالي المطالبات"}</Typography>
                 <Chip label={filteredStats.totalClaims} sx={{ backgroundColor: "#556B2F", color: "#fff" }} />
               </Paper>
             </Grid>
             <Grid item xs={12} md={2}>
               <Paper sx={{ p: 2, textAlign: "center", backgroundColor: "#F5F5DC" }}>
-                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("approved", language)}</Typography>
+                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("approved", language) || "موافق عليها"}</Typography>
                 <Chip label={filteredStats.approvedClaims} sx={{ backgroundColor: "#8B9A46", color: "#fff" }} />
               </Paper>
             </Grid>
             <Grid item xs={12} md={2}>
               <Paper sx={{ p: 2, textAlign: "center", backgroundColor: "#F5F5DC" }}>
-                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("rejected", language)}</Typography>
+                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("rejected", language) || "مرفوضة"}</Typography>
                 <Chip label={filteredStats.rejectedClaims} sx={{ backgroundColor: "#7B8B5E", color: "#fff" }} />
               </Paper>
             </Grid>
             <Grid item xs={12} md={2}>
               <Paper sx={{ p: 2, textAlign: "center", backgroundColor: "#F5F5DC" }}>
-                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("pending", language)}</Typography>
+                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("pending", language) || "معلقة"}</Typography>
                 <Chip label={filteredStats.pendingClaims} sx={{ backgroundColor: "#A8B56B", color: "#fff" }} />
               </Paper>
             </Grid>
             <Grid item xs={12} md={2}>
               <Paper sx={{ p: 2, textAlign: "center", backgroundColor: "#F5F5DC" }}>
-                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("approvedAmount", language)}</Typography>
+                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("approvedAmount", language) || "المبلغ الموافق"}</Typography>
                 <Typography sx={{ color: "#556B2F", fontWeight: "bold" }}>${filteredStats.totalApprovedAmount.toFixed(2)}</Typography>
               </Paper>
             </Grid>
             <Grid item xs={12} md={2}>
               <Paper sx={{ p: 2, textAlign: "center", backgroundColor: "#F5F5DC" }}>
-                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("rejectedAmount", language)}</Typography>
+                <Typography variant="h6" sx={{ color: "#3D4F23" }}>{t("rejectedAmount", language) || "المبلغ المرفوض"}</Typography>
                 <Typography sx={{ color: "#7B8B5E", fontWeight: "bold" }}>${filteredStats.totalRejectedAmount.toFixed(2)}</Typography>
               </Paper>
             </Grid>
@@ -725,7 +728,7 @@ const ClaimsReport = () => {
           {(statusFilter === "all" || statusFilter === "approved") && (
             <>
               <Typography variant="h5" sx={{ mt: 2, mb: 1, color: "#556B2F", display: "flex", alignItems: "center" }}>
-                {t("approvedClaims", language)}
+                {t("approvedClaims", language) || "المطالبات الموافق عليها"}
                 <Chip label={filteredApprovedList.length} size="small" sx={{ ml: 1, backgroundColor: "#8B9A46", color: "#fff" }} />
               </Typography>
               {filteredApprovedList.length > 0 ? (
@@ -733,20 +736,20 @@ const ClaimsReport = () => {
                   <Paper key={claim.id} sx={{ p: 2, mb: 2, backgroundColor: "#E8EDE0", borderLeft: "4px solid #556B2F" }}>
                     <Grid container spacing={2} alignItems="center">
                       <Grid item xs={12} md={2.5}>
-                        <Typography><PersonIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#556B2F" }} /><b>{t("member", language)}:</b> {claim.memberName}</Typography>
+                        <Typography><PersonIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#556B2F" }} /><b>{t("member", language) || "العضو"}:</b> {claim.memberName}</Typography>
                       </Grid>
                       <Grid item xs={12} md={2}>
-                        <Typography><DescriptionIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#556B2F" }} /><b>{t("policy", language)}:</b> {claim.policyName}</Typography>
+                        <Typography><DescriptionIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#556B2F" }} /><b>{t("policy", language) || "البوليصة"}:</b> {claim.policyName}</Typography>
                       </Grid>
                       <Grid item xs={12} md={2.5}>
-                        <Typography><b>{t("description", language)}:</b> {sanitizeString(claim.description)}</Typography>
+                        <Typography><b>{t("description", language) || "الوصف"}:</b> {sanitizeString(claim.description)}</Typography>
                       </Grid>
                       <Grid item xs={12} md={1.5}>
-                        <Typography><AttachMoneyIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#556B2F" }} /><b>{t("amount", language)}:</b> ${claim.amount}</Typography>
+                        <Typography><AttachMoneyIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#556B2F" }} /><b>{t("amount", language) || "المبلغ"}:</b> ${claim.amount}</Typography>
                       </Grid>
                       <Grid item xs={12} md={3.5} sx={{ textAlign: "center" }}>
                         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
-                          <Tooltip title={t("viewDetails", language) || "View Details"}>
+                          <Tooltip title={t("viewDetails", language) || "عرض التفاصيل"}>
                             <IconButton
                               onClick={() => handleViewDetails(claim, "approved")}
                               sx={{ color: "#556B2F", "&:hover": { backgroundColor: "rgba(85, 107, 47, 0.1)" } }}
@@ -754,7 +757,7 @@ const ClaimsReport = () => {
                               <VisibilityIcon />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title={t("returnForReview", language) || "Return for Review"}>
+                          <Tooltip title={t("returnForReview", language) || "إعادة للمراجعة"}>
                             <IconButton
                               onClick={() => handleOpenReturnDialog(claim)}
                               disabled={actionLoading}
@@ -763,7 +766,7 @@ const ClaimsReport = () => {
                               <UndoIcon />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title={t("markAsPaid", language) || "Mark as Paid (Final)"}>
+                          <Tooltip title={t("markAsPaid", language) || "تعليم كمدفوعة (نهائي)"}>
                             <IconButton
                               onClick={() => handleMarkAsPaid(claim)}
                               disabled={actionLoading}
@@ -778,7 +781,7 @@ const ClaimsReport = () => {
                   </Paper>
                 ))
               ) : (
-                <Typography color="text.secondary" sx={{ mb: 2 }}>{t("noApprovedClaims", language)}</Typography>
+                <Typography color="text.secondary" sx={{ mb: 2 }}>{t("noApprovedClaims", language) || "لا توجد مطالبات موافق عليها"}</Typography>
               )}
             </>
           )}
@@ -787,7 +790,7 @@ const ClaimsReport = () => {
           {(statusFilter === "all" || statusFilter === "rejected") && (
             <>
               <Typography variant="h5" sx={{ mt: 2, mb: 1, color: "#7B8B5E", display: "flex", alignItems: "center" }}>
-                {t("rejectedClaims", language)}
+                {t("rejectedClaims", language) || "المطالبات المرفوضة"}
                 <Chip label={filteredRejectedList.length} size="small" sx={{ ml: 1, backgroundColor: "#7B8B5E", color: "#fff" }} />
               </Typography>
               {filteredRejectedList.length > 0 ? (
@@ -795,22 +798,22 @@ const ClaimsReport = () => {
                   <Paper key={claim.id} sx={{ p: 2, mb: 2, backgroundColor: "#F5F5DC", borderLeft: "4px solid #7B8B5E" }}>
                     <Grid container spacing={2} alignItems="center">
                       <Grid item xs={12} md={2.5}>
-                        <Typography><PersonIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#7B8B5E" }} /><b>{t("member", language)}:</b> {claim.memberName}</Typography>
+                        <Typography><PersonIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#7B8B5E" }} /><b>{t("member", language) || "العضو"}:</b> {claim.memberName}</Typography>
                       </Grid>
                       <Grid item xs={12} md={2}>
-                        <Typography><DescriptionIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#7B8B5E" }} /><b>{t("policy", language)}:</b> {claim.policyName}</Typography>
+                        <Typography><DescriptionIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#7B8B5E" }} /><b>{t("policy", language) || "البوليصة"}:</b> {claim.policyName}</Typography>
                       </Grid>
                       <Grid item xs={12} md={2.5}>
-                        <Typography><b>{t("description", language)}:</b> {sanitizeString(claim.description)}</Typography>
+                        <Typography><b>{t("description", language) || "الوصف"}:</b> {sanitizeString(claim.description)}</Typography>
                       </Grid>
                       <Grid item xs={12} md={2}>
-                        <Typography color="error"><b>{t("reason", language)}:</b> {sanitizeString(claim.rejectionReason)}</Typography>
+                        <Typography color="error"><b>{t("reason", language) || "السبب"}:</b> {sanitizeString(claim.rejectionReason)}</Typography>
                       </Grid>
                       <Grid item xs={12} md={2}>
-                        <Typography><AttachMoneyIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#7B8B5E" }} /><b>{t("amount", language)}:</b> ${claim.amount}</Typography>
+                        <Typography><AttachMoneyIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#7B8B5E" }} /><b>{t("amount", language) || "المبلغ"}:</b> ${claim.amount}</Typography>
                       </Grid>
                       <Grid item xs={12} md={1} sx={{ textAlign: "center" }}>
-                        <Tooltip title={t("viewDetails", language) || "View Details"}>
+                        <Tooltip title={t("viewDetails", language) || "عرض التفاصيل"}>
                           <IconButton
                             onClick={() => handleViewDetails(claim, "rejected")}
                             sx={{ color: "#7B8B5E", "&:hover": { backgroundColor: "rgba(123, 139, 94, 0.1)" } }}
@@ -823,7 +826,7 @@ const ClaimsReport = () => {
                   </Paper>
                 ))
               ) : (
-                <Typography color="text.secondary" sx={{ mb: 2 }}>{t("noRejectedClaims", language)}</Typography>
+                <Typography color="text.secondary" sx={{ mb: 2 }}>{t("noRejectedClaims", language) || "لا توجد مطالبات مرفوضة"}</Typography>
               )}
             </>
           )}
@@ -832,7 +835,7 @@ const ClaimsReport = () => {
           {(statusFilter === "all" || statusFilter === "pending") && (
             <>
               <Typography variant="h5" sx={{ mt: 2, mb: 1, color: "#8B9A46", display: "flex", alignItems: "center" }}>
-                {t("pendingClaimsTitle", language)}
+                {t("pendingClaimsTitle", language) || "المطالبات المعلقة"}
                 <Chip label={filteredPendingList.length} size="small" sx={{ ml: 1, backgroundColor: "#A8B56B", color: "#fff" }} />
               </Typography>
               {filteredPendingList.length > 0 ? (
@@ -840,19 +843,19 @@ const ClaimsReport = () => {
                   <Paper key={claim.id} sx={{ p: 2, mb: 2, backgroundColor: "#FAF8F5", borderLeft: "4px solid #8B9A46" }}>
                     <Grid container spacing={2} alignItems="center">
                       <Grid item xs={12} md={3}>
-                        <Typography><PersonIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#8B9A46" }} /><b>{t("member", language)}:</b> {claim.memberName}</Typography>
+                        <Typography><PersonIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#8B9A46" }} /><b>{t("member", language) || "العضو"}:</b> {claim.memberName}</Typography>
                       </Grid>
                       <Grid item xs={12} md={2.5}>
-                        <Typography><DescriptionIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#8B9A46" }} /><b>{t("policy", language)}:</b> {claim.policyName}</Typography>
+                        <Typography><DescriptionIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#8B9A46" }} /><b>{t("policy", language) || "البوليصة"}:</b> {claim.policyName}</Typography>
                       </Grid>
                       <Grid item xs={12} md={3.5}>
-                        <Typography><b>{t("description", language)}:</b> {sanitizeString(claim.description)}</Typography>
+                        <Typography><b>{t("description", language) || "الوصف"}:</b> {sanitizeString(claim.description)}</Typography>
                       </Grid>
                       <Grid item xs={12} md={2}>
-                        <Typography><AttachMoneyIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#8B9A46" }} /><b>{t("amount", language)}:</b> ${claim.amount}</Typography>
+                        <Typography><AttachMoneyIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle", color: "#8B9A46" }} /><b>{t("amount", language) || "المبلغ"}:</b> ${claim.amount}</Typography>
                       </Grid>
                       <Grid item xs={12} md={1} sx={{ textAlign: "center" }}>
-                        <Tooltip title={t("viewDetails", language) || "View Details"}>
+                        <Tooltip title={t("viewDetails", language) || "عرض التفاصيل"}>
                           <IconButton
                             onClick={() => handleViewDetails(claim, "pending")}
                             sx={{ color: "#8B9A46", "&:hover": { backgroundColor: "rgba(139, 154, 70, 0.1)" } }}
@@ -865,7 +868,7 @@ const ClaimsReport = () => {
                   </Paper>
                 ))
               ) : (
-                <Typography color="text.secondary" sx={{ mb: 2 }}>{t("noPendingClaims", language)}</Typography>
+                <Typography color="text.secondary" sx={{ mb: 2 }}>{t("noPendingClaims", language) || "لا توجد مطالبات معلقة"}</Typography>
               )}
             </>
           )}
@@ -899,7 +902,7 @@ const ClaimsReport = () => {
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <VisibilityIcon />
-                <Typography variant="h6">{t("claimDetails", language) || "Claim Details"}</Typography>
+                <Typography variant="h6">{t("claimDetails", language) || "تفاصيل المطالبة"}</Typography>
               </Box>
               <IconButton onClick={handleCloseDetails} sx={{ color: "#fff" }}>
                 <CloseIcon />
@@ -912,15 +915,15 @@ const ClaimsReport = () => {
                   <Grid item xs={12}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
                       <Typography variant="subtitle2" color="text.secondary">
-                        {t("status", language) || "Status"}:
+                        {t("status", language) || "الحالة"}:
                       </Typography>
                       <Chip
                         label={
                           selectedClaim.status === "approved"
-                            ? t("approved", language) || "Approved"
+                            ? t("approved", language) || "موافق عليها"
                             : selectedClaim.status === "rejected"
-                            ? t("rejected", language) || "Rejected"
-                            : t("pending", language) || "Pending"
+                            ? t("rejected", language) || "مرفوضة"
+                            : t("pending", language) || "معلقة"
                         }
                         sx={{
                           backgroundColor:
@@ -936,7 +939,7 @@ const ClaimsReport = () => {
                       {selectedClaim.isFollowUp && (
                         <Chip
                           icon={<ReplayIcon sx={{ color: "#fff !important" }} />}
-                          label={t("followUpVisit", language) || "Follow-up Visit"}
+                          label={t("followUpVisit", language) || "زيارة متابعة"}
                           sx={{ backgroundColor: "#2196f3", color: "#fff" }}
                         />
                       )}
@@ -951,7 +954,7 @@ const ClaimsReport = () => {
                   <Grid item xs={12}>
                     <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#556B2F", mb: 1 }}>
                       <LocalHospitalIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-                      {t("providerInformation", language) || "Provider Information"}
+                      {t("providerInformation", language) || "معلومات مقدم الخدمة"}
                     </Typography>
                   </Grid>
 
@@ -959,7 +962,7 @@ const ClaimsReport = () => {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                       <PersonIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                       <Typography variant="caption" color="text.secondary">
-                        {t("providerName", language) || "Provider Name"}
+                        {t("providerName", language) || "اسم مقدم الخدمة"}
                       </Typography>
                     </Box>
                     <Typography variant="body1" fontWeight="bold">
@@ -969,11 +972,11 @@ const ClaimsReport = () => {
                       <Chip
                         size="small"
                         label={
-                          selectedClaim.providerRole === "DOCTOR" ? t("doctor", language) || "Doctor" :
-                          selectedClaim.providerRole === "PHARMACIST" ? t("pharmacist", language) || "Pharmacist" :
-                          selectedClaim.providerRole === "LAB_TECH" ? t("labTech", language) || "Lab Technician" :
-                          selectedClaim.providerRole === "RADIOLOGIST" ? t("radiologist", language) || "Radiologist" :
-                          selectedClaim.providerRole === "INSURANCE_CLIENT" ? t("client", language) || "Client" :
+                          selectedClaim.providerRole === "DOCTOR" ? t("doctor", language) || "طبيب" :
+                          selectedClaim.providerRole === "PHARMACIST" ? t("pharmacist", language) || "صيدلي" :
+                          selectedClaim.providerRole === "LAB_TECH" ? t("labTech", language) || "فني مختبر" :
+                          selectedClaim.providerRole === "RADIOLOGIST" ? t("radiologist", language) || "أخصائي أشعة" :
+                          selectedClaim.providerRole === "INSURANCE_CLIENT" ? t("client", language) || "عميل" :
                           selectedClaim.providerRole
                         }
                         sx={{ mt: 0.5, backgroundColor: "#E8EDE0", color: "#3D4F23" }}
@@ -986,7 +989,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <WorkIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("employeeId", language) || "Employee ID"}
+                          {t("employeeId", language) || "رقم الموظف"}
                         </Typography>
                       </Box>
                       <Typography variant="body2">{selectedClaim.providerEmployeeId}</Typography>
@@ -998,7 +1001,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <BadgeIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("nationalId", language) || "National ID"}
+                          {t("nationalId", language) || "رقم الهوية"}
                         </Typography>
                       </Box>
                       <Typography variant="body2">{selectedClaim.providerNationalId}</Typography>
@@ -1013,7 +1016,7 @@ const ClaimsReport = () => {
                   <Grid item xs={12}>
                     <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#556B2F", mb: 1 }}>
                       <PersonOutlineIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-                      {t("patientInformation", language) || "Patient Information"}
+                      {t("patientInformation", language) || "معلومات المريض"}
                     </Typography>
                   </Grid>
 
@@ -1021,7 +1024,7 @@ const ClaimsReport = () => {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                       <PersonIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                       <Typography variant="caption" color="text.secondary">
-                        {t("patientName", language) || "Patient Name"}
+                        {t("patientName", language) || "اسم المريض"}
                       </Typography>
                     </Box>
                     <Typography variant="body1" fontWeight="bold">
@@ -1033,10 +1036,10 @@ const ClaimsReport = () => {
                     <Grid item xs={6} md={2}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <Typography variant="caption" color="text.secondary">
-                          {t("age", language) || "Age"}
+                          {t("age", language) || "العمر"}
                         </Typography>
                       </Box>
-                      <Typography variant="body2">{selectedClaim.clientAge} {t("years", language) || "years"}</Typography>
+                      <Typography variant="body2">{selectedClaim.clientAge} {t("years", language) || "سنة"}</Typography>
                     </Grid>
                   )}
 
@@ -1044,10 +1047,10 @@ const ClaimsReport = () => {
                     <Grid item xs={6} md={2}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <Typography variant="caption" color="text.secondary">
-                          {t("gender", language) || "Gender"}
+                          {t("gender", language) || "الجنس"}
                         </Typography>
                       </Box>
-                      <Typography variant="body2">{selectedClaim.clientGender}</Typography>
+                      <Typography variant="body2">{selectedClaim.clientGender === "M" ? "ذكر" : selectedClaim.clientGender === "F" ? "أنثى" : selectedClaim.clientGender}</Typography>
                     </Grid>
                   )}
 
@@ -1056,7 +1059,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <ReceiptIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("insuranceNumber", language) || "Insurance Number"}
+                          {t("insuranceNumber", language) || "رقم التأمين"}
                         </Typography>
                       </Box>
                       <Typography variant="body2">{selectedClaim.clientInsuranceNumber}</Typography>
@@ -1068,7 +1071,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <WorkIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("employeeId", language) || "Employee ID"}
+                          {t("employeeId", language) || "رقم الموظف"}
                         </Typography>
                       </Box>
                       <Typography variant="body2">{selectedClaim.clientEmployeeId}</Typography>
@@ -1080,7 +1083,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <BadgeIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("nationalId", language) || "National ID"}
+                          {t("nationalId", language) || "رقم الهوية"}
                         </Typography>
                       </Box>
                       <Typography variant="body2">{selectedClaim.clientNationalId}</Typography>
@@ -1092,7 +1095,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <SchoolIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("facultyDepartment", language) || "Faculty / Department"}
+                          {t("facultyDepartment", language) || "الكلية / القسم"}
                         </Typography>
                       </Box>
                       <Typography variant="body2">
@@ -1111,7 +1114,7 @@ const ClaimsReport = () => {
                       <Grid item xs={12}>
                         <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#8B9A46", mb: 1 }}>
                           <FamilyRestroomIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-                          {t("familyMemberInformation", language) || "Family Member Information"}
+                          {t("familyMemberInformation", language) || "معلومات فرد العائلة"}
                         </Typography>
                       </Grid>
 
@@ -1119,7 +1122,7 @@ const ClaimsReport = () => {
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                           <PersonIcon sx={{ color: "#8B9A46", fontSize: 18 }} />
                           <Typography variant="caption" color="text.secondary">
-                            {t("name", language) || "Name"}
+                            {t("name", language) || "الاسم"}
                           </Typography>
                         </Box>
                         <Typography variant="body1" fontWeight="bold">{selectedClaim.familyMemberName}</Typography>
@@ -1129,7 +1132,7 @@ const ClaimsReport = () => {
                         <Grid item xs={6} md={2}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                             <Typography variant="caption" color="text.secondary">
-                              {t("relation", language) || "Relation"}
+                              {t("relation", language) || "صلة القرابة"}
                             </Typography>
                           </Box>
                           <Chip size="small" label={selectedClaim.familyMemberRelation} sx={{ backgroundColor: "#E8EDE0" }} />
@@ -1140,10 +1143,10 @@ const ClaimsReport = () => {
                         <Grid item xs={6} md={2}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                             <Typography variant="caption" color="text.secondary">
-                              {t("age", language) || "Age"}
+                              {t("age", language) || "العمر"}
                             </Typography>
                           </Box>
-                          <Typography variant="body2">{selectedClaim.familyMemberAge} {t("years", language) || "years"}</Typography>
+                          <Typography variant="body2">{selectedClaim.familyMemberAge} {t("years", language) || "سنة"}</Typography>
                         </Grid>
                       )}
 
@@ -1151,10 +1154,10 @@ const ClaimsReport = () => {
                         <Grid item xs={6} md={2}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                             <Typography variant="caption" color="text.secondary">
-                              {t("gender", language) || "Gender"}
+                              {t("gender", language) || "الجنس"}
                             </Typography>
                           </Box>
-                          <Typography variant="body2">{selectedClaim.familyMemberGender}</Typography>
+                          <Typography variant="body2">{selectedClaim.familyMemberGender === "M" ? "ذكر" : selectedClaim.familyMemberGender === "F" ? "أنثى" : selectedClaim.familyMemberGender}</Typography>
                         </Grid>
                       )}
 
@@ -1163,7 +1166,7 @@ const ClaimsReport = () => {
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                             <ReceiptIcon sx={{ color: "#8B9A46", fontSize: 18 }} />
                             <Typography variant="caption" color="text.secondary">
-                              {t("insuranceNumber", language) || "Insurance Number"}
+                              {t("insuranceNumber", language) || "رقم التأمين"}
                             </Typography>
                           </Box>
                           <Typography variant="body2">{selectedClaim.familyMemberInsuranceNumber}</Typography>
@@ -1175,7 +1178,7 @@ const ClaimsReport = () => {
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                             <BadgeIcon sx={{ color: "#8B9A46", fontSize: 18 }} />
                             <Typography variant="caption" color="text.secondary">
-                              {t("nationalId", language) || "National ID"}
+                              {t("nationalId", language) || "رقم الهوية"}
                             </Typography>
                           </Box>
                           <Typography variant="body2">{selectedClaim.familyMemberNationalId}</Typography>
@@ -1192,7 +1195,7 @@ const ClaimsReport = () => {
                   <Grid item xs={12}>
                     <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#556B2F", mb: 1 }}>
                       <AssignmentIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-                      {t("claimDetails", language) || "Claim Details"}
+                      {t("claimDetails", language) || "تفاصيل المطالبة"}
                     </Typography>
                   </Grid>
 
@@ -1201,7 +1204,7 @@ const ClaimsReport = () => {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                       <AttachMoneyIcon sx={{ color: "#556B2F", fontSize: 18 }} />
                       <Typography variant="caption" color="text.secondary">
-                        {t("amount", language) || "Amount"}
+                        {t("amount", language) || "المبلغ"}
                       </Typography>
                     </Box>
                     <Typography variant="h5" fontWeight="bold" sx={{ color: "#556B2F" }}>
@@ -1214,7 +1217,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <EventIcon sx={{ color: "#556B2F", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("serviceDate", language) || "Service Date"}
+                          {t("serviceDate", language) || "تاريخ الخدمة"}
                         </Typography>
                       </Box>
                       <Typography variant="body1">
@@ -1232,7 +1235,7 @@ const ClaimsReport = () => {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                       <DescriptionIcon sx={{ color: "#556B2F", fontSize: 18 }} />
                       <Typography variant="caption" color="text.secondary">
-                        {t("policy", language) || "Policy"}
+                        {t("policy", language) || "البوليصة"}
                       </Typography>
                     </Box>
                     <Typography variant="body1" fontWeight="bold">
@@ -1246,7 +1249,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <ReplayIcon sx={{ color: "#2196f3", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("originalConsultationFee", language) || "Original Consultation Fee"}
+                          {t("originalConsultationFee", language) || "رسوم الاستشارة الأصلية"}
                         </Typography>
                       </Box>
                       <Typography variant="body1">${parseFloat(selectedClaim.originalConsultationFee).toFixed(2)}</Typography>
@@ -1257,12 +1260,12 @@ const ClaimsReport = () => {
                   <Grid item xs={12}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                       <Typography variant="caption" color="text.secondary">
-                        {t("description", language) || "Description"}
+                        {t("description", language) || "الوصف"}
                       </Typography>
                     </Box>
                     <Paper sx={{ p: 2, backgroundColor: "#FAF8F5" }}>
                       <Typography variant="body1">
-                        {selectedClaim.description || t("noDescription", language) || "No description provided"}
+                        {selectedClaim.description || t("noDescription", language) || "لا يوجد وصف"}
                       </Typography>
                     </Paper>
                   </Grid>
@@ -1273,7 +1276,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <MedicalServicesIcon sx={{ color: "#556B2F", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("diagnosis", language) || "Diagnosis"}
+                          {t("diagnosis", language) || "التشخيص"}
                         </Typography>
                       </Box>
                       <Paper sx={{ p: 2, backgroundColor: "#E8F5E9", borderLeft: "4px solid #4caf50" }}>
@@ -1288,7 +1291,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <LocalHospitalIcon sx={{ color: "#556B2F", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("treatmentDetails", language) || "Treatment Details"}
+                          {t("treatmentDetails", language) || "تفاصيل العلاج"}
                         </Typography>
                       </Box>
                       <Paper sx={{ p: 2, backgroundColor: "#E3F2FD", borderLeft: "4px solid #2196f3" }}>
@@ -1303,11 +1306,11 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <DescriptionIcon sx={{ color: "#556B2F", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("additionalDetails", language) || "Additional Details"}
-                          ({selectedClaim.providerRole === "PHARMACIST" ? t("medicines", language) || "Medicines" :
-                            selectedClaim.providerRole === "LAB_TECH" ? t("testResults", language) || "Test Results" :
-                            selectedClaim.providerRole === "RADIOLOGIST" ? t("imagingDetails", language) || "Imaging Details" :
-                            t("details", language) || "Details"})
+                          {t("additionalDetails", language) || "تفاصيل إضافية"}
+                          ({selectedClaim.providerRole === "PHARMACIST" ? t("medicines", language) || "الأدوية" :
+                            selectedClaim.providerRole === "LAB_TECH" ? t("testResults", language) || "نتائج الفحوصات" :
+                            selectedClaim.providerRole === "RADIOLOGIST" ? t("imagingDetails", language) || "تفاصيل التصوير" :
+                            t("details", language) || "التفاصيل"})
                         </Typography>
                       </Box>
                       <Paper sx={{ p: 2, backgroundColor: "#FFF8E1", borderLeft: "4px solid #ff9800" }}>
@@ -1324,7 +1327,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <ImageIcon sx={{ color: "#556B2F", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("invoiceImage", language) || "Invoice Image"}
+                          {t("invoiceImage", language) || "صورة الفاتورة"}
                         </Typography>
                       </Box>
                       <Paper sx={{ p: 2, backgroundColor: "#FAF8F5", display: "flex", alignItems: "center", gap: 2 }}>
@@ -1334,7 +1337,7 @@ const ClaimsReport = () => {
                           onClick={() => window.open(`http://localhost:8080${selectedClaim.invoiceImagePath}`, '_blank')}
                           sx={{ borderColor: "#556B2F", color: "#556B2F" }}
                         >
-                          {t("viewInvoice", language) || "View Invoice"}
+                          {t("viewInvoice", language) || "عرض الفاتورة"}
                         </Button>
                         <Typography variant="body2" color="text.secondary">
                           {selectedClaim.invoiceImagePath.split('/').pop()}
@@ -1349,7 +1352,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <ClearIcon sx={{ color: "#d32f2f", fontSize: 18 }} />
                         <Typography variant="caption" color="error">
-                          {t("rejectionReason", language) || "Rejection Reason"}
+                          {t("rejectionReason", language) || "سبب الرفض"}
                         </Typography>
                       </Box>
                       <Paper sx={{ p: 2, backgroundColor: "#ffebee", borderLeft: "4px solid #d32f2f" }}>
@@ -1368,7 +1371,7 @@ const ClaimsReport = () => {
                   <Grid item xs={12}>
                     <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#556B2F", mb: 1 }}>
                       <DateRangeIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-                      {t("timestampsAndReview", language) || "Timestamps & Review"}
+                      {t("timestampsAndReview", language) || "التواريخ والمراجعة"}
                     </Typography>
                   </Grid>
 
@@ -1377,7 +1380,7 @@ const ClaimsReport = () => {
                     <Grid item xs={12} md={4}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <Typography variant="caption" color="text.secondary">
-                          {t("submittedAt", language) || "Submitted At"}
+                          {t("submittedAt", language) || "تاريخ التقديم"}
                         </Typography>
                       </Box>
                       <Typography variant="body2">
@@ -1392,7 +1395,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <ReviewsIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("medicalReviewedAt", language) || "Medical Reviewed At"}
+                          {t("medicalReviewedAt", language) || "تاريخ المراجعة الطبية"}
                         </Typography>
                       </Box>
                       <Typography variant="body2">
@@ -1407,7 +1410,7 @@ const ClaimsReport = () => {
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <PersonIcon sx={{ color: "#7B8B5E", fontSize: 18 }} />
                         <Typography variant="caption" color="text.secondary">
-                          {t("medicalReviewer", language) || "Medical Reviewer"}
+                          {t("medicalReviewer", language) || "المراجع الطبي"}
                         </Typography>
                       </Box>
                       <Typography variant="body2">{selectedClaim.medicalReviewerName}</Typography>
@@ -1419,7 +1422,7 @@ const ClaimsReport = () => {
                     <Grid item xs={12} md={4}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <Typography variant="caption" sx={{ color: "#4caf50" }}>
-                          {t("approvedAt", language) || "Approved At"}
+                          {t("approvedAt", language) || "تاريخ الموافقة"}
                         </Typography>
                       </Box>
                       <Typography variant="body2" sx={{ color: "#4caf50" }}>
@@ -1433,7 +1436,7 @@ const ClaimsReport = () => {
                     <Grid item xs={12} md={4}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                         <Typography variant="caption" color="error">
-                          {t("rejectedAt", language) || "Rejected At"}
+                          {t("rejectedAt", language) || "تاريخ الرفض"}
                         </Typography>
                       </Box>
                       <Typography variant="body2" color="error">
@@ -1446,7 +1449,7 @@ const ClaimsReport = () => {
                   <Grid item xs={12}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                       <Typography variant="caption" color="text.secondary">
-                        {t("claimId", language) || "Claim ID"}
+                        {t("claimId", language) || "رقم المطالبة"}
                       </Typography>
                     </Box>
                     <Typography variant="body2" sx={{ fontFamily: "monospace", color: "#666", backgroundColor: "#f5f5f5", p: 1, borderRadius: 1 }}>
@@ -1465,7 +1468,7 @@ const ClaimsReport = () => {
                   "&:hover": { backgroundColor: "#3D4F23" },
                 }}
               >
-                {t("close", language) || "Close"}
+                {t("close", language) || "إغلاق"}
               </Button>
             </DialogActions>
           </Dialog>
@@ -1494,7 +1497,7 @@ const ClaimsReport = () => {
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <UndoIcon />
-                <Typography variant="h6">{t("returnForReview", language) || "Return for Review"}</Typography>
+                <Typography variant="h6">{t("returnForReview", language) || "إعادة للمراجعة"}</Typography>
               </Box>
               <IconButton onClick={handleCloseReturnDialog} sx={{ color: "#fff" }}>
                 <CloseIcon />
@@ -1504,18 +1507,18 @@ const ClaimsReport = () => {
               {claimToReturn && (
                 <Box>
                   <Typography variant="body1" sx={{ mb: 2 }}>
-                    {t("returnClaimConfirmation", language) || "You are about to return this approved claim for medical review. Please provide a reason:"}
+                    {t("returnClaimConfirmation", language) || "أنت على وشك إعادة هذه المطالبة الموافق عليها للمراجعة الطبية. يرجى تقديم سبب:"}
                   </Typography>
 
                   <Paper sx={{ p: 2, mb: 3, backgroundColor: "#FFF8E1", borderLeft: "4px solid #ff9800" }}>
                     <Typography variant="body2">
-                      <b>{t("claimId", language) || "Claim ID"}:</b> {claimToReturn.id}
+                      <b>{t("claimId", language) || "رقم المطالبة"}:</b> {claimToReturn.id}
                     </Typography>
                     <Typography variant="body2">
-                      <b>{t("member", language) || "Member"}:</b> {claimToReturn.memberName}
+                      <b>{t("member", language) || "العضو"}:</b> {claimToReturn.memberName}
                     </Typography>
                     <Typography variant="body2">
-                      <b>{t("amount", language) || "Amount"}:</b> ${claimToReturn.amount}
+                      <b>{t("amount", language) || "المبلغ"}:</b> ${claimToReturn.amount}
                     </Typography>
                   </Paper>
 
@@ -1523,10 +1526,10 @@ const ClaimsReport = () => {
                     fullWidth
                     multiline
                     rows={4}
-                    label={t("reasonForReturn", language) || "Reason for Return"}
+                    label={t("reasonForReturn", language) || "سبب الإعادة"}
                     value={returnReason}
                     onChange={(e) => setReturnReason(e.target.value)}
-                    placeholder={t("enterReasonForReturn", language) || "Enter the reason for returning this claim for review..."}
+                    placeholder={t("enterReasonForReturn", language) || "أدخل سبب إعادة هذه المطالبة للمراجعة..."}
                     required
                     sx={{
                       "& .MuiOutlinedInput-root": {
@@ -1553,7 +1556,7 @@ const ClaimsReport = () => {
                   "&:hover": { borderColor: "#556B2F", backgroundColor: "rgba(85, 107, 47, 0.1)" },
                 }}
               >
-                {t("cancel", language) || "Cancel"}
+                {t("cancel", language) || "إلغاء"}
               </Button>
               <Button
                 variant="contained"
@@ -1566,7 +1569,7 @@ const ClaimsReport = () => {
                   "&:disabled": { backgroundColor: "#ffcc80" },
                 }}
               >
-                {actionLoading ? (t("processing", language) || "Processing...") : (t("returnForReview", language) || "Return for Review")}
+                {actionLoading ? (t("processing", language) || "جاري المعالجة...") : (t("returnForReview", language) || "إعادة للمراجعة")}
               </Button>
             </DialogActions>
           </Dialog>

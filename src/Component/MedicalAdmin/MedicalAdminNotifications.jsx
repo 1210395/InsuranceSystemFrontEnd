@@ -49,7 +49,8 @@ const MedicalAdminNotifications = () => {
       if (!token) return;
       const res = await api.get(API_ENDPOINTS.NOTIFICATIONS.ALL);
 
-      const sorted = res.data.sort(
+      // api.get returns data directly, not wrapped in .data
+      const sorted = (res || []).sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
       setNotifications(sorted);
@@ -75,7 +76,8 @@ const MedicalAdminNotifications = () => {
       const token = getToken();
       if (!token) return;
       const res = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
-      setUnreadCount(res.data);
+      // api.get returns data directly
+      setUnreadCount(res || 0);
     } catch (err) {
       console.error("Failed to fetch unread count:", err);
     }
@@ -217,7 +219,7 @@ const MedicalAdminNotifications = () => {
       <Box
         sx={{
           flexGrow: 1,
-          backgroundColor: "#f4f6f9",
+          backgroundColor: "#FAF8F5",
           minHeight: "100vh",
           marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
           marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
@@ -231,7 +233,7 @@ const MedicalAdminNotifications = () => {
             variant="h4"
             fontWeight="bold"
             gutterBottom
-            sx={{ color: "#120460", display: "flex", alignItems: "center" }}
+            sx={{ color: "#3D4F23", display: "flex", alignItems: "center" }}
           >
             <NotificationsIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0, fontSize: 35, color: "#FF1744" }} />
             {t("notifications", language)}
@@ -322,7 +324,7 @@ const MedicalAdminNotifications = () => {
                       {icon}
                       <Typography
                         variant="subtitle1"
-                        sx={{ ml: 1, fontWeight: "bold", color: "#120460" }}
+                        sx={{ ml: 1, fontWeight: "bold", color: "#3D4F23" }}
                       >
                         {n.senderName || "System"}
                       </Typography>

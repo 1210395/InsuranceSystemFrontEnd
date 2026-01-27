@@ -110,7 +110,7 @@ const getStepLabels = (language) => [
   t("documents", language) || "Documents",
 ];
 
-const SignUp = memo(function SignUp({ setMode, setPendingEmail }) {
+const SignUp = memo(function SignUp({ setMode }) {
   const { language, isRTL } = useLanguage();
 
   // Current step (0-3)
@@ -149,6 +149,7 @@ const SignUp = memo(function SignUp({ setMode, setPendingEmail }) {
 
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [chronicDocuments, setChronicDocuments] = useState([]);
+  const [doctorDocuments, setDoctorDocuments] = useState([]);
   const [agreeToPolicy, setAgreeToPolicy] = useState(false);
   const [familyMembers, setFamilyMembers] = useState([]);
   const [showFamilySection, setShowFamilySection] = useState(false);
@@ -160,6 +161,7 @@ const SignUp = memo(function SignUp({ setMode, setPendingEmail }) {
 
   const universityCardRef = useRef(null);
   const chronicDocsRef = useRef(null);
+  const doctorDocsRef = useRef(null);
 
   const hasUniversityCard = uploadedFiles.length > 0;
   const passwordsMatch = () => password === confirmPassword;
@@ -432,6 +434,12 @@ const SignUp = memo(function SignUp({ setMode, setPendingEmail }) {
       }
     }
 
+    if (selectedRole === "DOCTOR") {
+      if (doctorDocuments.length === 0) {
+        newErrors.doctorDocuments = t("medicalLicenseRequired", language) || "Medical license documents are required";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -528,9 +536,8 @@ const SignUp = memo(function SignUp({ setMode, setPendingEmail }) {
       payload.hasChronicDiseases = hasChronicDiseases;
       payload.chronicDiseases = chronicDiseases;
     } else if (selectedRole === "DOCTOR") {
-      payload.employeeId = employeeId;
       payload.specialization = selectedSpecialization;
-      payload.clinicLocation = clinicLocation;
+      if (clinicLocation) payload.clinicLocation = clinicLocation;
       payload.agreeToPolicy = false;
     } else if (selectedRole === "PHARMACIST") {
       payload.employeeId = employeeId.trim();
@@ -592,19 +599,24 @@ const SignUp = memo(function SignUp({ setMode, setPendingEmail }) {
         data.append("chronicDocuments", f);
       });
 
+      // Append doctor documents
+      doctorDocuments.forEach((f) => {
+        data.append("doctorDocuments", f);
+      });
+
       await api.post(API_ENDPOINTS.AUTH.REGISTER, data);
       clearSessionCache();
-      setPendingEmail(email);
-      setMode("verify-email");
+      // Skip email verification - go directly to sign in
+      alert(t("registrationSuccessful", language) || "Registration successful! Please sign in.");
+      setMode("signin");
 
     } catch (err) {
       logger.error("Error:", err.response?.data || err.message);
       const msg = err.response?.data?.message || "";
 
       if (msg.includes("not verified")) {
-        alert(t("emailAlreadyRegisteredNotVerified", language));
-        setPendingEmail(email);
-        setMode("verify-email");
+        alert(t("emailAlreadyRegistered", language) || "This email is already registered. Please sign in.");
+        setMode("signin");
         return;
       }
 
@@ -967,17 +979,9 @@ const SignUp = memo(function SignUp({ setMode, setPendingEmail }) {
           <TextField
             margin="normal"
             size="small"
-            fullWidth
-            label={t("employeeId", language)}
-            value={employeeId}
-            onChange={(e) => setEmployeeId(e.target.value)}
-            InputLabelProps={{ shrink: true, style: { color: "#000", fontWeight: "bold" } }}
-          />
-          <TextField
-            margin="normal"
-            size="small"
             select
             fullWidth
+            required
             label={t("specialization", language)}
             value={selectedSpecialization}
             onChange={(e) => setSelectedSpecialization(e.target.value)}
@@ -1163,71 +1167,139 @@ const SignUp = memo(function SignUp({ setMode, setPendingEmail }) {
         {t("documentsUpload", language) || "Upload Documents"}
       </Typography>
 
-      {/* University Card Upload */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
-          {t("universityCard", language) || "University Card"} {selectedRole === "INSURANCE_CLIENT" && "*"}
-        </Typography>
+      {/* Insurance Client - University Card Upload */}
+      {selectedRole === "INSURANCE_CLIENT" && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
+            {t("universityCard", language) || "University Card"} *
+          </Typography>
 
-        <Stack direction="row" spacing={1}>
-          <Button
-            component="label"
-            variant={hasUniversityCard ? "contained" : "outlined"}
-            fullWidth
-            sx={{
-              borderColor: hasUniversityCard ? "success.main" : errors.universityCard ? "error.main" : "#7B8B5E",
-              color: hasUniversityCard ? "#fff" : "#7B8B5E",
-              backgroundColor: hasUniversityCard ? "success.main" : "transparent",
-              borderRadius: "10px",
-              fontWeight: "bold",
-              textTransform: "none",
-              minHeight: { xs: 48, md: 44 },
-              "&:hover": {
-                backgroundColor: hasUniversityCard ? "success.dark" : "#f4f7ff",
-              },
-            }}
-          >
-            {hasUniversityCard
-              ? `${uploadedFiles.length} ${t("filesSelected", language)}`
-              : t("uploadUniversityCard", language)}
-
-            <input
-              type="file"
-              hidden
-              multiple
-              accept=".jpg,.jpeg,.png,.pdf"
-              ref={universityCardRef}
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                if (!files.length) return;
-                setUploadedFiles((prev) => [...prev, ...files]);
-                if (universityCardRef.current) universityCardRef.current.value = "";
+          <Stack direction="row" spacing={1}>
+            <Button
+              component="label"
+              variant={hasUniversityCard ? "contained" : "outlined"}
+              fullWidth
+              sx={{
+                borderColor: hasUniversityCard ? "success.main" : errors.universityCard ? "error.main" : "#7B8B5E",
+                color: hasUniversityCard ? "#fff" : "#7B8B5E",
+                backgroundColor: hasUniversityCard ? "success.main" : "transparent",
+                borderRadius: "10px",
+                fontWeight: "bold",
+                textTransform: "none",
+                minHeight: { xs: 48, md: 44 },
+                "&:hover": {
+                  backgroundColor: hasUniversityCard ? "success.dark" : "#f4f7ff",
+                },
               }}
-            />
-          </Button>
+            >
+              {hasUniversityCard
+                ? `${uploadedFiles.length} ${t("filesSelected", language)}`
+                : t("uploadUniversityCard", language)}
 
-          {hasUniversityCard && (
-            <Tooltip title={t("clearAll", language)}>
-              <Button
-                variant="outlined"
-                color="error"
-                sx={{ minWidth: { xs: "60px", md: "90px" }, fontWeight: "bold" }}
-                onClick={() => {
-                  setUploadedFiles([]);
+              <input
+                type="file"
+                hidden
+                multiple
+                accept=".jpg,.jpeg,.png,.pdf"
+                ref={universityCardRef}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  setUploadedFiles((prev) => [...prev, ...files]);
                   if (universityCardRef.current) universityCardRef.current.value = "";
                 }}
-              >
-                X
-              </Button>
-            </Tooltip>
-          )}
-        </Stack>
-        {errors.universityCard && (
-          <FormHelperText error>{errors.universityCard}</FormHelperText>
-        )}
-      </Box>
+              />
+            </Button>
 
-      {/* Insurance Client specific documents */}
+            {hasUniversityCard && (
+              <Tooltip title={t("clearAll", language)}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  sx={{ minWidth: { xs: "60px", md: "90px" }, fontWeight: "bold" }}
+                  onClick={() => {
+                    setUploadedFiles([]);
+                    if (universityCardRef.current) universityCardRef.current.value = "";
+                  }}
+                >
+                  X
+                </Button>
+              </Tooltip>
+            )}
+          </Stack>
+          {errors.universityCard && (
+            <FormHelperText error>{errors.universityCard}</FormHelperText>
+          )}
+        </Box>
+      )}
+
+      {/* Doctor - Medical License Documents */}
+      {selectedRole === "DOCTOR" && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
+            {t("medicalLicense", language) || "Medical License & Certifications"} *
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              component="label"
+              variant={doctorDocuments.length > 0 ? "contained" : "outlined"}
+              fullWidth
+              sx={{
+                borderColor: doctorDocuments.length > 0 ? "success.main" : errors.doctorDocuments ? "error.main" : "#7B8B5E",
+                color: doctorDocuments.length > 0 ? "#fff" : "#7B8B5E",
+                backgroundColor: doctorDocuments.length > 0 ? "success.main" : "transparent",
+                borderRadius: "10px",
+                fontWeight: "bold",
+                textTransform: "none",
+                minHeight: { xs: 48, md: 44 },
+                "&:hover": {
+                  backgroundColor: doctorDocuments.length > 0 ? "success.dark" : "#f4f7ff",
+                },
+              }}
+            >
+              {doctorDocuments.length > 0
+                ? `${doctorDocuments.length} ${t("filesSelected", language)}`
+                : t("uploadMedicalLicense", language) || "Upload Medical License"}
+
+              <input
+                type="file"
+                hidden
+                multiple
+                accept=".jpg,.jpeg,.png,.pdf"
+                ref={doctorDocsRef}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  setDoctorDocuments((prev) => [...prev, ...files]);
+                  if (doctorDocsRef.current) doctorDocsRef.current.value = "";
+                }}
+              />
+            </Button>
+
+            {doctorDocuments.length > 0 && (
+              <Tooltip title={t("clearAll", language)}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  sx={{ minWidth: { xs: "60px", md: "90px" }, fontWeight: "bold" }}
+                  onClick={() => {
+                    setDoctorDocuments([]);
+                    if (doctorDocsRef.current) doctorDocsRef.current.value = "";
+                  }}
+                >
+                  X
+                </Button>
+              </Tooltip>
+            )}
+          </Stack>
+          {errors.doctorDocuments && (
+            <FormHelperText error>{errors.doctorDocuments}</FormHelperText>
+          )}
+        </Box>
+      )}
+
+      {/* Insurance Client specific sections */}
       {selectedRole === "INSURANCE_CLIENT" && (
         <>
           {/* Chronic Diseases Section */}
@@ -1726,7 +1798,6 @@ const SignUp = memo(function SignUp({ setMode, setPendingEmail }) {
 
 SignUp.propTypes = {
   setMode: PropTypes.func.isRequired,
-  setPendingEmail: PropTypes.func.isRequired,
 };
 
 export default SignUp;

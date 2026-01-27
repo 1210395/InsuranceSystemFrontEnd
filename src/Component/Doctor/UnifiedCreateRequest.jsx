@@ -299,6 +299,8 @@ const UnifiedCreateRequest = () => {
         quantity: item.serviceDetails?.quantity || 0,
         unionPrice: item.price,
         form: item.serviceDetails?.form || "",
+        coverageStatus: item.serviceDetails?.coverageStatus || "COVERED",
+        coveragePercentage: item.serviceDetails?.coveragePercentage || 100,
         fullItem: item, // Keep full item for filtering
       }));
 
@@ -547,6 +549,8 @@ const UnifiedCreateRequest = () => {
     selectedFamilyMember,
     doctorId,
     setDoctorId,
+    selectedSpecializationData,
+    language,
   });
 
   const handleClaimSubmit = useClaimSubmitHandler({
@@ -561,6 +565,48 @@ const UnifiedCreateRequest = () => {
     selectedSpecializationData,
     specializations,
   });
+
+  // Validate if patient matches doctor's specialization restrictions
+  const validatePatientForSpecialization = (patientAge, patientGender) => {
+    if (!selectedSpecializationData) {
+      return { valid: true };
+    }
+
+    const spec = selectedSpecializationData;
+
+    // Check gender restrictions
+    if (spec.allowedGenders && spec.allowedGenders.length > 0) {
+      const normalizedPatientGender = patientGender?.toUpperCase();
+      const normalizedAllowedGenders = spec.allowedGenders.map(g => g.toUpperCase());
+
+      if (!normalizedAllowedGenders.includes(normalizedPatientGender)) {
+        const genderMessage = language === "ar"
+          ? `هذا التخصص (${spec.displayName}) مخصص فقط للمرضى من جنس: ${spec.allowedGenders.join(", ")}`
+          : `This specialization (${spec.displayName}) is only for patients of gender: ${spec.allowedGenders.join(", ")}`;
+        return { valid: false, message: genderMessage };
+      }
+    }
+
+    // Check age restrictions
+    const age = parseInt(patientAge);
+    if (!isNaN(age)) {
+      if (spec.minAge !== null && spec.minAge !== undefined && age < spec.minAge) {
+        const ageMessage = language === "ar"
+          ? `هذا التخصص (${spec.displayName}) مخصص للمرضى من عمر ${spec.minAge} سنة فأكثر. عمر المريض: ${age} سنة`
+          : `This specialization (${spec.displayName}) is for patients aged ${spec.minAge} years and above. Patient age: ${age} years`;
+        return { valid: false, message: ageMessage };
+      }
+
+      if (spec.maxAge !== null && spec.maxAge !== undefined && age > spec.maxAge) {
+        const ageMessage = language === "ar"
+          ? `هذا التخصص (${spec.displayName}) مخصص للمرضى حتى عمر ${spec.maxAge} سنة. عمر المريض: ${age} سنة`
+          : `This specialization (${spec.displayName}) is for patients up to ${spec.maxAge} years old. Patient age: ${age} years`;
+        return { valid: false, message: ageMessage };
+      }
+    }
+
+    return { valid: true };
+  };
 
   const handleEmployeeIdLookup = async () => {
     const clientData = await lookupPatient(patientForm.employeeId, showError);
@@ -846,6 +892,8 @@ const UnifiedCreateRequest = () => {
           calculateAge={calculateAge}
           handleEmployeeIdLookup={handleEmployeeIdLookup}
           handleNationalIdLookup={handleNationalIdLookup}
+          validatePatient={validatePatientForSpecialization}
+          showError={showError}
           onPatientChange={(patientId, familyMemberId) => {
             // Reset restriction failure state when changing patient
             setSpecializationRestrictionFailed(false);

@@ -27,7 +27,6 @@ import ImageSearchIcon from "@mui/icons-material/ImageSearch";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-import PaidIcon from "@mui/icons-material/Paid";
 
 import LogoutDialog from "../Auth/LogoutDialog";
 import { useLanguage } from "../../context/LanguageContext";
@@ -317,23 +316,6 @@ const ClientSidebar = memo(function ClientSidebar({ activeView, setActiveView })
               <ImageSearchIcon sx={{ color: "#FF9800", fontSize: { xs: 26, sm: 22 } }} />
             </ListItemIcon>
             {(open || isDrawer) && <ListItemText primary={t("myRadiologyRequests", language)} />}
-          </ListItemButton>
-        </Tooltip>
-
-        <Tooltip
-          title={t("consultationPrices", language)}
-          placement={isRTL ? "left" : "right"}
-          disableHoverListener={open || isDrawer}
-        >
-          <ListItemButton
-            selected={activeView === "consultation-prices"}
-            onClick={() => handleNavClick("consultation-prices")}
-            sx={{ "&.Mui-selected": { backgroundColor: "rgba(255,255,255,0.2)" } }}
-          >
-            <ListItemIcon>
-              <PaidIcon sx={{ color: "#4DB6AC", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("consultationPrices", language)} />}
           </ListItemButton>
         </Tooltip>
 

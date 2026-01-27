@@ -146,7 +146,7 @@ const MedicalAdminProfile = () => {
       <Box
         sx={{
           flexGrow: 1,
-          background: "#f5f7fb",
+          background: "#FAF8F5",
           minHeight: "100vh",
           marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
           marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
@@ -166,7 +166,7 @@ const MedicalAdminProfile = () => {
               boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
               maxWidth: "950px",
               width: "100%",
-              background: "linear-gradient(145deg, #ffffffcc, #bed9facc)",
+              background: "linear-gradient(145deg, #ffffffcc, #E8EDE0cc)",
               backdropFilter: "blur(6px)",
             }}
           >
@@ -174,14 +174,14 @@ const MedicalAdminProfile = () => {
               variant="h4"
               fontWeight="bold"
               sx={{
-                color: "#150380",
+                color: "#3D4F23",
                 mb: 3,
                 display: "flex",
                 alignItems: "center",
                 gap: 1,
               }}
             >
-              <PersonIcon sx={{ fontSize: 36, color: "#1E8EAB" }} />
+              <PersonIcon sx={{ fontSize: 36, color: "#556B2F" }} />
               {t("medicalAdminProfile", language)}
             </Typography>
             <Divider sx={{ mb: 4 }} />
@@ -193,7 +193,7 @@ const MedicalAdminProfile = () => {
                   <Avatar
                     src={getUniversityCardSrc(profile, previewImage)}
                     alt="Profile"
-                    sx={{ width: 140, height: 140, border: "4px solid #1E8EAB" }}
+                    sx={{ width: 140, height: 140, border: "4px solid #556B2F" }}
                   />
 
                   {editMode && (
@@ -203,7 +203,7 @@ const MedicalAdminProfile = () => {
                         position: "absolute",
                         bottom: 10,
                         right: 10,
-                        bgcolor: "#1E8EAB",
+                        bgcolor: "#556B2F",
                         color: "#fff",
                       }}
                     >
@@ -358,7 +358,7 @@ const MedicalAdminProfile = () => {
                         sx={{
                           mr: isRTL ? 0 : 1,
                           ml: isRTL ? 1 : 0,
-                          background: "#1E8EAB",
+                          background: "#556B2F",
                           color: "#fff",
                           fontWeight: "bold",
                         }}
@@ -391,7 +391,7 @@ const MedicalAdminProfile = () => {
                   startIcon={<EditIcon />}
                   sx={{
                     borderRadius: 3,
-                    background: "linear-gradient(90deg,#150380,#1E8EAB)",
+                    background: "linear-gradient(90deg,#150380,#556B2F)",
                     fontWeight: "bold",
                     px: 4,
                   }}

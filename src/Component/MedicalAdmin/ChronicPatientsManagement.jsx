@@ -106,7 +106,8 @@ const ChronicPatientsManagement = () => {
     try {
       setLoadingMedications(true);
       const res = await api.get(API_ENDPOINTS.PRICELIST.BY_TYPE("PHARMACY"));
-      const medicationNames = res.data
+      // api.get returns response.data directly
+      const medicationNames = (res || [])
         .map(item => item.serviceName)
         .filter(Boolean)
         .sort();
@@ -127,7 +128,8 @@ const ChronicPatientsManagement = () => {
     try {
       setLoadingLabTests(true);
       const res = await api.get(API_ENDPOINTS.PRICELIST.BY_TYPE("LAB"));
-      const testNames = res.data
+      // api.get returns response.data directly
+      const testNames = (res || [])
         .map(item => item.serviceName)
         .filter(Boolean)
         .sort();
@@ -147,9 +149,9 @@ const ChronicPatientsManagement = () => {
   const fetchChronicPatients = async () => {
     try {
       const res = await api.get("/api/medical-admin/chronic-patients");
-      console.log("📋 Chronic patients data:", res.data);
-      // ✅ التأكد من أن البيانات كاملة
-      const patientsWithFullData = res.data.map(patient => {
+      // api.get returns response.data directly
+      console.log("📋 Chronic patients data:", res);
+      const patientsWithFullData = (res || []).map(patient => {
         console.log("🔍 Patient data:", patient);
         return {
           ...patient,
@@ -179,8 +181,9 @@ const ChronicPatientsManagement = () => {
   const fetchSchedules = async () => {
     try {
       const res = await api.get("/api/medical-admin/chronic-schedules");
-      console.log("Chronic schedules sample", res.data?.[0]);
-      setSchedules(res.data);
+      // api.get returns response.data directly
+      console.log("Chronic schedules sample", res?.[0]);
+      setSchedules(res || []);
     } catch (err) {
       console.error("Error fetching schedules:", err);
     }

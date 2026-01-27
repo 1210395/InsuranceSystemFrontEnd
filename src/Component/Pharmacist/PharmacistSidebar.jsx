@@ -213,55 +213,6 @@ const PharmacistSidebar = memo(function PharmacistSidebar({ activeView, setActiv
           </ListItemButton>
         </Tooltip>
 
-        {/* Consultation Prices */}
-        <Tooltip title={t("consultationPrices", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton
-            onClick={() => handleNavClick("consultation-prices")}
-            selected={activeView === "consultation-prices"}
-            sx={{ "&.Mui-selected": { backgroundColor: "rgba(255,255,255,0.2)" } }}
-          >
-            <ListItemIcon>
-              <PaidIcon sx={{ color: "#4DB6AC", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("consultationPrices", language)} />}
-          </ListItemButton>
-        </Tooltip>
-        <Divider sx={{ my: 1, borderColor: "rgba(255,255,255,0.2)" }} />
-
-        {/* Profiles Section */}
-        {(open || isDrawer) && (
-          <Typography variant="body2" sx={{ ml: 1, mb: 0.7, color: "rgba(255,255,255,0.7)", fontSize: { xs: "0.9rem", sm: "0.8rem" } }}>
-            {t("profiles", language)}
-          </Typography>
-        )}
-
-        {/* Add Profile */}
-        <Tooltip title={t("addProfile", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton
-            onClick={() => handleNavClick("addProfile")}
-            selected={activeView === "addProfile"}
-            sx={{ "&.Mui-selected": { backgroundColor: "rgba(255,255,255,0.2)" } }}
-          >
-            <ListItemIcon>
-              <AddBusinessIcon sx={{ color: "#00E5FF", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("addProfile", language)} />}
-          </ListItemButton>
-        </Tooltip>
-
-        {/* Pharmacist Profiles */}
-        <Tooltip title={t("myProfiles", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton
-            onClick={() => handleNavClick("pharmacistProfiles")}
-            selected={activeView === "pharmacistProfiles"}
-            sx={{ "&.Mui-selected": { backgroundColor: "rgba(255,255,255,0.2)" } }}
-          >
-            <ListItemIcon>
-              <LocalPharmacyIcon sx={{ color: "#FF9800", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("myProfiles", language)} />}
-          </ListItemButton>
-        </Tooltip>
         <Divider sx={{ my: 1, borderColor: "rgba(255,255,255,0.2)" }} />
 
         {/* Account Section */}

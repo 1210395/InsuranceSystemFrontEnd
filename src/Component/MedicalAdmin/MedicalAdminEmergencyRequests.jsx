@@ -99,7 +99,7 @@ const MedicalAdminEmergencyRequests = () => {
       label: t("all", language),
       status: "ALL",
       icon: <LocalHospitalIcon />,
-      color: "#1976d2",
+      color: "#556B2F",
     },
   ];
 
@@ -124,13 +124,14 @@ const MedicalAdminEmergencyRequests = () => {
         try {
           const res = await api.get(API_ENDPOINTS.CLIENTS.SEARCH_BY_EMPLOYEE_ID(trimmedSearch));
 
-          if (res.data && res.data.fullName) {
-            setSearchResults([res.data]);
+          // api.get returns response.data directly
+          if (res && res.fullName) {
+            setSearchResults([res]);
           } else {
             setSearchResults([]);
           }
         } catch (err) {
-          console.error("❌ Error searching by employee ID:", err);
+          console.error("Error searching by employee ID:", err);
           setSearchResults([]);
         } finally {
           setSearchLoading(false);
@@ -186,10 +187,11 @@ const MedicalAdminEmergencyRequests = () => {
     try {
       setLoading(true);
       const res = await api.get(API_ENDPOINTS.EMERGENCIES.ALL);
-      setRequests(res.data || []);
+      // api.get returns response.data directly
+      setRequests(res || []);
       setError(null);
     } catch (err) {
-      console.error("❌ Error fetching emergency requests:", err.response || err);
+      console.error("Error fetching emergency requests:", err.response || err);
       setError(
         err.response?.data?.message ||
           err.message ||
@@ -242,8 +244,9 @@ const MedicalAdminEmergencyRequests = () => {
   const handleApprove = async (id) => {
     try {
       const res = await api.patch(API_ENDPOINTS.EMERGENCIES.APPROVE(id));
+      // api.patch returns response.data directly
       setRequests((prev) =>
-        prev.map((req) => (req.id === id ? res.data : req))
+        prev.map((req) => (req.id === id ? res : req))
       );
       setSnackbar({
         open: true,
@@ -253,14 +256,14 @@ const MedicalAdminEmergencyRequests = () => {
       // Refresh the list
       setTimeout(() => fetchRequests(), 500);
     } catch (err) {
-      console.error("❌ Error approving request:", err.response || err);
+      console.error("Error approving request:", err.response || err);
       const errorMsg =
         err.response?.data?.message ||
         err.response?.data ||
         "Failed to approve request!";
       setSnackbar({
         open: true,
-        message: `❌ Error: ${errorMsg}`,
+        message: `Error: ${errorMsg}`,
         severity: "error",
       });
     }
@@ -285,8 +288,9 @@ const MedicalAdminEmergencyRequests = () => {
       const res = await api.patch(API_ENDPOINTS.EMERGENCIES.REJECT(currentRequestId), {
         reason: rejectReason,
       });
+      // api.patch returns response.data directly
       setRequests((prev) =>
-        prev.map((req) => (req.id === currentRequestId ? res.data : req))
+        prev.map((req) => (req.id === currentRequestId ? res : req))
       );
       setSnackbar({
         open: true,
@@ -296,14 +300,14 @@ const MedicalAdminEmergencyRequests = () => {
       // Refresh the list
       setTimeout(() => fetchRequests(), 500);
     } catch (err) {
-      console.error("❌ Error rejecting request:", err.response || err);
+      console.error("Error rejecting request:", err.response || err);
       const errorMsg =
         err.response?.data?.message ||
         err.response?.data ||
         "Failed to reject request!";
       setSnackbar({
         open: true,
-        message: `❌ Error: ${errorMsg}`,
+        message: `Error: ${errorMsg}`,
         severity: "error",
       });
     } finally {
@@ -338,7 +342,7 @@ const MedicalAdminEmergencyRequests = () => {
       <Box
         sx={{
           flexGrow: 1,
-          background: "#f4f6fb",
+          background: "#FAF8F5",
           minHeight: "100vh",
           ml: isRTL ? 0 : "240px",
           mr: isRTL ? "240px" : 0,
@@ -354,7 +358,7 @@ const MedicalAdminEmergencyRequests = () => {
             <Typography
               variant="h4"
               fontWeight="bold"
-              sx={{ color: "#150380", mb: 1 }}
+              sx={{ color: "#3D4F23", mb: 1 }}
             >
               {t("emergencyRequestsManagement", language)}
             </Typography>
@@ -454,7 +458,7 @@ const MedicalAdminEmergencyRequests = () => {
                 minHeight: "400px",
               }}
             >
-              <CircularProgress />
+              <CircularProgress sx={{ color: "#556B2F" }} />
             </Box>
           )}
 
@@ -533,10 +537,10 @@ const MedicalAdminEmergencyRequests = () => {
                                 }
                               }}
                               sx={{
-                                bgcolor: "#150380",
+                                bgcolor: "#556B2F",
                                 width: 56,
                                 height: 56,
-                                border: "2px solid #1E8EAB",
+                                border: "2px solid #7B8B5E",
                                 boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                                 cursor: req.universityCardImage ? "pointer" : "default",
                                 transition: "all 0.2s ease",
@@ -556,7 +560,7 @@ const MedicalAdminEmergencyRequests = () => {
                                   position: "absolute",
                                   bottom: -4,
                                   right: -4,
-                                  bgcolor: "#1E8EAB",
+                                  bgcolor: "#7B8B5E",
                                   borderRadius: "50%",
                                   p: 0.5,
                                   display: "flex",
@@ -574,7 +578,7 @@ const MedicalAdminEmergencyRequests = () => {
                             <Typography
                               variant="h6"
                               fontWeight="bold"
-                              sx={{ color: "#150380", mb: 0.5 }}
+                              sx={{ color: "#3D4F23", mb: 0.5 }}
                             >
                               {req.memberName || "Unknown Patient"}
                             </Typography>
@@ -604,7 +608,7 @@ const MedicalAdminEmergencyRequests = () => {
                             <Typography
                               variant="subtitle2"
                               fontWeight="bold"
-                              sx={{ color: "#1E8EAB", mb: 1 }}
+                              sx={{ color: "#556B2F", mb: 1 }}
                             >
                               Patient Information
                             </Typography>
@@ -716,7 +720,7 @@ const MedicalAdminEmergencyRequests = () => {
                             <Typography
                               variant="subtitle2"
                               fontWeight="bold"
-                              sx={{ color: "#1E8EAB", mb: 1 }}
+                              sx={{ color: "#556B2F", mb: 1 }}
                             >
                               Emergency Details
                             </Typography>
@@ -756,7 +760,7 @@ const MedicalAdminEmergencyRequests = () => {
                             <Typography
                               variant="subtitle2"
                               fontWeight="bold"
-                              sx={{ color: "#1E8EAB", mb: 1 }}
+                              sx={{ color: "#556B2F", mb: 1 }}
                             >
                               Status & Timeline
                             </Typography>

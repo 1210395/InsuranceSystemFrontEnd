@@ -15,7 +15,6 @@ import {
 import SignIn from "../Auth/SignIn.jsx";
 import SignUp from "../Auth/SignUp.jsx";
 import ForgotPassword from "../Auth/ForgotPassword.jsx";
-import VerifyEmail from "../Auth/VerifyEmail.jsx";
 import LanguageToggle from "../Shared/LanguageToggle.jsx";
 import birzeitLogo from "../../images/Birzeit Logo.png";
 import { useLanguage } from "../../context/LanguageContext";
@@ -58,7 +57,6 @@ const oliveTheme = {
 
 const LandingPage = memo(function LandingPage() {
   const [mode, setMode] = useState(localStorage.getItem("authMode") || "signin");
-  const [pendingEmail, setPendingEmail] = useState("");
   const theme = useTheme();
   const _isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const _isSmall = useMediaQuery(theme.breakpoints.down("sm"));
@@ -490,8 +488,6 @@ const LandingPage = memo(function LandingPage() {
                         ? t("welcomeBack", language)
                         : mode === "signup"
                         ? t("createAccount", language)
-                        : mode === "verify-email"
-                        ? t("verifyEmailTitle", language)
                         : t("resetPassword", language)}
                     </Typography>
                   </Box>
@@ -499,11 +495,9 @@ const LandingPage = memo(function LandingPage() {
                   {/* Auth Form Content */}
                   <Box sx={{ p: { xs: 2, sm: 3 } }}>
                     {mode === "signin" ? (
-                      <SignIn setMode={setMode} setPendingEmail={setPendingEmail} />
+                      <SignIn setMode={setMode} />
                     ) : mode === "signup" ? (
-                      <SignUp setMode={setMode} setPendingEmail={setPendingEmail} />
-                    ) : mode === "verify-email" ? (
-                      <VerifyEmail setMode={setMode} presetEmail={pendingEmail} />
+                      <SignUp setMode={setMode} />
                     ) : (
                       <ForgotPassword setMode={setMode} />
                     )}

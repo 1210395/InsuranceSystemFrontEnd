@@ -19,15 +19,62 @@ export const useRequestSubmitHandler = ({
   selectedFamilyMember,
   doctorId,
   setDoctorId,
+  selectedSpecializationData,
+  language,
 }) => {
   const handleSubmit = async (e) => {
+    e.preventDefault();
+
     // Prevent submission if there's a same specialization restriction
     if (hasSameSpecializationRestriction) {
-      e.preventDefault();
       showError("You couldn't visit two doctors on the same day with the same specialization.");
       return;
     }
-    e.preventDefault();
+
+    // Validate patient against specialization restrictions before submitting
+    if (selectedSpecializationData) {
+      const patientAge = selectedFamilyMember
+        ? selectedFamilyMember.age || patientForm.age
+        : patientForm.age;
+      const patientGender = selectedFamilyMember
+        ? selectedFamilyMember.gender
+        : patientForm.gender;
+
+      // Check gender restrictions
+      if (selectedSpecializationData.allowedGenders && selectedSpecializationData.allowedGenders.length > 0) {
+        const normalizedPatientGender = patientGender?.toUpperCase();
+        const normalizedAllowedGenders = selectedSpecializationData.allowedGenders.map(g => g.toUpperCase());
+
+        if (!normalizedAllowedGenders.includes(normalizedPatientGender)) {
+          const genderMessage = language === "ar"
+            ? `هذا التخصص (${selectedSpecializationData.displayName}) مخصص فقط للمرضى من جنس: ${selectedSpecializationData.allowedGenders.join(", ")}`
+            : `This specialization (${selectedSpecializationData.displayName}) is only for patients of gender: ${selectedSpecializationData.allowedGenders.join(", ")}`;
+          showError(genderMessage);
+          return;
+        }
+      }
+
+      // Check age restrictions
+      const age = parseInt(patientAge);
+      if (!isNaN(age)) {
+        if (selectedSpecializationData.minAge !== null && selectedSpecializationData.minAge !== undefined && age < selectedSpecializationData.minAge) {
+          const ageMessage = language === "ar"
+            ? `هذا التخصص (${selectedSpecializationData.displayName}) مخصص للمرضى من عمر ${selectedSpecializationData.minAge} سنة فأكثر. عمر المريض: ${age} سنة`
+            : `This specialization (${selectedSpecializationData.displayName}) is for patients aged ${selectedSpecializationData.minAge} years and above. Patient age: ${age} years`;
+          showError(ageMessage);
+          return;
+        }
+
+        if (selectedSpecializationData.maxAge !== null && selectedSpecializationData.maxAge !== undefined && age > selectedSpecializationData.maxAge) {
+          const ageMessage = language === "ar"
+            ? `هذا التخصص (${selectedSpecializationData.displayName}) مخصص للمرضى حتى عمر ${selectedSpecializationData.maxAge} سنة. عمر المريض: ${age} سنة`
+            : `This specialization (${selectedSpecializationData.displayName}) is for patients up to ${selectedSpecializationData.maxAge} years old. Patient age: ${age} years`;
+          showError(ageMessage);
+          return;
+        }
+      }
+    }
+
     setLoading(true);
 
     // Check diagnosis and treatment only if they are required
@@ -268,8 +315,58 @@ export const useRequestSubmitHandler = ({
       }
 
       await Promise.all(promises);
-      showSuccess("✅ Request created successfully!");
-      setRequestCreated(true);
+      showSuccess("✅ Requests created successfully!");
+
+      // Auto-submit claim for the visit
+      try {
+        let clientId;
+
+        // Get client ID (family member or main client)
+        if (selectedFamilyMember) {
+          clientId = selectedFamilyMember.id;
+        } else {
+          clientId = patientForm.memberId;
+        }
+
+        // Get consultation price from specialization
+        const consultationPrice = selectedSpecializationData?.consultationPrice || 0;
+
+        // Create claim data
+        const claimData = {
+          clientId: clientId,
+          description: `Medical consultation - ${selectedSpecializationData?.displayName || 'General'}`,
+          amount: consultationPrice,
+          serviceDate: new Date().toISOString().split("T")[0],
+          diagnosis: noDiagnosisTreatment ? "" : patientForm.diagnosis,
+          treatmentDetails: noDiagnosisTreatment ? "" : patientForm.treatment,
+        };
+
+        // Create FormData for multipart/form-data request
+        const formData = new FormData();
+        formData.append("data", JSON.stringify(claimData));
+        // No document needed for auto-submitted claims
+
+        // Submit claim automatically using multipart/form-data
+        await api.post("/api/healthcare-provider-claims/create", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        showSuccess("✅ Claim submitted successfully!");
+
+        // Redirect to dashboard
+        setTimeout(() => {
+          localStorage.setItem("doctorActiveView", "create-center");
+          window.location.href = "/DoctorDashboard";
+        }, 1500);
+      } catch (claimErr) {
+        showError("Requests created but claim submission failed: " + (claimErr.response?.data?.message || claimErr.message));
+        // Still consider it a success since requests were created
+        setTimeout(() => {
+          localStorage.setItem("doctorActiveView", "create-center");
+          window.location.href = "/DoctorDashboard";
+        }, 2000);
+      }
     } catch (err) {
       showError("Error creating requests: " + (err.response?.data?.message || err.message));
     } finally {

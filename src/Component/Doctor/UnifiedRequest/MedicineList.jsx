@@ -184,9 +184,50 @@ const MedicineList = ({
           )}
           renderOption={(props, option) => {
             const { key, ...restProps } = props;
+
+            // Get coverage status info
+            const coverageStatus = option.coverageStatus || "COVERED";
+            const coveragePercentage = option.coveragePercentage || 100;
+
+            // Define coverage status display properties
+            const getCoverageDisplay = () => {
+              switch (coverageStatus) {
+                case "COVERED":
+                  return {
+                    label: language === "ar" ? "مغطى" : "Covered",
+                    color: "#10b981",
+                    bgColor: "#d1fae5",
+                    icon: "✓",
+                  };
+                case "REQUIRES_APPROVAL":
+                  return {
+                    label: language === "ar" ? "يحتاج موافقة" : "Requires Approval",
+                    color: "#f59e0b",
+                    bgColor: "#fef3c7",
+                    icon: "⚠",
+                  };
+                case "NOT_COVERED":
+                  return {
+                    label: language === "ar" ? "غير مغطى" : "Not Covered",
+                    color: "#ef4444",
+                    bgColor: "#fee2e2",
+                    icon: "✗",
+                  };
+                default:
+                  return {
+                    label: language === "ar" ? "مغطى" : "Covered",
+                    color: "#10b981",
+                    bgColor: "#d1fae5",
+                    icon: "✓",
+                  };
+              }
+            };
+
+            const coverageDisplay = getCoverageDisplay();
+
             return (
-              <Box component="li" key={key} {...restProps}>
-                <Box>
+              <Box component="li" key={key} {...restProps} sx={{ display: "flex", alignItems: "center", width: "100%", gap: 1 }}>
+                <Box sx={{ flex: 1 }}>
                   <Typography variant="body2" fontWeight={600}>
                     {option.name}
                   </Typography>
@@ -196,6 +237,17 @@ const MedicineList = ({
                     </Typography>
                   )}
                 </Box>
+                <Chip
+                  label={`${coverageDisplay.icon} ${coverageDisplay.label}${coverageStatus === "COVERED" && coveragePercentage < 100 ? ` (${coveragePercentage}%)` : ""}`}
+                  size="small"
+                  sx={{
+                    bgcolor: coverageDisplay.bgColor,
+                    color: coverageDisplay.color,
+                    fontWeight: 600,
+                    fontSize: "0.7rem",
+                    height: "20px",
+                  }}
+                />
               </Box>
             );
           }}

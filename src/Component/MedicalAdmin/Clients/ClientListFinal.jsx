@@ -62,23 +62,25 @@ const getUniversityCardSrc = (client) => {
     const fetchClients = async () => {
       try {
         const res = await api.get(API_ENDPOINTS.CLIENTS.LIST);
+        // api.get returns response.data directly
+        const clientsData = res || [];
 
- const filtered = res.data.filter((client) => {
-  const roles = (client.roles || []).map((r) => r.toUpperCase());
-  const requestedRole = client.requestedRole?.toUpperCase();
+        const filtered = clientsData.filter((client) => {
+          const roles = (client.roles || []).map((r) => r.toUpperCase());
+          const requestedRole = client.requestedRole?.toUpperCase();
 
-  // ✅ Active clients → role فعلي
-  if (client.status === "ACTIVE") {
-    return roles.includes("INSURANCE_CLIENT");
-  }
+          // ✅ Active clients → role فعلي
+          if (client.status === "ACTIVE") {
+            return roles.includes("INSURANCE_CLIENT");
+          }
 
-  // ✅ Inactive clients → كانوا Insurance Client
-  if (client.status === "INACTIVE") {
-    return requestedRole === "INSURANCE_CLIENT";
-  }
+          // ✅ Inactive clients → كانوا Insurance Client
+          if (client.status === "INACTIVE") {
+            return requestedRole === "INSURANCE_CLIENT";
+          }
 
-  return false;
-});
+          return false;
+        });
 
         const sorted = filtered.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
@@ -148,7 +150,8 @@ const getUniversityCardSrc = (client) => {
         }
       );
 
-      const updatedClient = res.data;
+      // api.patch returns response.data directly
+      const updatedClient = res;
       setAllClients((prev) =>
         prev.map((c) => (c.id === editClient.id ? updatedClient : c))
       );
@@ -246,7 +249,8 @@ const fetchClientFamily = async (client) => {
 
   try {
     const res = await api.get(API_ENDPOINTS.FAMILY_MEMBERS.BY_CLIENT(client.id));
-    setFamilyMembers(res.data);
+    // api.get returns response.data directly
+    setFamilyMembers(res || []);
   } catch (err) {
     console.error("❌ Failed to fetch family:", err);
     setFamilyMembers([]);
@@ -258,7 +262,8 @@ useEffect(() => {
   const fetchPendingFamily = async () => {
     try {
       const res = await api.get("/api/family-members/pending");
-      setPendingFamily(res.data);
+      // api.get returns response.data directly
+      setPendingFamily(res || []);
     } catch (err) {
       console.error("❌ Failed to fetch pending family updates", err);
     }
@@ -268,7 +273,7 @@ useEffect(() => {
 }, []);
 
 // ✅ فلترة الميمبرز بحيث نعرض فقط ميمبرز الكلاينتس ACTIVE
-const activePendingFamily = pendingFamily.filter(
+const activePendingFamily = (pendingFamily || []).filter(
   (member) => member.clientStatus === "ACTIVE"
 );
 
@@ -296,7 +301,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
       <Box
         sx={{
           flexGrow: 1,
-          backgroundColor: "#f4f6f9",
+          backgroundColor: "#FAF8F5",
           minHeight: "100vh",
           marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
           marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
@@ -310,9 +315,9 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
             variant="h4"
             fontWeight="bold"
             gutterBottom
-            sx={{ color: "#120460", display: "flex", alignItems: "center" }}
+            sx={{ color: "#3D4F23", display: "flex", alignItems: "center" }}
           >
-            <AssignmentIndIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0, fontSize: 35, color: "#1E8EAB" }} />
+            <AssignmentIndIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0, fontSize: 35, color: "#556B2F" }} />
             {t("clients", language)}
           </Typography>
 
@@ -490,7 +495,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
               >
                 <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
-  <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#1E8EAB" }}>
+  <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#556B2F" }}>
     {t("generalInformationTitle", language)}
   </Typography>
   <Stack spacing={1}>
@@ -535,7 +540,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                   {/* Chronic Diseases Info with Documents (only for Insurance Clients) */}
 {client.roles && client.roles.includes('INSURANCE_CLIENT') && (
   <Grid item xs={12} md={6}>
-    <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#1E8EAB" }}>
+    <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#556B2F" }}>
       {t("chronicDiseases", language)}
     </Typography>
     <Stack spacing={1}>
@@ -591,7 +596,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                     <Typography
                       variant="subtitle1"
                       fontWeight="bold"
-                      sx={{ color: "#1E8EAB" }}
+                      sx={{ color: "#556B2F" }}
                     >
                       {t("contactInfoSection", language)}
                     </Typography>
@@ -623,7 +628,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                       <Typography
                         variant="subtitle1"
                         fontWeight="bold"
-                        sx={{ mb: 1, color: "#1E8EAB" }}
+                        sx={{ mb: 1, color: "#556B2F" }}
                       >
                         {t("roles", language)}
                       </Typography>
@@ -662,7 +667,7 @@ const groupedPendingFamily = activePendingFamily.reduce((acc, member) => {
                     <Typography
                       variant="subtitle1"
                       fontWeight="bold"
-                      sx={{ color: "#1E8EAB" }}
+                      sx={{ color: "#556B2F" }}
                     >
                       {t("universityCardSection", language)}
                     </Typography>

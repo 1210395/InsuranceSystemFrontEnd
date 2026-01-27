@@ -66,9 +66,11 @@ documents: [], // Array<File>
     setLoading(true);
     try {
       const res = await api.get(API_ENDPOINTS.FAMILY_MEMBERS.MY);
-      setFamily(res.data);
+      // api.get returns response.data directly
+      setFamily(res || []);
     } catch (err) {
       console.error("Failed to fetch family:", err);
+      setFamily([]);
     } finally {
       setLoading(false);
     }
@@ -230,7 +232,7 @@ documents: [],
             </Box>
           ) : (
             <Grid container spacing={4}>
-          {family.map((member) => {
+          {(family || []).map((member) => {
   const status = member.status?.trim().toUpperCase();
   const isPending = status === "PENDING";
   const isApproved = status === "APPROVED";
