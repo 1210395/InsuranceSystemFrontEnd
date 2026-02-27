@@ -9,7 +9,7 @@ import logger from "../../utils/logger";
 
 import RadiologySidebar from "./RadiologySidebar";
 import RadiologyHeader from "./RadiologyHeader";
-import RadiologyRequestList from "./radiologyrequestlist";
+import RadiologyRequestList from "./RadiologyRequestList";
 import NotificationsList from "../Notification/NotificationsList";
 import LogoutDialog from "../Auth/LogoutDialog";
 import RadiologyPersonalProfile from "../Profile/RadiologyProfile";
