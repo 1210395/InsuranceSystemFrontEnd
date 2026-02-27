@@ -1445,14 +1445,15 @@ const AdminRegisterAccounts = () => {
   const stepLabels = getStepLabels(language);
 
   return (
-    <Box sx={{ display: "flex" }} dir="rtl">
+    <Box sx={{ display: "flex" }} dir={isRTL ? "rtl" : "ltr"}>
       <Sidebar />
       <Box
         sx={{
           flexGrow: 1,
           background: "linear-gradient(180deg, #f3f7ff 0%, #e8effc 100%)",
           minHeight: "100vh",
-          mr: "240px",
+          marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
+          marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
         }}
       >
         <Header />
@@ -1476,10 +1477,10 @@ const AdminRegisterAccounts = () => {
                 <PersonAddAlt1Icon fontSize="large" />
               </Avatar>
               <Typography variant="h5" fontWeight="bold" color="#150380">
-                تسجيل حساب جديد
+                {t("registerNewAccount", language)}
               </Typography>
               <Typography variant="body2" color="#666">
-                المدير - إدارة الحسابات
+                {t("managerAccountManagement", language)}
               </Typography>
             </Box>
 

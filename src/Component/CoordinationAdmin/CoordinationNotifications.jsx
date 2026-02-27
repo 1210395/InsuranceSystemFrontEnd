@@ -53,7 +53,7 @@ const CoordinationNotifications = () => {
     try {
       const res = await api.get(API_ENDPOINTS.NOTIFICATIONS.BASE);
 
-      const sorted = res.data.sort(
+      const sorted = (res || []).sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
 
@@ -80,7 +80,7 @@ const CoordinationNotifications = () => {
   const fetchUnreadCount = useCallback(async () => {
     try {
       const res = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
-      setUnreadCount(res.data);
+      setUnreadCount(res);
     } catch (err) {
       console.error("Failed to fetch unread count:", err);
     }
@@ -88,7 +88,7 @@ const CoordinationNotifications = () => {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 3000);
+    const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 

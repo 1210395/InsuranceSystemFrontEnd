@@ -48,7 +48,7 @@ const EmergencyNotifications = () => {
 
       const res = await api.get(API_ENDPOINTS.NOTIFICATIONS.ALL);
 
-      const dataWithReplied = res.data.map((n) => ({ ...n, replied: n.replied || false }));
+      const dataWithReplied = (res || []).map((n) => ({ ...n, replied: n.replied || false }));
       setNotifications(
         dataWithReplied.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       );
