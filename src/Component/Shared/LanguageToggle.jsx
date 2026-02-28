@@ -14,22 +14,23 @@ const LanguageToggle = ({ sx = {} }) => {
           color: "#556B2F",
           backgroundColor: "rgba(85, 107, 47, 0.1)",
           borderRadius: "8px",
-          px: 1.5,
+          px: { xs: 0.75, sm: 1.5 },
           py: 0.5,
+          minWidth: { xs: 36, sm: "auto" },
           transition: "all 0.3s ease",
           "&:hover": {
             backgroundColor: "rgba(85, 107, 47, 0.2)",
-            transform: "scale(1.05)",
           },
           ...sx,
         }}
       >
-        <LanguageIcon sx={{ fontSize: 20, mr: 0.5 }} />
+        <LanguageIcon sx={{ fontSize: { xs: 18, sm: 20 }, marginInlineEnd: { xs: 0, sm: "4px" } }} />
         <Typography
           variant="body2"
           sx={{
             fontWeight: 600,
             fontSize: "0.85rem",
+            display: { xs: "none", sm: "inline" },
           }}
         >
           {language === "en" ? "عربي" : "EN"}

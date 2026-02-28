@@ -8,6 +8,8 @@ import {
   Typography,
   Container,
   InputAdornment,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import LockIcon from "@mui/icons-material/Lock";
@@ -23,6 +25,8 @@ const ResetPassword = memo(function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [severity, setSeverity] = useState("info");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const query = new URLSearchParams(useLocation().search);
@@ -30,12 +34,15 @@ const ResetPassword = memo(function ResetPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage("");
 
     if (newPassword !== confirmPassword) {
+      setSeverity("error");
       setMessage(t("passwordsDoNotMatch", language));
       return;
     }
 
+    setLoading(true);
     try {
       await api.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
         token,
@@ -43,16 +50,18 @@ const ResetPassword = memo(function ResetPassword() {
       });
 
       localStorage.removeItem("authMode");
-
-    setMessage(t("passwordResetSuccessRedirecting", language));
-setTimeout(() => {
-  localStorage.setItem("authMode", "signin");
-  navigate("/LandingPage");
-}, 2000);
-
+      setSeverity("success");
+      setMessage(t("passwordResetSuccessRedirecting", language));
+      setTimeout(() => {
+        localStorage.setItem("authMode", "signin");
+        navigate("/LandingPage");
+      }, 2000);
     } catch (err) {
       logger.error(err.response?.data || err.message);
-      setMessage(t("failedToResetPasswordTryAgain", language));
+      setSeverity("error");
+      setMessage(err.response?.data?.message || t("failedToResetPasswordTryAgain", language));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,12 +74,13 @@ setTimeout(() => {
           flexDirection: "column",
           alignItems: "center",
           background: "linear-gradient(145deg, #FFFFFF, #E8EDE0)",
-          p: 4,
-          borderRadius: "18px",
+          p: { xs: 2.5, sm: 4 },
+          borderRadius: { xs: "12px", sm: "18px" },
           boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
           border: "1px solid #e0e6ed",
           maxWidth: "460px",
-          margin: "40px auto",
+          margin: { xs: "20px auto", sm: "40px auto" },
+          mx: { xs: 2, sm: "auto" },
         }}
       >
         <Avatar sx={{ m: 1, bgcolor: "#556B2F", width: 56, height: 56 }}>
@@ -120,6 +130,7 @@ setTimeout(() => {
             type="submit"
             fullWidth
             variant="contained"
+            disabled={loading}
             sx={{
               mt: 3,
               mb: 2,
@@ -131,14 +142,27 @@ setTimeout(() => {
               transition: "0.2s",
             }}
           >
-            {t("resetMyPassword", language)}
+            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : t("resetMyPassword", language)}
           </Button>
 
           {message && (
-            <Typography sx={{ mt: 2, color: message === t("passwordResetSuccessRedirecting", language) ? "green" : "red" }}>
+            <Alert severity={severity} sx={{ mt: 2, borderRadius: 2 }}>
               {message}
-            </Typography>
+            </Alert>
           )}
+
+          <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/LandingPage");
+              }}
+              style={{ color: "#556B2F", fontWeight: "600", textDecoration: "none" }}
+            >
+              {t("backToSignIn", language)}
+            </a>
+          </Typography>
         </Box>
       </Box>
     </Container>

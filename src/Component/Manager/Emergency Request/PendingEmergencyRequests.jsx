@@ -128,7 +128,7 @@ const PendingEmergencyRequests = () => {
     <Box sx={{ display: "flex" }}>
       <ManagerSidebar />
 
-      <Box sx={{ flexGrow: 1, background: "#f9fafc", minHeight: "100vh", marginLeft: "240px" }}>
+      <Box sx={{ flexGrow: 1, background: "#f9fafc", minHeight: "100vh", marginLeft: { xs: 0, sm: "72px", md: "240px" } }}>
         <ManagerHeader />
 
         <Box sx={{ p: 3 }}>

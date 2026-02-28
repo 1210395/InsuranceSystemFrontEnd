@@ -1071,7 +1071,7 @@ const UnifiedCreateRequest = () => {
           onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
           sx={{ 
             width: "100%", 
-            minWidth: "400px",
+            minWidth: { xs: "auto", sm: "400px" },
             maxWidth: "700px",
             fontSize: "1rem", 
             fontWeight: 600,

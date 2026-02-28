@@ -97,10 +97,13 @@ const EmergencyHeader = memo(function EmergencyHeader() {
           backgroundColor: "#fff",
           borderBottom: "1px solid #E8EDE0",
           color: "#333",
-          px: 3,
+          width: "100%",
         }}
       >
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Toolbar
+          disableGutters
+          sx={{ display: "flex", justifyContent: "space-between", width: "100%", px: { xs: 1, sm: 2 } }}
+        >
           {/* ✅ اللوجو + اسم النظام */}
           <Box
             sx={{
@@ -114,7 +117,7 @@ const EmergencyHeader = memo(function EmergencyHeader() {
             <img
               src={logo}
               alt="System Logo"
-              style={{ height: 40, width: 40, borderRadius: "50%" }}
+              style={{ height: 36, width: 36, borderRadius: "50%" }}
             />
             <Typography
               variant="h6"
@@ -124,7 +127,7 @@ const EmergencyHeader = memo(function EmergencyHeader() {
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexDirection: isRTL ? "row-reverse" : "row" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1, md: 2 }, flexDirection: isRTL ? "row-reverse" : "row" }}>
             {/* Language Toggle */}
             <LanguageToggle />
 
@@ -136,7 +139,7 @@ const EmergencyHeader = memo(function EmergencyHeader() {
             </IconButton>
 
             {/* User Info */}
-            <Box sx={{ textAlign: "right", mr: 1, display: { xs: "none", md: "block" } }}>
+            <Box sx={{ textAlign: "right", display: { xs: "none", md: "block" } }}>
               <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
                 {fullName || "Loading..."}
               </Typography>
@@ -154,7 +157,7 @@ const EmergencyHeader = memo(function EmergencyHeader() {
             <IconButton onClick={handleMenuOpen}>
               <Avatar
                 src={profileImage || undefined}
-                sx={{ bgcolor: "#556B2F", width: 42, height: 42, border: "2px solid #7B8B5E" }}
+                sx={{ bgcolor: "#556B2F", width: { xs: 34, sm: 42 }, height: { xs: 34, sm: 42 }, border: "2px solid #7B8B5E" }}
               >
                 {!profileImage && fullName?.charAt(0)}
               </Avatar>

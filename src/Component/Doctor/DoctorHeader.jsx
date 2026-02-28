@@ -69,7 +69,7 @@ const DoctorHeader = memo(function DoctorHeader({
           display: "flex",
           justifyContent: "space-between",
           width: "100%",
-          px: 2,
+          px: { xs: 1, sm: 2 },
         }}
       >
         {/* Logo + System Name */}
@@ -79,14 +79,13 @@ const DoctorHeader = memo(function DoctorHeader({
             alignItems: "center",
             gap: 1,
             cursor: "pointer",
-            pl: 2,
           }}
           onClick={onLogoClick}
         >
           <img
             src={logo}
             alt="System Logo"
-            style={{ height: 40, width: 40, borderRadius: "50%" }}
+            style={{ height: 36, width: 36, borderRadius: "50%" }}
           />
           <Typography
             variant="h6"
@@ -97,7 +96,7 @@ const DoctorHeader = memo(function DoctorHeader({
         </Box>
 
         {/* Right Section */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, pr: 2, flexDirection: isRTL ? "row-reverse" : "row" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1, md: 2 }, flexDirection: isRTL ? "row-reverse" : "row" }}>
           {/* Language Toggle */}
           <LanguageToggle />
 
@@ -128,8 +127,8 @@ const DoctorHeader = memo(function DoctorHeader({
               src={profileImage || undefined}
               sx={{
                 bgcolor: "#556B2F",
-                width: 42,
-                height: 42,
+                width: { xs: 34, sm: 42 },
+                height: { xs: 34, sm: 42 },
                 border: "2px solid #7B8B5E",
               }}
             >

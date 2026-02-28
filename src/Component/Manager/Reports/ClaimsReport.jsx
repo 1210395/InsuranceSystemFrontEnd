@@ -372,8 +372,8 @@ const ClaimsReport = () => {
             flexGrow: 1,
             backgroundColor: "#FAF8F5",
             minHeight: "100vh",
-            marginLeft: isRTL ? 0 : "240px",
-            marginRight: isRTL ? "240px" : 0,
+            marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
+            marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -394,8 +394,8 @@ const ClaimsReport = () => {
             flexGrow: 1,
             backgroundColor: "#FAF8F5",
             minHeight: "100vh",
-            marginLeft: isRTL ? 0 : "240px",
-            marginRight: isRTL ? "240px" : 0,
+            marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
+            marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -415,8 +415,8 @@ const ClaimsReport = () => {
           flexGrow: 1,
           backgroundColor: "#FAF8F5",
           minHeight: "100vh",
-          marginLeft: isRTL ? 0 : "240px",
-          marginRight: isRTL ? "240px" : 0,
+          marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
+          marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
         }}
       >
         <Header />

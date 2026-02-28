@@ -12,7 +12,15 @@ import {
   IconButton,
   useTheme,
   useMediaQuery,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Divider,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import CloseIcon from "@mui/icons-material/Close";
 import SignIn from "../Auth/SignIn.jsx";
 import SignUp from "../Auth/SignUp.jsx";
 import ForgotPassword from "../Auth/ForgotPassword.jsx";
@@ -60,6 +68,7 @@ const oliveTheme = {
 
 const LandingPage = memo(function LandingPage() {
   const [mode, setMode] = useState(localStorage.getItem("authMode") || "signin");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const theme = useTheme();
   const _isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const _isSmall = useMediaQuery(theme.breakpoints.down("sm"));
@@ -231,6 +240,16 @@ const LandingPage = memo(function LandingPage() {
           </Box>
 
           <Stack direction="row" spacing={{ xs: 0.5, sm: 1, md: 3 }} alignItems="center">
+            {/* Hamburger menu for mobile */}
+            <IconButton
+              onClick={() => setDrawerOpen(true)}
+              sx={{
+                color: oliveTheme.white,
+                display: { xs: "inline-flex", sm: "none" },
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
             <Button
               onClick={() => scrollToSection("features")}
               sx={{
@@ -334,6 +353,86 @@ const LandingPage = memo(function LandingPage() {
             </Button>
           </Stack>
         </Box>
+
+        {/* Mobile Navigation Drawer */}
+        <Drawer
+          anchor="right"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          PaperProps={{
+            sx: {
+              width: 260,
+              backgroundColor: "#1E2D14",
+              color: oliveTheme.white,
+            },
+          }}
+        >
+          <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
+            <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: oliveTheme.white }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+          <List>
+            {[
+              { label: t("features", language), action: () => scrollToSection("features") },
+              { label: t("howItWorks", language), action: () => scrollToSection("how-it-works") },
+              { label: t("about", language), action: () => navigate("/About") },
+              { label: t("help", language), action: () => navigate("/Help") },
+              { label: t("contactUs", language), action: () => scrollToSection("contact") },
+            ].map((item) => (
+              <ListItem key={item.label} disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    item.action();
+                    setDrawerOpen(false);
+                  }}
+                  sx={{ "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" } }}
+                >
+                  <ListItemText primary={item.label} sx={{ color: oliveTheme.white }} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+          <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+          <Box sx={{ p: 2 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => {
+                setMode("signin");
+                scrollToSection("auth-section");
+                setDrawerOpen(false);
+              }}
+              sx={{
+                backgroundColor: oliveTheme.accent,
+                color: oliveTheme.primaryDark,
+                fontWeight: 600,
+                mb: 1,
+                "&:hover": { backgroundColor: "#D4B35A" },
+              }}
+            >
+              {t("login", language)}
+            </Button>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => {
+                setMode("signup");
+                scrollToSection("auth-section");
+                setDrawerOpen(false);
+              }}
+              sx={{
+                borderColor: oliveTheme.white,
+                color: oliveTheme.white,
+                fontWeight: 600,
+                "&:hover": { borderColor: oliveTheme.accent, backgroundColor: "rgba(255,255,255,0.1)" },
+              }}
+            >
+              {t("getStarted", language)}
+            </Button>
+          </Box>
+        </Drawer>
 
         {/* Hero Content */}
         <Box

@@ -29,7 +29,7 @@ const MyClaims = ({ claims }) => {
 
       {/* 🔹 جدول الكليمات */}
       <div className="table-section">
-        <div className="table-container">
+        <div className="table-container" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           {!claims || claims.length === 0 ? (
             <div
               style={{ padding: "2rem", textAlign: "center", color: "#6B7280" }}

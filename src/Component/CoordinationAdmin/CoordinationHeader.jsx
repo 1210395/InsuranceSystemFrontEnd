@@ -101,16 +101,19 @@ const CoordinationHeader = memo(function CoordinationHeader() {
           backgroundColor: "#fff",
           borderBottom: "1px solid #E8EDE0",
           color: "#333",
-          px: 3,
+          width: "100%",
         }}
       >
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Toolbar
+          disableGutters
+          sx={{ display: "flex", justifyContent: "space-between", width: "100%", px: { xs: 1, sm: 2 } }}
+        >
           {/* LEFT SIDE */}
           <Box
             sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }}
             onClick={() => navigate("/CoordinationDashboard")}
           >
-            <img src={logo} alt="Logo" style={{ height: 40, width: 40, borderRadius: "50%" }} />
+            <img src={logo} alt="Logo" style={{ height: 36, width: 36, borderRadius: "50%" }} />
 
             <Typography variant="h6" sx={{ fontWeight: "bold", color: "#556B2F", display: { xs: "none", sm: "block" } }}>
               {t("birzeitInsuranceSystem", language)}
@@ -118,7 +121,7 @@ const CoordinationHeader = memo(function CoordinationHeader() {
           </Box>
 
           {/* RIGHT SIDE */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexDirection: isRTL ? "row-reverse" : "row" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1, md: 2 }, flexDirection: isRTL ? "row-reverse" : "row" }}>
             {/* Language Toggle */}
             <LanguageToggle />
 
@@ -147,8 +150,8 @@ const CoordinationHeader = memo(function CoordinationHeader() {
                 src={profileImage || undefined}
                 sx={{
                   bgcolor: "#556B2F",
-                  width: 42,
-                  height: 42,
+                  width: { xs: 34, sm: 42 },
+                  height: { xs: 34, sm: 42 },
                   border: "2px solid #7B8B5E",
                 }}
               >

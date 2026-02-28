@@ -53,7 +53,8 @@ const MembersActivityReport = () => {
             flexGrow: 1,
             background: "#FAF8F5",
             minHeight: "100vh",
-            marginLeft: "240px",
+            marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
+            marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -74,7 +75,8 @@ const MembersActivityReport = () => {
             flexGrow: 1,
             background: "#FAF8F5",
             minHeight: "100vh",
-            marginLeft: "240px",
+            marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
+            marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -136,7 +138,8 @@ const MembersActivityReport = () => {
           flexGrow: 1,
           background: "linear-gradient(to bottom, #FAF8F5, #E8EDE0)",
           minHeight: "100vh",
-          marginLeft: "240px",
+          marginLeft: isRTL ? 0 : { xs: 0, sm: "72px", md: "240px" },
+          marginRight: isRTL ? { xs: 0, sm: "72px", md: "240px" } : 0,
         }}
       >
         <Header />
