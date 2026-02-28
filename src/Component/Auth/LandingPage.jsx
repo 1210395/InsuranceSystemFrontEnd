@@ -1,4 +1,5 @@
 import React, { useState, useEffect, memo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -19,6 +20,8 @@ import LanguageToggle from "../Shared/LanguageToggle.jsx";
 import birzeitLogo from "../../images/Birzeit Logo.png";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
+import { getToken, getUser, getRoles } from "../../utils/apiService";
+import { normalizeRoles, getDashboardRoute } from "../../config/roles";
 
 // Icons
 import SecurityIcon from "@mui/icons-material/Security";
@@ -61,6 +64,18 @@ const LandingPage = memo(function LandingPage() {
   const _isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const _isSmall = useMediaQuery(theme.breakpoints.down("sm"));
   const { language } = useLanguage();
+  const navigate = useNavigate();
+
+  // Redirect already-authenticated users to their dashboard
+  useEffect(() => {
+    const token = getToken();
+    const user = getUser();
+    if (token && user) {
+      const userRoles = normalizeRoles(getRoles());
+      const dashboard = getDashboardRoute(userRoles);
+      navigate(dashboard, { replace: true });
+    }
+  }, [navigate]);
 
   useEffect(() => {
     localStorage.setItem("authMode", mode);

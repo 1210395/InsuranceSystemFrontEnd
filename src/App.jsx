@@ -4,7 +4,19 @@ import { Routes, Route } from "react-router-dom";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
 // Import ROLES constants for consistent role checking
-import { ROLES } from "./config/roles";
+import { ROLES, normalizeRoles, getDashboardRoute } from "./config/roles";
+import { getToken, getUser, getRoles } from "./utils/apiService";
+
+// Smart root redirect - sends authenticated users to dashboard, others to landing
+const RootRedirect = () => {
+  const token = getToken();
+  const user = getUser();
+  if (token && user) {
+    const userRoles = normalizeRoles(getRoles());
+    return <Navigate to={getDashboardRoute(userRoles)} replace />;
+  }
+  return <Navigate to="/LandingPage" replace />;
+};
 
 // Loading fallback component
 const PageLoader = () => (
@@ -116,7 +128,7 @@ function App() {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public Pages */}
-        <Route path="/" element={<Navigate to="/LandingPage" replace />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/LandingPage" element={<LandingPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/About" element={<About />} />

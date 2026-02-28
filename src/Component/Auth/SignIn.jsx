@@ -1,4 +1,4 @@
-import React, { useState, memo } from "react";
+import React, { useState, useEffect, memo } from "react";
 import PropTypes from "prop-types";
 import {
   Avatar,
@@ -16,7 +16,8 @@ import {
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import EmailIcon from "@mui/icons-material/Email";
 import LockIcon from "@mui/icons-material/Lock";
-import { api, setToken, setUser, setRoles } from "../../utils/apiService";
+import { useNavigate } from "react-router-dom";
+import { api, setToken, setUser, setRoles, getToken, getUser, getRoles } from "../../utils/apiService";
 import { API_ENDPOINTS } from "../../config/api";
 import { ROLES, normalizeRoles, getDashboardRoute } from "../../config/roles";
 import { sanitizeString } from "../../utils/sanitize";
@@ -27,6 +28,18 @@ const SignIn = memo(function SignIn({ setMode }) {
   const { language, isRTL } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    const token = getToken();
+    const user = getUser();
+    if (token && user) {
+      const userRoles = normalizeRoles(getRoles());
+      const dashboard = getDashboardRoute(userRoles);
+      navigate(dashboard, { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -71,7 +84,7 @@ const SignIn = memo(function SignIn({ setMode }) {
       const userRoles = normalizeRoles(effectiveRoles);
       const dashboardRoute = getDashboardRoute(userRoles);
 
-      window.location.href = dashboardRoute;
+      navigate(dashboardRoute, { replace: true });
 
     } catch (err) {
       const msg = err.response?.data?.message;
