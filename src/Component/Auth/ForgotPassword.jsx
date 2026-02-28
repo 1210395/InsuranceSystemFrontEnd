@@ -9,6 +9,8 @@ import {
   Typography,
   Container,
   InputAdornment,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import MailIcon from "@mui/icons-material/Mail";
 import LockResetIcon from "@mui/icons-material/LockReset";
@@ -22,15 +24,23 @@ const ForgotPassword = memo(function ForgotPassword({ setMode }) {
   const { language, isRTL } = useLanguage();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [severity, setSeverity] = useState("info");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setMessage("");
     try {
       await api.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+      setSeverity("success");
       setMessage(t("checkEmailForResetInstructions", language));
     } catch (err) {
       logger.error(err.response?.data || err.message);
-      setMessage(t("failedToSendResetLink", language));
+      setSeverity("error");
+      setMessage(err.response?.data?.message || t("failedToSendResetLink", language));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,6 +91,7 @@ const ForgotPassword = memo(function ForgotPassword({ setMode }) {
             type="submit"
             fullWidth
             variant="contained"
+            disabled={loading}
             sx={{
               mt: 3,
               mb: 2,
@@ -92,13 +103,13 @@ const ForgotPassword = memo(function ForgotPassword({ setMode }) {
               transition: "0.2s",
             }}
           >
-            {t("sendResetLink", language)}
+            {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : t("sendResetLink", language)}
           </Button>
 
           {message && (
-            <Typography sx={{ mt: 2, color: message === t("checkEmailForResetInstructions", language) ? "green" : "red" }}>
+            <Alert severity={severity} sx={{ mt: 2, borderRadius: 2 }}>
               {message}
-            </Typography>
+            </Alert>
           )}
 
           <Typography variant="body2" sx={{ mt: 2 }}>
