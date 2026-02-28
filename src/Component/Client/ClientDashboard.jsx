@@ -61,27 +61,15 @@ const ClientDashboard = () => {
     localStorage.setItem("clientActiveView", activeView);
   }, [activeView]);
 
-  // User Info
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("clientUser");
-    if (storedUser) {
-      try {
-        return JSON.parse(storedUser);
-      } catch {
-        return { fullName: "Client", roles: [ROLES.INSURANCE_CLIENT], status: "ACTIVE" };
-      }
-    }
-    return { fullName: "Client", roles: [ROLES.INSURANCE_CLIENT], status: "ACTIVE" };
-  });
+  // User Info - don't initialize from localStorage to avoid stale data from previous user
+  const [user, setUser] = useState({ fullName: "Client", roles: [ROLES.INSURANCE_CLIENT], status: "ACTIVE" });
   const [profileImage, setProfileImage] = useState(null);
 
 
   // ✅ Data
   const [prescriptions, setPrescriptions] = useState([]);
   const [labRequests, setLabRequests] = useState([]);
-  const [radiologyRequests, setRadiologyRequests] = useState(
-    JSON.parse(localStorage.getItem("clientRadiologyRequests")) || []
-  );
+  const [radiologyRequests, setRadiologyRequests] = useState([]);
   const [claims, setClaims] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 

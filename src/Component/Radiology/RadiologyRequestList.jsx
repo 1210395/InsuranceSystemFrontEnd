@@ -28,12 +28,17 @@ import { api, getToken } from "../../utils/apiService";
 import { API_ENDPOINTS } from "../../config/api";
 import RadiologyRequestCard from "./RadiologyRequestCard";
 import RadiologyRequestDialogs from "./RadiologyRequestDialogs";
+import PatientSearchBar from "../Shared/PatientSearchBar";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
 
 const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onUploaded }) => {
   const { language, isRTL } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchType, setSearchType] = useState("employeeId");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [, setEmployeeIdToNameMap] = useState({});
   const [nameToEmployeeIdMap, setNameToEmployeeIdMap] = useState({}); // Map patient names to employee IDs
   const [clientInfoMap, setClientInfoMap] = useState({}); // Map member names to client info (age, gender)
@@ -670,56 +675,41 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
     );
   }
 
-  // ✅ Lookup employee ID to name mapping - only when user presses Enter or leaves the field
-  const handleEmployeeIdLookup = async (employeeId) => {
-    if (!employeeId || !employeeId.trim()) {
-      return;
-    }
+  // Search handler - validates client exists then filters results
+  const handleSearch = async () => {
+    if (!searchInput.trim()) return;
+    setSearchLoading(true);
+    try {
+      const endpoint = searchType === "employeeId"
+        ? `/api/clients/search/employeeId/${encodeURIComponent(searchInput.trim())}`
+        : `/api/clients/search/nationalId/${encodeURIComponent(searchInput.trim())}`;
+      const clientData = await api.get(endpoint);
 
-    const trimmedSearch = employeeId.trim();
-    const looksLikeEmployeeId = /^[A-Za-z0-9]{3,}$/.test(trimmedSearch);
+      if (clientData) {
+        // Use client's full name for exact matching in filter
+        setSearchTerm(clientData.fullName || searchInput.trim());
+        setHasSearched(true);
 
-    if (looksLikeEmployeeId) {
-      try {
-        const response = await api.get(
-          API_ENDPOINTS.CLIENTS.SEARCH_BY_EMPLOYEE_ID(encodeURIComponent(trimmedSearch))
-        );
-
-        // Check if response is successful and has fullName (not an error message)
-        if (response.status === 200 && response.data && response.data.fullName && !response.data.error) {
-          const employeeIdLower = trimmedSearch.toLowerCase();
-          const patientName = response.data.fullName.toLowerCase();
-          const actualEmployeeId = response.data.employeeId || trimmedSearch;
-          
-          // Map employee ID to patient name (for search)
-          setEmployeeIdToNameMap(prev => ({
-            ...prev,
-            [employeeIdLower]: patientName
-          }));
-          
-          // Map patient name to employee ID (for display in cards)
+        if (clientData.fullName && clientData.employeeId) {
           setNameToEmployeeIdMap(prev => ({
             ...prev,
-            [patientName]: actualEmployeeId
+            [clientData.fullName.toLowerCase()]: clientData.employeeId
           }));
-        } else {
-          // Clear only this employee ID from map, keep others
-          setEmployeeIdToNameMap(prev => {
-            const newMap = { ...prev };
-            delete newMap[trimmedSearch.toLowerCase()];
-            return newMap;
-          });
         }
-      } catch {
-        // Employee ID not found (404) or other error - silently handle
-        // Clear only this employee ID from map, keep others
-        setEmployeeIdToNameMap(prev => {
-          const newMap = { ...prev };
-          delete newMap[trimmedSearch.toLowerCase()];
-          return newMap;
-        });
       }
+    } catch {
+      setSearchTerm("");
+      setHasSearched(false);
+    } finally {
+      setSearchLoading(false);
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearchTerm("");
+    setHasSearched(false);
+    setFamilyMemberFilter("all");
   };
 
   // ✅ Sorting and filtering - Show only PENDING (hide COMPLETED)
@@ -740,28 +730,27 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
   );
 
   // First filter by search term - only show results after searching
-  const hasSearchTerm = searchTerm.trim().length > 0;
   const searchFilteredRequests = sortedRequests.filter(
     (r) => {
-      // Only show results when user has entered a search term
-      if (!hasSearchTerm) return false;
+      // Only show results when search has been performed
+      if (!hasSearched || !searchTerm.trim()) return false;
 
       const searchLower = searchTerm.toLowerCase();
 
-      // Search by patient name (main client)
-      const matchesName = r.memberName?.toLowerCase().includes(searchLower);
+      // Exact match by patient name (main client)
+      const matchesName = r.memberName?.toLowerCase() === searchLower;
 
-      // Search by Employee ID (main client)
-      const matchesEmployeeId = r.employeeId?.toLowerCase().includes(searchLower);
+      // Exact match by Employee ID (main client)
+      const matchesEmployeeId = r.employeeId?.toLowerCase() === searchLower;
 
-      // Search by National ID (main client)
-      const matchesNationalId = r.memberNationalId?.toLowerCase().includes(searchLower);
+      // Exact match by National ID (main client)
+      const matchesNationalId = r.memberNationalId?.toLowerCase() === searchLower;
 
-      // Search by family member info if exists
+      // Exact match by family member info if exists
       const familyInfo = getFamilyMemberInfo(r);
-      const matchesFamilyMemberName = familyInfo?.name?.toLowerCase().includes(searchLower);
-      const matchesFamilyMemberInsuranceNumber = familyInfo?.insuranceNumber?.toLowerCase().includes(searchLower);
-      const matchesFamilyMemberNationalId = familyInfo?.nationalId?.toLowerCase().includes(searchLower);
+      const matchesFamilyMemberName = familyInfo?.name?.toLowerCase() === searchLower;
+      const matchesFamilyMemberInsuranceNumber = familyInfo?.insuranceNumber?.toLowerCase() === searchLower;
+      const matchesFamilyMemberNationalId = familyInfo?.nationalId?.toLowerCase() === searchLower;
 
       return matchesName || matchesEmployeeId || matchesNationalId || matchesFamilyMemberName || matchesFamilyMemberInsuranceNumber || matchesFamilyMemberNationalId;
     }
@@ -784,7 +773,7 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
   };
 
   const { mainClientName, familyMembers } = getUniqueFamilyMembers();
-  const hasFamilyMembers = familyMembers.length > 0 && searchTerm.trim();
+  const hasFamilyMembers = familyMembers.length > 0 && hasSearched;
 
   // Apply family member filter
   const filteredRequests = searchFilteredRequests.filter((r) => {
@@ -867,51 +856,17 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
           </Grid>
         </Paper>
 
-        {/* Search Section - No Filter (like LabRequestList) */}
-        <Card elevation={0} sx={{ borderRadius: 4, border: "1px solid #E8EDE0", mb: 4 }}>
-          <CardContent sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              {/* Search Bar - Only by patient name and employee ID */}
-              <TextField
-                placeholder={t("searchByEmployeeIdOrNationalId", language)}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => {
-                  // If Enter is pressed and search term looks like employee ID, lookup
-                  if (e.key === 'Enter') {
-                    const trimmedSearch = searchTerm.trim();
-                    const looksLikeEmployeeId = /^[A-Za-z0-9]{3,}$/.test(trimmedSearch);
-                    if (looksLikeEmployeeId) {
-                      handleEmployeeIdLookup(trimmedSearch);
-                    }
-                  }
-                }}
-                onBlur={() => {
-                  // When user leaves the field, if search term looks like employee ID, lookup
-                  const trimmedSearch = searchTerm.trim();
-                  const looksLikeEmployeeId = /^[A-Za-z0-9]{3,}$/.test(trimmedSearch);
-                  if (looksLikeEmployeeId) {
-                    handleEmployeeIdLookup(trimmedSearch);
-                  }
-                }}
-                fullWidth
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: "text.secondary" }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                    bgcolor: "#FAF8F5",
-                  },
-                }}
-              />
-            </Stack>
-          </CardContent>
-        </Card>
+        {/* Patient Search Section */}
+        <PatientSearchBar
+          searchType={searchType}
+          onSearchTypeChange={setSearchType}
+          searchValue={searchInput}
+          onSearchValueChange={setSearchInput}
+          onSearch={handleSearch}
+          loading={searchLoading}
+          onClear={handleClearSearch}
+          hasSearched={hasSearched}
+        />
 
         {/* Family Member Filter - Only show if there are family members in the results */}
         {hasFamilyMembers && (
@@ -967,8 +922,8 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
           </Card>
         )}
 
-        {/* Prompt to search - shown when no search term entered */}
-        {!hasSearchTerm && (
+        {/* Prompt to search - shown when no search performed */}
+        {!hasSearched && (
           <Paper
             elevation={0}
             sx={{
@@ -991,7 +946,7 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
         )}
 
         {/* Results Count - only show when searching */}
-        {hasSearchTerm && (
+        {hasSearched && (
           <Typography variant="body1" sx={{ mb: 3, color: "text.secondary" }}>
             {filteredRequests.length === 0
               ? `${t("noRadiologyRequestsFound", language)}`

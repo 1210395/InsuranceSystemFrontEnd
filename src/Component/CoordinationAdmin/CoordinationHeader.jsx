@@ -47,20 +47,26 @@ const CoordinationHeader = memo(function CoordinationHeader() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await api.get(API_ENDPOINTS.AUTH.ME);
+        // api.get() returns response.data directly
+        const userData = await api.get(API_ENDPOINTS.AUTH.ME);
 
-        setFullName(res.data.fullName || "Coordinator");
-        setRoles(res.data.roles || []);
+        setFullName(userData.fullName || "Coordinator");
+        setRoles(userData.roles || []);
 
-        if (res.data.universityCardImage) {
-          const img = res.data.universityCardImage.startsWith("http")
-            ? res.data.universityCardImage
-            : `${API_BASE_URL}${res.data.universityCardImage}`;
+        // Handle both single image and array format
+        let imgPath = userData.universityCardImage || "";
+        if (!imgPath && userData.universityCardImages && userData.universityCardImages.length > 0) {
+          imgPath = userData.universityCardImages[userData.universityCardImages.length - 1];
+        }
 
+        if (imgPath) {
+          const img = imgPath.startsWith("http")
+            ? imgPath
+            : `${API_BASE_URL}${imgPath}`;
           setProfileImage(img);
         }
       } catch (err) {
-        console.error("❌ Failed to load profile:", err);
+        console.error("Failed to load profile:", err);
       }
     };
 
@@ -72,16 +78,17 @@ const CoordinationHeader = memo(function CoordinationHeader() {
   // ============================
   const fetchUnreadCount = async () => {
     try {
-      const res = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
-      setUnreadCount(res.data);
+      // api.get() returns response.data directly
+      const count = await api.get(API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT);
+      setUnreadCount(typeof count === 'number' ? count : parseInt(count) || 0);
     } catch (err) {
-      console.error("❌ Failed to fetch unread count:", err);
+      console.error("Failed to fetch unread count:", err);
     }
   };
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 3000);
+    const interval = setInterval(fetchUnreadCount, 30000); // 30s instead of 3s
     return () => clearInterval(interval);
   }, []);
 
@@ -105,7 +112,7 @@ const CoordinationHeader = memo(function CoordinationHeader() {
           >
             <img src={logo} alt="Logo" style={{ height: 40, width: 40, borderRadius: "50%" }} />
 
-            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#556B2F" }}>
+            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#556B2F", display: { xs: "none", sm: "block" } }}>
               {t("birzeitInsuranceSystem", language)}
             </Typography>
           </Box>
@@ -125,7 +132,7 @@ const CoordinationHeader = memo(function CoordinationHeader() {
             </Tooltip>
 
             {/* USER NAME */}
-            <Box sx={{ textAlign: "right" }}>
+            <Box sx={{ textAlign: "right", display: { xs: "none", md: "block" } }}>
               <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
                 {fullName}
               </Typography>

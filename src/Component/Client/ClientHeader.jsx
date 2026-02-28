@@ -90,7 +90,7 @@ const ClientHeader = ({
           />
           <Typography
             variant="h6"
-            sx={{ fontWeight: "bold", color: "#150380" }}
+            sx={{ fontWeight: "bold", color: "#150380", display: { xs: "none", sm: "block" } }}
           >
             {t("birzeitInsuranceSystem", language)}
           </Typography>
@@ -113,7 +113,7 @@ const ClientHeader = ({
           </IconButton>
 
           {/* User Info */}
-          <Box sx={{ textAlign: "right" }}>
+          <Box sx={{ textAlign: "right", display: { xs: "none", md: "block" } }}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
               {userInfo?.fullName || "Client"}
             </Typography>

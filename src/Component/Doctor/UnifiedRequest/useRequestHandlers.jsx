@@ -332,10 +332,17 @@ export const useRequestSubmitHandler = ({
         // Get consultation price from specialization
         const consultationPrice = selectedSpecializationData?.consultationPrice || 0;
 
+        // Check if the visit was a follow-up
+        const isVisitFollowUp = visitResponse?.visitType === "FOLLOW_UP";
+
         // Build roleSpecificData with medicines, lab tests, and radiology tests
         const roleSpecificData = {
-          notes: "Auto-submitted claim from doctor visit",
+          notes: isVisitFollowUp
+            ? "⚠️ FOLLOW-UP VISIT: Auto-submitted claim. Patient must pay consultation fee. Insurance does not cover consultation fee for follow-up visits."
+            : "Auto-submitted claim from doctor visit",
           specialization: selectedSpecializationData?.displayName || 'General',
+          isFollowUp: isVisitFollowUp,
+          originalConsultationFee: isVisitFollowUp ? consultationPrice : null,
           // Include medicines with details
           medicines: validMedicines.map((m) => ({
             name: m.medicine?.serviceName || m.medicine?.name || "Unknown",
@@ -358,11 +365,13 @@ export const useRequestSubmitHandler = ({
           })),
         };
 
-        // Create claim data
+        // Create claim data - set amount to 0 for follow-up visits (insurance doesn't pay)
         const claimData = {
           clientId: clientId,
-          description: `Medical consultation - ${selectedSpecializationData?.displayName || 'General'}`,
-          amount: consultationPrice,
+          description: isVisitFollowUp
+            ? `Follow-up consultation - ${selectedSpecializationData?.displayName || 'General'}`
+            : `Medical consultation - ${selectedSpecializationData?.displayName || 'General'}`,
+          amount: isVisitFollowUp ? 0 : consultationPrice,
           serviceDate: new Date().toISOString().split("T")[0],
           diagnosis: noDiagnosisTreatment ? "" : patientForm.diagnosis,
           treatmentDetails: noDiagnosisTreatment ? "" : patientForm.treatment,

@@ -265,6 +265,40 @@ const LandingPage = memo(function LandingPage() {
             >
               {t("howItWorks", language)}
             </Button>
+            <Button
+              onClick={() => navigate("/About")}
+              sx={{
+                color: oliveTheme.white,
+                fontWeight: 500,
+                textTransform: "none",
+                fontSize: { xs: "0.7rem", sm: "0.85rem", md: "1rem" },
+                minHeight: { xs: 44, md: 40 },
+                px: { xs: 1, sm: 1.5, md: 2 },
+                display: { xs: "none", sm: "inline-flex" },
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                },
+              }}
+            >
+              {t("about", language)}
+            </Button>
+            <Button
+              onClick={() => navigate("/Help")}
+              sx={{
+                color: oliveTheme.white,
+                fontWeight: 500,
+                textTransform: "none",
+                fontSize: { xs: "0.7rem", sm: "0.85rem", md: "1rem" },
+                minHeight: { xs: 44, md: 40 },
+                px: { xs: 1, sm: 1.5, md: 2 },
+                display: { xs: "none", sm: "inline-flex" },
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                },
+              }}
+            >
+              {t("help", language)}
+            </Button>
             <LanguageToggle
               sx={{
                 color: oliveTheme.white,
@@ -969,6 +1003,8 @@ const LandingPage = memo(function LandingPage() {
                   { key: "home", section: "hero" },
                   { key: "features", section: "features" },
                   { key: "howItWorks", section: "how-it-works" },
+                  { key: "about", route: "/About" },
+                  { key: "help", route: "/Help" },
                   { key: "contactUs", section: "contact" }
                 ].map((link) => (
                   <Typography
@@ -982,7 +1018,7 @@ const LandingPage = memo(function LandingPage() {
                       py: { xs: 0.25, md: 0 },
                       "&:hover": { color: oliveTheme.white },
                     }}
-                    onClick={() => scrollToSection(link.section)}
+                    onClick={() => link.route ? navigate(link.route) : scrollToSection(link.section)}
                   >
                     {t(link.key, language)}
                   </Typography>

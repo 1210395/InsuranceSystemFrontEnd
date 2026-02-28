@@ -56,6 +56,10 @@ export const clearAuthData = () => {
   removeUser();
   localStorage.removeItem(ROLES_KEY);
   localStorage.removeItem('role');
+  // Clear role-specific cached data to prevent stale data on next login
+  localStorage.removeItem('clientUser');
+  localStorage.removeItem('clientRadiologyRequests');
+  localStorage.removeItem('clientActiveView');
 };
 
 // Check if user is authenticated

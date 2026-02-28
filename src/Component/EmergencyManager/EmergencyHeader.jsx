@@ -39,11 +39,20 @@ const EmergencyHeader = memo(function EmergencyHeader() {
     if (!token) return;
 
     try {
-      const res = await api.get(API_ENDPOINTS.AUTH.ME);
-      setFullName(res.data.fullName);
-      setRoles(res.data.roles || []);
-      if (res.data.universityCardImage) {
-        setProfileImage(`${API_BASE_URL}${res.data.universityCardImage}`);
+      // api.get() returns response.data directly
+      const userData = await api.get(API_ENDPOINTS.AUTH.ME);
+      setFullName(userData.fullName || "Emergency Manager");
+      setRoles(userData.roles || []);
+
+      // Handle both single image and array format
+      let imgPath = userData.universityCardImage || "";
+      if (!imgPath && userData.universityCardImages && userData.universityCardImages.length > 0) {
+        imgPath = userData.universityCardImages[userData.universityCardImages.length - 1];
+      }
+
+      if (imgPath) {
+        const full = imgPath.startsWith("http") ? imgPath : `${API_BASE_URL}${imgPath}`;
+        setProfileImage(full);
       }
     } catch (err) {
       console.error("Profile fetch error:", err);
@@ -55,8 +64,9 @@ const EmergencyHeader = memo(function EmergencyHeader() {
     if (!token) return;
 
     try {
-      const res = await api.get(`${API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT}/emergency`);
-      setUnreadCount(res.data);
+      // api.get() returns response.data directly
+      const count = await api.get(`${API_ENDPOINTS.NOTIFICATIONS.UNREAD_COUNT}/emergency`);
+      setUnreadCount(typeof count === 'number' ? count : parseInt(count) || 0);
     } catch (err) {
       console.error("Unread count fetch error:", err);
     }
@@ -108,7 +118,7 @@ const EmergencyHeader = memo(function EmergencyHeader() {
             />
             <Typography
               variant="h6"
-              sx={{ fontWeight: "bold", color: "#556B2F" }}
+              sx={{ fontWeight: "bold", color: "#556B2F", display: { xs: "none", sm: "block" } }}
             >
               {t("birzeitInsuranceSystem", language)}
             </Typography>
@@ -126,7 +136,7 @@ const EmergencyHeader = memo(function EmergencyHeader() {
             </IconButton>
 
             {/* User Info */}
-            <Box sx={{ textAlign: "right", mr: 1 }}>
+            <Box sx={{ textAlign: "right", mr: 1, display: { xs: "none", md: "block" } }}>
               <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
                 {fullName || "Loading..."}
               </Typography>

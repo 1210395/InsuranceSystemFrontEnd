@@ -73,7 +73,6 @@ const LabRequestCard = memo(({
           flexDirection: "column",
           border: `2px solid ${cardStyle.borderColor}30`,
           bgcolor: "#fff",
-          overflow: "hidden",
           transition: "all 0.2s ease",
           "&:hover": {
             transform: "translateY(-4px)",

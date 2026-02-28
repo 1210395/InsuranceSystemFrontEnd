@@ -56,7 +56,6 @@ const PrescriptionCard = memo(({
           flexDirection: "column",
           border: `2px solid ${status.textColor}30`,
           bgcolor: "#fff",
-          overflow: "hidden",
           transition: "all 0.2s ease",
           "&:hover": {
             transform: "translateY(-4px)",

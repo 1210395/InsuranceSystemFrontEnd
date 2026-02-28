@@ -90,7 +90,7 @@ const DoctorHeader = memo(function DoctorHeader({
           />
           <Typography
             variant="h6"
-            sx={{ fontWeight: "bold", color: "#556B2F" }}
+            sx={{ fontWeight: "bold", color: "#556B2F", display: { xs: "none", sm: "block" } }}
           >
             {t("systemName", language)}
           </Typography>
@@ -109,7 +109,7 @@ const DoctorHeader = memo(function DoctorHeader({
           </IconButton>
 
           {/* User Info */}
-          <Box sx={{ textAlign: "right" }}>
+          <Box sx={{ textAlign: "right", display: { xs: "none", md: "block" } }}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
               {userInfo?.fullName || "Doctor"}
             </Typography>

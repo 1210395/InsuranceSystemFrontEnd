@@ -34,6 +34,7 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import ClearIcon from "@mui/icons-material/Clear";
 import PrescriptionCard from "./PrescriptionCard";
 import PrescriptionDialogs from "./PrescriptionDialogs";
+import PatientSearchBar from "../Shared/PatientSearchBar";
 
 const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, onBill }) => {
   const { language, isRTL } = useLanguage();
@@ -671,7 +672,8 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
       const clientData = await api.get(endpoint);
 
       if (clientData) {
-        setSearchTerm(searchInput.trim());
+        // Use client's full name for exact matching in filter
+        setSearchTerm(clientData.fullName || searchInput.trim());
         setHasSearched(true);
         setSnackbar({
           open: true,
@@ -707,20 +709,20 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
 
       const searchLower = searchTerm.toLowerCase();
 
-      // Search by patient name (main client)
-      const matchesName = p.memberName?.toLowerCase().includes(searchLower);
+      // Exact match by patient name (main client)
+      const matchesName = p.memberName?.toLowerCase() === searchLower;
 
-      // Search by Employee ID (main client)
-      const matchesEmployeeId = p.employeeId?.toLowerCase().includes(searchLower);
+      // Exact match by Employee ID (main client)
+      const matchesEmployeeId = p.employeeId?.toLowerCase() === searchLower;
 
-      // Search by National ID (main client)
-      const matchesNationalId = p.nationalId?.toLowerCase().includes(searchLower);
+      // Exact match by National ID (main client)
+      const matchesNationalId = p.nationalId?.toLowerCase() === searchLower;
 
-      // Search by family member info if exists
+      // Exact match by family member info if exists
       const familyMemberInfo = getFamilyMemberInfo(p);
-      const matchesFamilyMemberName = familyMemberInfo?.name?.toLowerCase().includes(searchLower);
-      const matchesFamilyMemberInsuranceNumber = familyMemberInfo?.insuranceNumber?.toLowerCase().includes(searchLower);
-      const matchesFamilyMemberNationalId = familyMemberInfo?.nationalId?.toLowerCase().includes(searchLower);
+      const matchesFamilyMemberName = familyMemberInfo?.name?.toLowerCase() === searchLower;
+      const matchesFamilyMemberInsuranceNumber = familyMemberInfo?.insuranceNumber?.toLowerCase() === searchLower;
+      const matchesFamilyMemberNationalId = familyMemberInfo?.nationalId?.toLowerCase() === searchLower;
 
       return matchesName || matchesEmployeeId || matchesNationalId || matchesFamilyMemberName || matchesFamilyMemberInsuranceNumber || matchesFamilyMemberNationalId;
     }
@@ -859,135 +861,20 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
         </Paper>
 
         {/* Patient Search Section */}
-        <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2, bgcolor: "#f0f9ff" }} dir={isRTL ? "rtl" : "ltr"}>
-          <Typography variant="h6" fontWeight={600} mb={3} color="#0284c7">
-            {language === "ar" ? "بحث عن وصفات العميل" : "Search Patient Prescriptions"}
-          </Typography>
-
-          {/* Search Type Toggle */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" fontWeight={600} mb={1.5} color="#0284c7">
-              {language === "ar" ? "اختر نوع البحث:" : "Select Search Type:"}
-            </Typography>
-            <ToggleButtonGroup
-              value={searchType}
-              exclusive
-              onChange={(event, newSearchType) => {
-                if (newSearchType !== null) {
-                  setSearchType(newSearchType);
-                  setSearchInput("");
-                }
-              }}
-              fullWidth
-              sx={{
-                "& .MuiToggleButton-root": {
-                  textTransform: "none",
-                  fontWeight: 600,
-                  px: 3,
-                  py: 1.5,
-                  fontSize: "1rem",
-                  border: "2px solid #cbd5e1",
-                  "&.Mui-selected": {
-                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    color: "#fff",
-                    border: "2px solid #667eea",
-                    "&:hover": {
-                      background: "linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)",
-                    },
-                  },
-                },
-              }}
-            >
-              <ToggleButton value="employeeId">
-                <BadgeIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0, fontSize: 22 }} />
-                {t("employeeId", language)}
-              </ToggleButton>
-              <ToggleButton value="nationalId">
-                <CreditCardIcon sx={{ mr: isRTL ? 0 : 1, ml: isRTL ? 1 : 0, fontSize: 22 }} />
-                {t("nationalId", language)}
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={hasSearched ? 8 : 10}>
-              <TextField
-                label={searchType === "employeeId" ? `🆔 ${t("employeeId", language)}` : `🪪 ${t("nationalId", language)}`}
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !searchLoading && searchInput.trim()) {
-                    e.preventDefault();
-                    handleSearch();
-                  }
-                }}
-                placeholder={searchType === "employeeId" ? t("enterEmployeeId", language) : t("enterNationalId", language)}
-                fullWidth
-                required
-                disabled={searchLoading}
-                InputProps={{
-                  endAdornment: hasSearched && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={handleClearSearch}
-                        edge="end"
-                        size="small"
-                        sx={{ color: "#dc2626" }}
-                      >
-                        <ClearIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-
-            {hasSearched && (
-              <Grid item xs={12} md={2}>
-                <Button
-                  onClick={handleClearSearch}
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    borderColor: "#dc2626",
-                    color: "#dc2626",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    padding: "12px 16px",
-                    borderRadius: 2.5,
-                    "&:hover": {
-                      borderColor: "#b91c1c",
-                      bgcolor: "#fee2e2",
-                    },
-                  }}
-                >
-                  {language === "ar" ? "مسح" : "Clear"}
-                </Button>
-              </Grid>
-            )}
-
-            <Grid item xs={12} md={hasSearched ? 2 : 2} sx={{ display: "flex", alignItems: "flex-end" }}>
-              <Button
-                onClick={handleSearch}
-                variant="contained"
-                fullWidth
-                disabled={searchLoading || !searchInput}
-                sx={{
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "#ffffff !important",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: "0.95rem",
-                  padding: "12px 16px",
-                  borderRadius: 2.5,
-                }}
-              >
-                {searchLoading ? (language === "ar" ? "جاري البحث..." : "Searching...") : `🔍 ${language === "ar" ? "بحث" : "Search"}`}
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
+        <PatientSearchBar
+          searchType={searchType}
+          onSearchTypeChange={(newType) => {
+            setSearchType(newType);
+            setSearchInput("");
+          }}
+          searchValue={searchInput}
+          onSearchValueChange={setSearchInput}
+          onSearch={handleSearch}
+          loading={searchLoading}
+          onClear={handleClearSearch}
+          hasSearched={hasSearched}
+          title={language === "ar" ? "بحث عن وصفات العميل" : "Search Patient Prescriptions"}
+        />
 
         {/* Search Section - Only show if search has been performed */}
         {hasSearched && (

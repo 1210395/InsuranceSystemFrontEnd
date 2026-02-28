@@ -90,7 +90,7 @@ const RadiologyHeader = memo(function RadiologyHeader({
           />
           <Typography
             variant="h6"
-            sx={{ fontWeight: "bold", color: "#556B2F" }}
+            sx={{ fontWeight: "bold", color: "#556B2F", display: { xs: "none", sm: "block" } }}
           >
             {t("birzeitInsuranceSystem", language)}
           </Typography>
@@ -109,7 +109,7 @@ const RadiologyHeader = memo(function RadiologyHeader({
           </IconButton>
 
           {/* User Info */}
-          <Box sx={{ textAlign: isRTL ? "left" : "right" }}>
+          <Box sx={{ textAlign: isRTL ? "left" : "right", display: { xs: "none", md: "block" } }}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
               {userInfo?.fullName || "Radiologist"}
             </Typography>
