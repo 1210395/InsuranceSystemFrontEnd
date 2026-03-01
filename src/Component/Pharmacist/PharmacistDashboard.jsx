@@ -337,26 +337,35 @@ const PharmacistDashboard = () => {
       setCurrentClaimData(claimData);
       logger.log("📤 Claim data prepared:", claimData);
 
-      // Refresh prescriptions (جميع الوصفات) و stats
-      // api.get() returns data directly
-      const [pendingData, allData, statsData] = await Promise.all([
-        api.get("/api/prescriptions/pending"),
-        api.get("/api/prescriptions/all"),
-        api.get("/api/prescriptions/pharmacist/stats"),
-      ]);
-
-      // دمج: المعلقة + اللي تعامل معها (verified/rejected/billed) - جميع الحالات
-      const pendingPrescriptions = pendingData || [];
-      const myPrescriptions = allData || []; // Include all prescriptions including BILLED
-      const allUnique = myPrescriptions.filter(
-        p => !pendingPrescriptions.some(pending => pending.id === p.id)
+      // Optimistic update: immediately mark as VERIFIED so UI reflects the change
+      setPrescriptions((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: "VERIFIED" } : p))
       );
-      const combined = [...pendingPrescriptions, ...allUnique];
 
-      setPrescriptions(combined);
-      if (statsData) setStats(statsData);
-      localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
-      if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
+      // Refresh prescriptions and stats in background (delayed to avoid race condition)
+      setTimeout(async () => {
+        try {
+          const [pendingData, allData, statsData] = await Promise.all([
+            api.get("/api/prescriptions/pending"),
+            api.get("/api/prescriptions/all"),
+            api.get("/api/prescriptions/pharmacist/stats"),
+          ]);
+
+          const pendingPrescriptions = pendingData || [];
+          const myPrescriptions = allData || [];
+          const allUnique = myPrescriptions.filter(
+            p => !pendingPrescriptions.some(pending => pending.id === p.id)
+          );
+          const combined = [...pendingPrescriptions, ...allUnique];
+
+          setPrescriptions(combined);
+          if (statsData) setStats(statsData);
+          localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
+          if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
+        } catch (refreshErr) {
+          logger.error("Error refreshing after verify:", refreshErr);
+        }
+      }, 500);
     } catch (err) {
       logger.error("Error verifying prescription:", err);
       logger.error("Error details:", err.response?.data);
@@ -370,26 +379,35 @@ const PharmacistDashboard = () => {
     try {
       await api.patch(`/api/prescriptions/${id}/reject`, {});
 
-      // Refresh prescriptions (جميع الوصفات) و stats
-      // api.get() returns data directly
-      const [pendingData, allData, statsData] = await Promise.all([
-        api.get("/api/prescriptions/pending"),
-        api.get("/api/prescriptions/all"),
-        api.get("/api/prescriptions/pharmacist/stats"),
-      ]);
-
-      // دمج: المعلقة + اللي تعامل معها (verified/rejected)
-      const pendingPrescriptions = pendingData || [];
-      const myPrescriptions = allData || [];
-      const allUnique = myPrescriptions.filter(
-        p => !pendingPrescriptions.some(pending => pending.id === p.id)
+      // Optimistic update: immediately mark as REJECTED so UI reflects the change
+      setPrescriptions((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: "REJECTED" } : p))
       );
-      const combined = [...pendingPrescriptions, ...allUnique];
 
-      setPrescriptions(combined);
-      if (statsData) setStats(statsData);
-      localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
-      if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
+      // Refresh prescriptions and stats in background (delayed to avoid race condition)
+      setTimeout(async () => {
+        try {
+          const [pendingData, allData, statsData] = await Promise.all([
+            api.get("/api/prescriptions/pending"),
+            api.get("/api/prescriptions/all"),
+            api.get("/api/prescriptions/pharmacist/stats"),
+          ]);
+
+          const pendingPrescriptions = pendingData || [];
+          const myPrescriptions = allData || [];
+          const allUnique = myPrescriptions.filter(
+            p => !pendingPrescriptions.some(pending => pending.id === p.id)
+          );
+          const combined = [...pendingPrescriptions, ...allUnique];
+
+          setPrescriptions(combined);
+          if (statsData) setStats(statsData);
+          localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
+          if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
+        } catch (refreshErr) {
+          logger.error("Error refreshing after reject:", refreshErr);
+        }
+      }, 500);
     } catch (err) {
       logger.error("Error rejecting prescription:", err);
       alert(t("failedToRejectPrescription", language));
@@ -402,26 +420,35 @@ const PharmacistDashboard = () => {
     try {
       await api.patch(`/api/prescriptions/${id}/bill`, {});
 
-      // Refresh prescriptions (جميع الوصفات) و stats
-      // api.get() returns data directly
-      const [pendingData, allData, statsData] = await Promise.all([
-        api.get("/api/prescriptions/pending"),
-        api.get("/api/prescriptions/all"),
-        api.get("/api/prescriptions/pharmacist/stats"),
-      ]);
-
-      // دمج: المعلقة + اللي تعامل معها (verified/rejected/billed) - جميع الحالات
-      const pendingPrescriptions = pendingData || [];
-      const myPrescriptions = allData || []; // Include all prescriptions including BILLED
-      const allUnique = myPrescriptions.filter(
-        p => !pendingPrescriptions.some(pending => pending.id === p.id)
+      // Optimistic update: immediately mark as BILLED
+      setPrescriptions((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: "BILLED" } : p))
       );
-      const combined = [...pendingPrescriptions, ...allUnique];
 
-      setPrescriptions(combined);
-      if (statsData) setStats(statsData);
-      localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
-      if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
+      // Refresh in background (delayed to avoid race condition)
+      setTimeout(async () => {
+        try {
+          const [pendingData, allData, statsData] = await Promise.all([
+            api.get("/api/prescriptions/pending"),
+            api.get("/api/prescriptions/all"),
+            api.get("/api/prescriptions/pharmacist/stats"),
+          ]);
+
+          const pendingPrescriptions = pendingData || [];
+          const myPrescriptions = allData || [];
+          const allUnique = myPrescriptions.filter(
+            p => !pendingPrescriptions.some(pending => pending.id === p.id)
+          );
+          const combined = [...pendingPrescriptions, ...allUnique];
+
+          setPrescriptions(combined);
+          if (statsData) setStats(statsData);
+          localStorage.setItem("pharmacistPrescriptions", JSON.stringify(combined));
+          if (statsData) localStorage.setItem("pharmacistStats", JSON.stringify(statsData));
+        } catch (refreshErr) {
+          logger.error("Error refreshing after bill:", refreshErr);
+        }
+      }, 500);
     } catch (err) {
       logger.error("Error marking prescription as billed:", err);
       alert(t("failedToMarkAsBilled", language));

@@ -809,10 +809,12 @@ const LabDashboard = () => {
             onSetClaimData={setCurrentLabClaimData}
             onSubmitClaim={handleLabSubmitClaim}
             onUploaded={(updatedReq) => {
+              // Optimistic update: immediately replace request with updated data
               setRequests((prev) =>
                 prev.map((r) => (r.id === updatedReq.id ? updatedReq : r))
               );
-              fetchData();
+              // Delayed refetch to avoid race condition (DB transaction may not have propagated)
+              setTimeout(() => fetchData(), 800);
             }}
           />
         )}
