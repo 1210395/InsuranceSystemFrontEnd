@@ -45,3 +45,4 @@ generate_report.py
 
 # Backend (separate repo)
 InsuranceSystem-main/
+.vercel

@@ -336,11 +336,10 @@ const PharmacistDashboard = () => {
       
       logger.log("📤 Claim data prepared:", claimData);
 
-      // Auto-submit claim immediately (like Lab/Radiology pattern)
+      // Auto-submit claim immediately (same pattern as Lab/Radiology)
       try {
-        const { memberName: _memberName, ...claimPayload } = claimData;
         const formData = new FormData();
-        formData.append("data", JSON.stringify(claimPayload));
+        formData.append("data", JSON.stringify(claimData));
 
         await api.post(
           API_ENDPOINTS.HEALTHCARE_CLAIMS.SUBMIT,
@@ -348,12 +347,12 @@ const PharmacistDashboard = () => {
           { headers: { "Content-Type": "multipart/form-data" } }
         );
 
-        logger.log("✅ Claim auto-submitted successfully");
         setCurrentClaimData(null);
         setClaimsRefreshTrigger(prev => prev + 1);
       } catch (claimErr) {
-        logger.error("Error auto-submitting claim:", claimErr);
-        // Keep claimData for manual retry via document dialog
+        // Show visible error to user (console is dropped in production)
+        const errMsg = claimErr.response?.data?.message || claimErr.message || "Unknown error";
+        alert(`${t("failedToSubmitClaim", language)}: ${errMsg}`);
         setCurrentClaimData(claimData);
       }
 
