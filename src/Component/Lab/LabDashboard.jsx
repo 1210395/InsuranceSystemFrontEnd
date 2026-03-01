@@ -9,7 +9,7 @@ import logger from "../../utils/logger";
 
 import LabSidebar from "./LabSidebar";
 import LabHeader from "./LabHeader";
-import LabRequestList from "./labrequestlist";
+import LabRequestList from "./LabRequestList";
 import LabProfile from "../Profile/LabProfile";
 import NotificationsList from "../Notification/NotificationsList";
 import LogoutDialog from "../Auth/LogoutDialog";
