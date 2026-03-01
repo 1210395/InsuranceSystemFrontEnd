@@ -334,8 +334,28 @@ const PharmacistDashboard = () => {
         })
       };
       
-      setCurrentClaimData(claimData);
       logger.log("📤 Claim data prepared:", claimData);
+
+      // Auto-submit claim immediately (like Lab/Radiology pattern)
+      try {
+        const { memberName: _memberName, ...claimPayload } = claimData;
+        const formData = new FormData();
+        formData.append("data", JSON.stringify(claimPayload));
+
+        await api.post(
+          API_ENDPOINTS.HEALTHCARE_CLAIMS.SUBMIT,
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+
+        logger.log("✅ Claim auto-submitted successfully");
+        setCurrentClaimData(null);
+        setClaimsRefreshTrigger(prev => prev + 1);
+      } catch (claimErr) {
+        logger.error("Error auto-submitting claim:", claimErr);
+        // Keep claimData for manual retry via document dialog
+        setCurrentClaimData(claimData);
+      }
 
       // Optimistic update: immediately mark as VERIFIED so UI reflects the change
       setPrescriptions((prev) =>

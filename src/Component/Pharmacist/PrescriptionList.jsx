@@ -423,13 +423,10 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
     });
 
     try {
-      // Pass fulfilled items info to parent for claim creation
+      // Pass fulfilled items info to parent for claim creation (claim is auto-submitted inside onVerify)
       await onVerify(prescription.id, itemsWithPrices, prescription, fulfilledItems);
       setVerifyDialog({ open: false, prescription: null, prices: [] });
-      
-      // فتح dialog لإضافة document
-      setDocumentDialog({ open: true, loading: false, document: null, description: "" });
-      
+
       setSnackbar({
         open: true,
         message: t("prescriptionVerifiedSuccessfully", language),
