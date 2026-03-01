@@ -17,7 +17,9 @@ import {
   TextField,
   Checkbox,
   FormControlLabel,
+  Chip,
 } from "@mui/material";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
 
@@ -31,6 +33,7 @@ const PrescriptionDialogs = memo(({
   onVerifyClose,
   onVerifySubmit,
   onPriceChange,
+  onReasonChange,
   onFulfilledChange,
   onDocumentClose,
   onDocumentChange,
@@ -89,9 +92,33 @@ const PrescriptionDialogs = memo(({
                     />
                   }
                   label={
-                    <Typography variant="subtitle2" fontWeight={600} color={item.fulfilled !== false ? "primary" : "text.secondary"}>
-                      {item.medicineName}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography variant="subtitle2" fontWeight={600} color={item.fulfilled !== false ? "primary" : "text.secondary"}>
+                        {item.medicineName}
+                      </Typography>
+                      {(() => {
+                        const covStatus = item.coverageStatus || "COVERED";
+                        const covPercent = item.coveragePercentage ?? 100;
+                        const covDisplay = covStatus === "COVERED"
+                          ? { label: covPercent < 100 ? `${t("covered", language)} (${covPercent}%)` : t("covered", language), color: "#10b981", bgColor: "#d1fae5" }
+                          : covStatus === "REQUIRES_APPROVAL"
+                            ? { label: t("requiresApproval", language), color: "#f59e0b", bgColor: "#fef3c7" }
+                            : { label: t("notCovered", language), color: "#ef4444", bgColor: "#fee2e2" };
+                        return (
+                          <Chip
+                            label={covDisplay.label}
+                            size="small"
+                            sx={{
+                              bgcolor: covDisplay.bgColor,
+                              color: covDisplay.color,
+                              fontWeight: 600,
+                              fontSize: "0.6rem",
+                              height: 18,
+                            }}
+                          />
+                        );
+                      })()}
+                    </Stack>
                   }
                 />
                 <Typography variant="caption" color="text.secondary" display="block" mb={1.5} sx={{ ml: 4 }}>
@@ -202,6 +229,57 @@ const PrescriptionDialogs = memo(({
                     }}
                   />
                 </Box>
+
+                {/* Price Override Warning - shown when pharmacist price > union price */}
+                {item.pharmacistPrice > 0 &&
+                 item.unionPriceTotal > 0 &&
+                 parseFloat(item.pharmacistPrice) > item.unionPriceTotal && (
+                  <Box sx={{ mt: 2, ml: 4, p: 2, bgcolor: "#FFF3E0", borderRadius: 2, border: "1px solid #FF9800" }}>
+                    <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                      <WarningAmberIcon sx={{ color: "#E65100" }} />
+                      <Typography variant="subtitle2" fontWeight={700} color="#E65100">
+                        {t("priceHigherWarning", language)}
+                      </Typography>
+                    </Stack>
+                    <Grid container spacing={1} sx={{ mb: 1.5 }}>
+                      <Grid item xs={4}>
+                        <Typography variant="caption" color="text.secondary">{t("definedPrice", language)}</Typography>
+                        <Typography variant="body2" fontWeight={600} color="#2E7D32">
+                          {item.unionPriceTotal?.toFixed(2)} ₪
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Typography variant="caption" color="text.secondary">{t("pharmacyPrice", language)}</Typography>
+                        <Typography variant="body2" fontWeight={600} color="#E65100">
+                          {parseFloat(item.pharmacistPrice)?.toFixed(2)} ₪
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Typography variant="caption" color="text.secondary">{t("patientPays", language)}</Typography>
+                        <Typography variant="body2" fontWeight={700} color="#C62828">
+                          {(parseFloat(item.pharmacistPrice) - item.unionPriceTotal).toFixed(2)} ₪
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                    <TextField
+                      label={t("whyPriceHigher", language)}
+                      value={item.priceHigherReason || ""}
+                      onChange={(e) => onReasonChange(item.id, e.target.value)}
+                      fullWidth
+                      required
+                      multiline
+                      rows={2}
+                      placeholder={language === "ar" ? "اشرح لماذا سعرك مختلف عن السعر المحدد..." : "Explain why your price differs from the defined price..."}
+                      error={!item.priceHigherReason || item.priceHigherReason.trim() === ""}
+                      helperText={!item.priceHigherReason ? (language === "ar" ? "هذا الحقل مطلوب عندما يكون سعرك أعلى" : "This field is required when your price is higher") : ""}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          bgcolor: "#fff",
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
                 </>
                 )}
 
@@ -459,6 +537,7 @@ PrescriptionDialogs.propTypes = {
   onVerifyClose: PropTypes.func.isRequired,
   onVerifySubmit: PropTypes.func.isRequired,
   onPriceChange: PropTypes.func.isRequired,
+  onReasonChange: PropTypes.func,
   onFulfilledChange: PropTypes.func,
   onDocumentClose: PropTypes.func.isRequired,
   onDocumentChange: PropTypes.func.isRequired,

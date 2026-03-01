@@ -166,6 +166,31 @@ const LabRequestCard = memo(({
             />
           )}
 
+          {/* Coverage Status */}
+          {(() => {
+            const covStatus = request.coverageStatus || "COVERED";
+            const covPercent = request.coveragePercentage ?? 100;
+            const covDisplay = covStatus === "COVERED"
+              ? { label: covPercent < 100 ? `${t("covered", language)} (${covPercent}%)` : t("covered", language), color: "#10b981", bgColor: "#d1fae5" }
+              : covStatus === "REQUIRES_APPROVAL"
+                ? { label: t("requiresApproval", language), color: "#f59e0b", bgColor: "#fef3c7" }
+                : { label: t("notCovered", language), color: "#ef4444", bgColor: "#fee2e2" };
+            return (
+              <Chip
+                label={covDisplay.label}
+                size="small"
+                sx={{
+                  mb: 1.5,
+                  bgcolor: covDisplay.bgColor,
+                  color: covDisplay.color,
+                  fontWeight: 600,
+                  fontSize: "0.7rem",
+                  height: 22,
+                }}
+              />
+            );
+          })()}
+
           {/* Lab Test + View Button */}
           <Box sx={{ mb: 2, flex: 1 }}>
             <Typography variant="caption" fontWeight={700} color="#556B2F" sx={{ mb: 1, display: "block", textTransform: "uppercase", letterSpacing: "0.5px" }}>

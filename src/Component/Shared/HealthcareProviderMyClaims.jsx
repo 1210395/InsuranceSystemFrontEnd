@@ -826,6 +826,7 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                   <TableCell sx={{ color: "white", fontWeight: 700 }}>{t("amount", language) || "Amount"}</TableCell>
                   <TableCell sx={{ color: "white", fontWeight: 700 }}>{t("date", language) || "Date"}</TableCell>
                   <TableCell sx={{ color: "white", fontWeight: 700 }}>{t("status", language) || "Status"}</TableCell>
+                  <TableCell sx={{ color: "white", fontWeight: 700 }}>{t("coverageInfo", language) || "Coverage"}</TableCell>
                   <TableCell sx={{ color: "white", fontWeight: 700, textAlign: "center" }}>{t("actions", language) || "Actions"}</TableCell>
                 </TableRow>
               </TableHead>
@@ -878,6 +879,32 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                             size="small"
                             sx={{ fontWeight: 600, fontSize: "0.7rem" }}
                           />
+                        </TableCell>
+                        <TableCell>
+                          {claim.isCovered != null ? (
+                            <Chip
+                              label={
+                                claim.isCovered
+                                  ? (parseFloat(claim.coveragePercentUsed) >= 100
+                                    ? (t("fullyCovered", language) || "Fully Covered")
+                                    : `${parseFloat(claim.coveragePercentUsed || 0).toFixed(0)}%`)
+                                  : (t("notCovered", language) || "Not Covered")
+                              }
+                              size="small"
+                              sx={{
+                                bgcolor: claim.isCovered
+                                  ? (parseFloat(claim.coveragePercentUsed) >= 100 ? "#d1fae5" : "#fef3c7")
+                                  : "#fee2e2",
+                                color: claim.isCovered
+                                  ? (parseFloat(claim.coveragePercentUsed) >= 100 ? "#10b981" : "#f59e0b")
+                                  : "#ef4444",
+                                fontWeight: 600,
+                                fontSize: "0.7rem",
+                              }}
+                            />
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">-</Typography>
+                          )}
                         </TableCell>
                         <TableCell align="center">
                           <Stack direction="row" spacing={0.5} justifyContent="center">
@@ -1813,6 +1840,85 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                       </Paper>
                     </Grid>
                   </Grid>
+
+                  {/* Coverage Info */}
+                  {claim.isCovered != null && (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 1.5,
+                        bgcolor: claim.isCovered
+                          ? (parseFloat(claim.coveragePercentUsed) >= 100 ? "#d1fae520" : "#fef3c720")
+                          : "#fee2e220",
+                        border: `1px solid ${claim.isCovered
+                          ? (parseFloat(claim.coveragePercentUsed) >= 100 ? "#10b981" : "#f59e0b")
+                          : "#ef4444"}`,
+                      }}
+                    >
+                      <Stack spacing={0.5}>
+                        <Chip
+                          label={
+                            claim.isCovered
+                              ? (parseFloat(claim.coveragePercentUsed) >= 100
+                                ? (t("fullyCovered", language) || "Fully Covered")
+                                : `${t("partiallyCovered", language) || "Partially Covered"} (${parseFloat(claim.coveragePercentUsed || 0).toFixed(0)}%)`)
+                              : (t("notCovered", language) || "Not Covered")
+                          }
+                          size="small"
+                          sx={{
+                            bgcolor: claim.isCovered
+                              ? (parseFloat(claim.coveragePercentUsed) >= 100 ? "#d1fae5" : "#fef3c7")
+                              : "#fee2e2",
+                            color: claim.isCovered
+                              ? (parseFloat(claim.coveragePercentUsed) >= 100 ? "#10b981" : "#f59e0b")
+                              : "#ef4444",
+                            fontWeight: 700,
+                            fontSize: "0.7rem",
+                            height: 24,
+                            alignSelf: "flex-start",
+                          }}
+                        />
+                        {claim.isCovered && (
+                          <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
+                            <Box>
+                              <Typography variant="caption" sx={{ color: "#10b981", fontWeight: 600, fontSize: "0.6rem", textTransform: "uppercase" }}>
+                                {t("insurancePaysAmount", language) || "Insurance Pays"}
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: "#10b981", fontSize: "0.85rem" }}>
+                                {parseFloat(claim.insuranceCoveredAmount || 0).toFixed(2)} {CURRENCY.SYMBOL}
+                              </Typography>
+                            </Box>
+                            {parseFloat(claim.clientPayAmount || 0) > 0 && (
+                              <Box>
+                                <Typography variant="caption" sx={{ color: "#ef4444", fontWeight: 600, fontSize: "0.6rem", textTransform: "uppercase" }}>
+                                  {t("clientPaysAmount", language) || "Client Pays"}
+                                </Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: "#ef4444", fontSize: "0.85rem" }}>
+                                  {parseFloat(claim.clientPayAmount || 0).toFixed(2)} {CURRENCY.SYMBOL}
+                                </Typography>
+                              </Box>
+                            )}
+                          </Stack>
+                        )}
+                        {!claim.isCovered && (
+                          <Box sx={{ mt: 0.5 }}>
+                            <Typography variant="caption" sx={{ color: "#ef4444", fontWeight: 600, fontSize: "0.6rem", textTransform: "uppercase" }}>
+                              {t("clientPaysAmount", language) || "Client Pays"}
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: "#ef4444", fontSize: "0.85rem" }}>
+                              {parseFloat(claim.amount || 0).toFixed(2)} {CURRENCY.SYMBOL}
+                            </Typography>
+                          </Box>
+                        )}
+                        {claim.coverageMessage && (
+                          <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.65rem", fontStyle: "italic", mt: 0.5 }}>
+                            {claim.coverageMessage}
+                          </Typography>
+                        )}
+                      </Stack>
+                    </Paper>
+                  )}
 
                   {/* Action Buttons */}
                   <Box sx={{ mt: "auto" }}>

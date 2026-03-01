@@ -253,14 +253,35 @@ const PrescriptionCard = memo(({
           <Divider sx={{ mb: 2 }} />
           {p.items && p.items.length > 0 ? (
             <Stack spacing={1.5}>
-              {p.items.map((item, idx) => (
+              {p.items.map((item, idx) => {
+                const covStatus = item.coverageStatus || "COVERED";
+                const covPercent = item.coveragePercentage ?? 100;
+                const covDisplay = covStatus === "COVERED"
+                  ? { label: covPercent < 100 ? `${t("covered", language)} (${covPercent}%)` : t("covered", language), color: "#10b981", bgColor: "#d1fae5" }
+                  : covStatus === "REQUIRES_APPROVAL"
+                    ? { label: t("requiresApproval", language), color: "#f59e0b", bgColor: "#fef3c7" }
+                    : { label: t("notCovered", language), color: "#ef4444", bgColor: "#fee2e2" };
+                return (
                 <Box key={idx} sx={{ p: 2, bgcolor: "#fafaf5", borderRadius: 2, border: "1px solid #e8ede0" }}>
                   <Stack direction="row" alignItems="center" spacing={1} mb={1}>
                     <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#556B2F", flexShrink: 0 }} />
                     <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" fontWeight={700} color="#1e293b">
-                        {item.medicineName}
-                      </Typography>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography variant="body2" fontWeight={700} color="#1e293b">
+                          {item.medicineName}
+                        </Typography>
+                        <Chip
+                          label={covDisplay.label}
+                          size="small"
+                          sx={{
+                            bgcolor: covDisplay.bgColor,
+                            color: covDisplay.color,
+                            fontWeight: 600,
+                            fontSize: "0.65rem",
+                            height: 20,
+                          }}
+                        />
+                      </Stack>
                       {item.scientificName && (
                         <Typography variant="caption" color="text.secondary" fontStyle="italic">
                           {item.scientificName}
@@ -297,7 +318,8 @@ const PrescriptionCard = memo(({
                     )}
                   </Box>
                 </Box>
-              ))}
+                );
+              })}
             </Stack>
           ) : (
             <Typography variant="body2" color="text.secondary" textAlign="center" py={3}>

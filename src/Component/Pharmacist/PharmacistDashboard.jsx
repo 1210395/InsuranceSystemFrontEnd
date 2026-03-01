@@ -303,28 +303,30 @@ const PharmacistDashboard = () => {
           isPartialFulfillment: isPartialFulfillment,
           originalItemCount: originalItemCount,
           itemsCount: fulfilledItemCount,
+          hasPriceOverride: itemsToInclude.some(item =>
+            (item.pharmacistPrice || 0) > (item.unionPriceForCalculatedQuantity || 0) && item.unionPriceForCalculatedQuantity > 0
+          ),
           items: itemsToInclude.map(item => {
             const isChronic = verifiedPrescription.isChronic || prescription.isChronic || false;
-            // ✅ للوصفات المزمنة: لا نرسل dosage و timesPerDay
-            if (isChronic) {
-              return {
-                name: item.medicineName,
-                price: item.finalPrice || 0,
-                calculatedQuantity: item.calculatedQuantity || null,
-                form: item.form || null,
-                // لا نرسل dosage و timesPerDay للوصفات المزمنة
-              };
-            } else {
-              return {
-                name: item.medicineName,
-                price: item.finalPrice || 0,
-                dosage: item.dosage || null,
-                calculatedQuantity: item.calculatedQuantity || null,
-                form: item.form || null,
-                timesPerDay: item.timesPerDay || null,
-                duration: item.duration || null
-              };
+            const priceDiff = (item.pharmacistPrice || 0) > (item.unionPriceForCalculatedQuantity || 0)
+              ? (item.pharmacistPrice - item.unionPriceForCalculatedQuantity) : 0;
+            const baseItem = {
+              name: item.medicineName,
+              price: item.finalPrice || 0,
+              pharmacistPrice: item.pharmacistPrice || 0,
+              unionPriceForCalculatedQuantity: item.unionPriceForCalculatedQuantity || 0,
+              priceDifference: priceDiff,
+              priceHigherReason: item.priceHigherReason || null,
+              calculatedQuantity: item.calculatedQuantity || null,
+              form: item.form || null,
+            };
+            // Add dosage fields for non-chronic prescriptions
+            if (!isChronic) {
+              baseItem.dosage = item.dosage || null;
+              baseItem.timesPerDay = item.timesPerDay || null;
+              baseItem.duration = item.duration || null;
             }
+            return baseItem;
           }),
           notes: isPartialFulfillment
             ? `Partially dispensed (${fulfilledItemCount}/${originalItemCount} items) by ${user?.fullName || "Pharmacist"}`

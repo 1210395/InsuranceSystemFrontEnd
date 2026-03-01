@@ -431,6 +431,15 @@ const ManagerMedicalClaimsReview = () => {
     return safeJsonParse(roleSpecificData, null);
   }, []);
 
+  // Check if a pharmacy claim has price overrides
+  const hasPriceOverride = useCallback((claim) => {
+    if (claim.providerRole !== ROLES.PHARMACIST) return false;
+    const roleData = parseRoleSpecificData(claim.roleSpecificData);
+    if (!roleData) return false;
+    if (roleData.hasPriceOverride === true) return true;
+    return roleData.items?.some(item => item.priceDifference > 0) || false;
+  }, [parseRoleSpecificData]);
+
   // Format amount with currency
   const formatAmount = useCallback((amount, isFollowUp = false) => {
     if (isFollowUp || amount === 0) {
@@ -1023,7 +1032,17 @@ const ManagerMedicalClaimsReview = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Chip label={statusProps.label} color={statusProps.color} size="small" />
+                          <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                            <Chip label={statusProps.label} color={statusProps.color} size="small" />
+                            {hasPriceOverride(claim) && (
+                              <Chip
+                                icon={<WarningAmberIcon sx={{ fontSize: 14 }} />}
+                                label="Price Override"
+                                size="small"
+                                sx={{ bgcolor: "#FFF3E0", color: "#E65100", fontSize: "0.65rem", height: 22 }}
+                              />
+                            )}
+                          </Stack>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">{claim.serviceDate || "N/A"}</Typography>
@@ -1176,18 +1195,74 @@ const ManagerMedicalClaimsReview = () => {
 
                     // Pharmacy Items
                     if (selectedClaim.providerRole === ROLES.PHARMACIST && roleData.items?.length > 0) {
+                      const hasOverrides = roleData.items.some(item => item.priceDifference > 0);
                       return (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: "#E8F5E9", borderRadius: 2 }}>
-                          <Typography fontWeight="bold" sx={{ mb: 1 }}>Medicines:</Typography>
-                          {roleData.items.map((item, idx) => (
-                            <Box key={idx} sx={{ mb: 1, pl: 2 }}>
-                              <Typography fontWeight="500">{item.name}</Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {item.form && `Form: ${item.form}`}
-                                {item.calculatedQuantity && ` | Qty: ${item.calculatedQuantity}`}
-                              </Typography>
-                            </Box>
-                          ))}
+                        <Box sx={{ mt: 2, p: 2, bgcolor: hasOverrides ? "#FFF8E1" : "#E8F5E9", borderRadius: 2, border: hasOverrides ? "1px solid #FFB74D" : "none" }}>
+                          <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                            <Typography fontWeight="bold">Medicines:</Typography>
+                            {hasOverrides && (
+                              <Chip
+                                icon={<WarningAmberIcon sx={{ fontSize: 14 }} />}
+                                label="Contains Price Overrides"
+                                size="small"
+                                sx={{ bgcolor: "#FFF3E0", color: "#E65100", fontWeight: 600 }}
+                              />
+                            )}
+                          </Stack>
+                          {roleData.items.map((item, idx) => {
+                            const hasOverride = item.priceDifference > 0;
+                            return (
+                              <Box key={idx} sx={{ mb: 2, p: 1.5, bgcolor: hasOverride ? "#FFF3E0" : "#f9f9f9", borderRadius: 1, border: hasOverride ? "1px solid #FFB74D" : "1px solid #e0e0e0" }}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                  <Typography fontWeight="500">{item.name}</Typography>
+                                  {hasOverride && (
+                                    <Chip label="Price Override" size="small" color="warning" sx={{ fontSize: "0.65rem", height: 20 }} />
+                                  )}
+                                </Stack>
+                                <Typography variant="body2" color="text.secondary">
+                                  {item.form && `Form: ${item.form}`}
+                                  {item.calculatedQuantity && ` | Qty: ${item.calculatedQuantity}`}
+                                </Typography>
+                                {/* Price comparison for overridden items */}
+                                {hasOverride && (
+                                  <Box sx={{ mt: 1, p: 1, bgcolor: "#fff", borderRadius: 1 }}>
+                                    <Grid container spacing={1}>
+                                      <Grid size={{ xs: 4 }}>
+                                        <Typography variant="caption" color="text.secondary">Defined Price</Typography>
+                                        <Typography variant="body2" fontWeight={600} color="#2E7D32">
+                                          {(item.unionPriceForCalculatedQuantity || 0).toFixed(2)} {CURRENCY.SYMBOL}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid size={{ xs: 4 }}>
+                                        <Typography variant="caption" color="text.secondary">Pharmacy Price</Typography>
+                                        <Typography variant="body2" fontWeight={600} color="#E65100">
+                                          {(item.pharmacistPrice || 0).toFixed(2)} {CURRENCY.SYMBOL}
+                                        </Typography>
+                                      </Grid>
+                                      <Grid size={{ xs: 4 }}>
+                                        <Typography variant="caption" color="text.secondary">Patient Pays</Typography>
+                                        <Typography variant="body2" fontWeight={700} color="#C62828">
+                                          {(item.priceDifference || 0).toFixed(2)} {CURRENCY.SYMBOL}
+                                        </Typography>
+                                      </Grid>
+                                    </Grid>
+                                    {item.priceHigherReason && (
+                                      <Box sx={{ mt: 1, p: 1, bgcolor: "#FFF8E1", borderRadius: 1 }}>
+                                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                          Pharmacist&apos;s Reason:
+                                        </Typography>
+                                        <Typography variant="body2">{item.priceHigherReason}</Typography>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                )}
+                                {/* Insurance pays for all items */}
+                                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                  <b>Insurance Pays:</b> {(item.price || 0).toFixed(2)} {CURRENCY.SYMBOL}
+                                </Typography>
+                              </Box>
+                            );
+                          })}
                         </Box>
                       );
                     }

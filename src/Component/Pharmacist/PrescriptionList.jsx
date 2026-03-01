@@ -311,20 +311,31 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
   const openVerifyDialog = (prescription) => {
     // الصيدلي يرى: الجرعة، كم مرة باليوم، المدة، الكمية المحسوبة
     // الصيدلي يدخل: السعر فقط + اختيار الأدوية المتوفرة
-    const prices = prescription.items.map((item) => ({
-      id: item.id,
-      medicineName: item.medicineName,
-      scientificName: item.scientificName,
-      dosage: item.dosage, // الجرعة
-      timesPerDay: item.timesPerDay, // كم مرة باليوم
-      duration: item.duration, // المدة
-      calculatedQuantity: item.calculatedQuantity || 0, // الكمية المحسوبة
-      unionPrice: item.unionPrice || 0,
-      unionPricePerUnit: item.unionPricePerUnit || 0,
-      pharmacistPrice: item.pharmacistPrice || "", // الصيدلي يدخل السعر فقط
-      form: item.form || null,
-      fulfilled: true, // Default: all items are fulfilled (partial fulfillment support)
-    }));
+    const prices = prescription.items.map((item) => {
+      // Compute union price total for the calculated quantity (same logic as backend)
+      const formUpper = (item.form || "").toUpperCase();
+      const isPackageBased = ["SYRUP", "SPRAY", "DROPS", "CREAM", "OINTMENT"].includes(formUpper);
+      const unionPriceTotal = isPackageBased
+        ? (item.unionPrice || 0) * (item.calculatedQuantity || 1)
+        : (item.unionPricePerUnit || 0) * (item.calculatedQuantity || 1);
+
+      return {
+        id: item.id,
+        medicineName: item.medicineName,
+        scientificName: item.scientificName,
+        dosage: item.dosage, // الجرعة
+        timesPerDay: item.timesPerDay, // كم مرة باليوم
+        duration: item.duration, // المدة
+        calculatedQuantity: item.calculatedQuantity || 0, // الكمية المحسوبة
+        unionPrice: item.unionPrice || 0,
+        unionPricePerUnit: item.unionPricePerUnit || 0,
+        unionPriceTotal, // Total union price for the calculated quantity
+        pharmacistPrice: item.pharmacistPrice || "", // الصيدلي يدخل السعر فقط
+        form: item.form || null,
+        fulfilled: true, // Default: all items are fulfilled (partial fulfillment support)
+        priceHigherReason: "", // Reason when pharmacist price > union price
+      };
+    });
     setVerifyDialog({ open: true, prescription, prices });
   };
 
@@ -333,6 +344,15 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
       ...prev,
       prices: prev.prices.map((p) =>
         p.id === itemId ? { ...p, pharmacistPrice: parseFloat(value) || 0 } : p
+      ),
+    }));
+  };
+
+  const handleReasonChange = (itemId, value) => {
+    setVerifyDialog((prev) => ({
+      ...prev,
+      prices: prev.prices.map((p) =>
+        p.id === itemId ? { ...p, priceHigherReason: value } : p
       ),
     }));
   };
@@ -374,6 +394,21 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
       return;
     }
 
+    // Validate reason is provided when pharmacist price > union price
+    const missingReason = fulfilledItems.find(
+      (p) => parseFloat(p.pharmacistPrice) > p.unionPriceTotal && (!p.priceHigherReason || p.priceHigherReason.trim() === "")
+    );
+    if (missingReason) {
+      setSnackbar({
+        open: true,
+        message: language === "ar"
+          ? "يجب إدخال سبب عندما يكون سعرك أعلى من السعر المحدد"
+          : "You must provide a reason when your price is higher than the defined price",
+        severity: "warning",
+      });
+      return;
+    }
+
     // Prepare only fulfilled items with prices
     // Backend will use calculatedQuantity and calculate the final claim amount
     const itemsWithPrices = fulfilledItems.map((p) => {
@@ -383,6 +418,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
         id: p.id,
         pharmacistPrice: pharmacistPrice, // السعر الكلي للكمية المحسوبة
         fulfilled: true, // Mark as fulfilled for backend
+        priceHigherReason: pharmacistPrice > p.unionPriceTotal ? p.priceHigherReason : null,
       };
     });
 
@@ -1086,6 +1122,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
         onVerifyClose={() => setVerifyDialog({ open: false, prescription: null, prices: [] })}
         onVerifySubmit={handleVerifySubmit}
         onPriceChange={handlePriceChange}
+        onReasonChange={handleReasonChange}
         onFulfilledChange={handleFulfilledChange}
         onDocumentClose={() => setDocumentDialog({ open: false, loading: false, document: null, description: "" })}
         onDocumentChange={(type, value) => {
