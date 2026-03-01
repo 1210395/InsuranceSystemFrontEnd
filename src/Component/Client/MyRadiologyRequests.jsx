@@ -134,6 +134,14 @@ const MyRadiologyRequests = memo(function MyRadiologyRequests() {
           textColor: "#E65100",
           icon: "⏳",
         };
+      case "in_progress":
+        return {
+          color: "info",
+          label: t("inProgress", language),
+          bgcolor: "#E3F2FD",
+          textColor: "#1565C0",
+          icon: "🔄",
+        };
       case "completed":
         return {
           color: "success",
@@ -334,15 +342,9 @@ const MyRadiologyRequests = memo(function MyRadiologyRequests() {
                   {[
                     { status: "ALL", label: t("all", language), count: requests.length },
                     { status: "PENDING", label: t("pending", language), count: requests.filter((r) => r.status?.toLowerCase() === "pending").length },
+                    { status: "IN_PROGRESS", label: t("inProgress", language), count: requests.filter((r) => r.status?.toLowerCase() === "in_progress").length },
                     { status: "COMPLETED", label: t("completed", language), count: requests.filter((r) => r.status?.toLowerCase() === "completed").length },
-                    {
-  status: "REJECTED",
-  label: t("rejected", language),
-  count: requests.filter(
-    (r) => r.status?.toLowerCase() === "rejected"
-  ).length,
-},
-
+                    { status: "REJECTED", label: t("rejected", language), count: requests.filter((r) => r.status?.toLowerCase() === "rejected").length },
                   ].map(({ status, label, count }) => (
                     <Chip
                       key={status}

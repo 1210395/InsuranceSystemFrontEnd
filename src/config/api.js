@@ -133,6 +133,7 @@ export const API_ENDPOINTS = {
     BASE: '/api/labs',
     GET_BY_MEMBER: '/api/labs/getByMember',
     BY_CLIENT: (clientId) => `/api/labs/client/${clientId}`,
+    ACCEPT: (id) => `/api/labs/${id}/accept`,
     UPLOAD: (id) => `/api/labs/${id}/upload`,
   },
 
@@ -148,6 +149,7 @@ export const API_ENDPOINTS = {
     BASE: '/api/radiology',
     GET_BY_MEMBER: '/api/radiology/getByMember',
     BY_CLIENT: (clientId) => `/api/radiology/client/${clientId}`,
+    ACCEPT: (id) => `/api/radiology/${id}/accept`,
     UPLOAD_RESULT: (id) => `/api/radiology/${id}/uploadResult`,
   },
 

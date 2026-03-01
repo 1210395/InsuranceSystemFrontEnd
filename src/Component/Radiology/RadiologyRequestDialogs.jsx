@@ -15,19 +15,23 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
 
 const RadiologyRequestDialogs = memo(({
+  acceptDialog,
   uploadDialog,
   imageDialog,
   snackbar,
   uploadFile,
   uploading,
   enteredPrice,
+  onAcceptDialogClose,
   onUploadDialogClose,
   onFileChange,
   onPriceChange,
+  onAcceptConfirm,
   onUploadConfirm,
   onImageDialogClose,
   onSnackbarClose,
@@ -36,7 +40,87 @@ const RadiologyRequestDialogs = memo(({
 
   return (
     <>
-      {/* Upload Dialog */}
+      {/* Accept Dialog - Price only (Step 1) */}
+      <Dialog
+        open={acceptDialog?.open || false}
+        onClose={onAcceptDialogClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 4 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{
+              fontWeight: "700",
+              color: "#1565C0",
+              mb: 3,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <PlayArrowIcon /> {t("acceptAndStart", language)}
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            {acceptDialog?.request?.memberName} — {acceptDialog?.request?.testName}
+          </Typography>
+
+          <Box>
+            <TextField
+              fullWidth
+              label={t("enterTestPrice", language)}
+              type="number"
+              value={enteredPrice}
+              onChange={onPriceChange}
+              placeholder="e.g., 50.00"
+              inputProps={{ step: "0.01", min: "0" }}
+              helperText={t("enterTestPriceHelper", language)}
+              autoFocus
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
+            />
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={onAcceptDialogClose}
+            variant="outlined"
+            disabled={uploading}
+            sx={{ borderRadius: 2, textTransform: "none", px: 3 }}
+          >
+            {t("cancel", language)}
+          </Button>
+          <Button
+            onClick={onAcceptConfirm}
+            variant="contained"
+            disabled={!enteredPrice || parseFloat(enteredPrice) <= 0 || uploading}
+            startIcon={uploading ? <CircularProgress size={20} /> : <PlayArrowIcon />}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              px: 3,
+              bgcolor: "#1976d2",
+              "&:hover": { bgcolor: "#1565c0" },
+            }}
+          >
+            {uploading ? t("acceptingTest", language) : t("acceptAndStart", language)}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Upload Dialog - File only (Step 2) */}
       <Dialog
         open={uploadDialog.open}
         onClose={onUploadDialogClose}
@@ -55,14 +139,18 @@ const RadiologyRequestDialogs = memo(({
             gutterBottom
             sx={{
               fontWeight: "700",
-              color: "#556B2F",
+              color: "#2e7d32",
               mb: 3,
               display: "flex",
               alignItems: "center",
               gap: 1,
             }}
           >
-            <FileUploadIcon /> {t("uploadRadiologyResult", language)}
+            <FileUploadIcon /> {t("uploadResultsOnly", language)}
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            {uploadDialog.request?.memberName} — {uploadDialog.request?.testName}
           </Typography>
 
           <Box sx={{ mb: 3 }}>
@@ -88,36 +176,14 @@ const RadiologyRequestDialogs = memo(({
               </Typography>
             )}
           </Box>
-
-          <Box>
-            <TextField
-              fullWidth
-              label={t("resultPriceOptional", language)}
-              type="number"
-              value={enteredPrice}
-              onChange={onPriceChange}
-              placeholder={t("enterPriceIfAvailable", language)}
-              InputProps={{
-                startAdornment: <Typography sx={{ mr: 1 }}>₪</Typography>,
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                },
-              }}
-            />
-          </Box>
         </DialogContent>
 
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button
             onClick={onUploadDialogClose}
             variant="outlined"
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              px: 3,
-            }}
+            disabled={uploading}
+            sx={{ borderRadius: 2, textTransform: "none", px: 3 }}
           >
             {t("cancel", language)}
           </Button>
@@ -130,10 +196,11 @@ const RadiologyRequestDialogs = memo(({
               borderRadius: 2,
               textTransform: "none",
               px: 3,
-              background: "linear-gradient(135deg, #556B2F 0%, #7B8B5E 100%)",
+              bgcolor: "#2e7d32",
+              "&:hover": { bgcolor: "#1b5e20" },
             }}
           >
-            {uploading ? t("uploading", language) : t("upload", language)}
+            {uploading ? t("uploadingResults", language) : t("upload", language)}
           </Button>
         </DialogActions>
       </Dialog>
@@ -205,6 +272,10 @@ const RadiologyRequestDialogs = memo(({
 });
 
 RadiologyRequestDialogs.propTypes = {
+  acceptDialog: PropTypes.shape({
+    open: PropTypes.bool,
+    request: PropTypes.object,
+  }),
   uploadDialog: PropTypes.shape({
     open: PropTypes.bool,
     request: PropTypes.object,
@@ -222,9 +293,11 @@ RadiologyRequestDialogs.propTypes = {
   uploadFile: PropTypes.object,
   uploading: PropTypes.bool,
   enteredPrice: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onAcceptDialogClose: PropTypes.func,
   onUploadDialogClose: PropTypes.func.isRequired,
   onFileChange: PropTypes.func.isRequired,
   onPriceChange: PropTypes.func.isRequired,
+  onAcceptConfirm: PropTypes.func,
   onUploadConfirm: PropTypes.func.isRequired,
   onImageDialogClose: PropTypes.func.isRequired,
   onSnackbarClose: PropTypes.func.isRequired,

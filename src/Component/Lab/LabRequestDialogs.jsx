@@ -14,64 +14,106 @@ import {
   CircularProgress,
 } from "@mui/material";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
 
 const LabRequestDialogs = memo(({
+  acceptDialog,
   uploadDialog,
   imageDialog,
   snackbar,
   uploadFile,
   uploading,
   enteredPrice,
+  onAcceptDialogClose,
   onUploadDialogClose,
   onImageDialogClose,
   onSnackbarClose,
   onFileChange,
   onPriceChange,
+  onAcceptSubmit,
   onUploadSubmit,
 }) => {
   const { language, isRTL } = useLanguage();
 
   return (
     <>
-      {/* Upload Dialog */}
+      {/* Accept Dialog - Price only (Step 1) */}
+      <Dialog
+        open={acceptDialog?.open || false}
+        onClose={onAcceptDialogClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ bgcolor: "#e3f2fd", color: "#1565C0", fontWeight: 700 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <PlayArrowIcon />
+            {t("acceptAndStart", language)}
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            {acceptDialog?.request?.memberName} — {acceptDialog?.request?.testName}
+          </Typography>
+
+          {/* Price Input */}
+          <TextField
+            fullWidth
+            label={t("enterTestPrice", language)}
+            type="number"
+            inputProps={{ step: "0.01", min: "0" }}
+            value={enteredPrice}
+            onChange={onPriceChange}
+            disabled={uploading}
+            sx={{ mb: 2 }}
+            placeholder="e.g., 50.00"
+            helperText={t("enterTestPriceHelper", language)}
+            variant="outlined"
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button
+            onClick={onAcceptDialogClose}
+            color="inherit"
+            disabled={uploading}
+          >
+            {t("cancel", language)}
+          </Button>
+          <Button
+            onClick={onAcceptSubmit}
+            variant="contained"
+            disabled={!enteredPrice || parseFloat(enteredPrice) <= 0 || uploading}
+            sx={{ px: 4, bgcolor: "#1976d2", "&:hover": { bgcolor: "#1565c0" } }}
+          >
+            {uploading ? <CircularProgress size={20} color="inherit" /> : t("acceptAndStart", language)}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Upload Dialog - File only (Step 2) */}
       <Dialog
         open={uploadDialog.open}
         onClose={onUploadDialogClose}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ bgcolor: "#F5F5DC", color: "#556B2F", fontWeight: 700 }}>
-          {t("uploadLabResult", language)}
+        <DialogTitle sx={{ bgcolor: "#e8f5e9", color: "#2e7d32", fontWeight: 700 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <FileUploadIcon />
+            {t("uploadResultsOnly", language)}
+          </Box>
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            {t("uploadLabResultFor", language)} {uploadDialog.request?.memberName}
+            {uploadDialog.request?.memberName} — {uploadDialog.request?.testName}
           </Typography>
-
-          {/* Price Input */}
-          <TextField
-            fullWidth
-            label={t("enterLabTestPrice", language)}
-            type="number"
-            inputProps={{ step: "0.01", min: "0" }}
-            value={enteredPrice}
-            onChange={onPriceChange}
-            disabled={uploading}
-            sx={{ mb: 3 }}
-            placeholder="e.g., 50.00"
-            helperText={t("enterTestPriceHelper", language)}
-            variant="outlined"
-          />
 
           {/* File Upload */}
-          <Typography variant="subtitle2" fontWeight={600} mb={1.5}>
-            {t("uploadResultFile", language)}
-          </Typography>
           <Box
             sx={{
-              border: "2px dashed #556B2F",
+              border: "2px dashed #2e7d32",
               borderRadius: 2,
               p: 3,
               textAlign: "center",
@@ -79,8 +121,8 @@ const LabRequestDialogs = memo(({
               cursor: "pointer",
               transition: "all 0.3s ease",
               "&:hover": {
-                bgcolor: "#F5F5DC",
-                borderColor: "#7B8B5E",
+                bgcolor: "#e8f5e9",
+                borderColor: "#1b5e20",
               },
             }}
             component="label"
@@ -92,8 +134,8 @@ const LabRequestDialogs = memo(({
               onChange={onFileChange}
               disabled={uploading}
             />
-            <FileUploadIcon sx={{ fontSize: 48, color: "#556B2F", mb: 1 }} />
-            <Typography variant="body2" fontWeight={600} color="#667eea">
+            <FileUploadIcon sx={{ fontSize: 48, color: "#2e7d32", mb: 1 }} />
+            <Typography variant="body2" fontWeight={600} color="#2e7d32">
               {t("clickToSelectFile", language)}
             </Typography>
             <Typography variant="caption" color="text.secondary" display="block" mt={1}>
@@ -123,9 +165,8 @@ const LabRequestDialogs = memo(({
           <Button
             onClick={onUploadSubmit}
             variant="contained"
-            color="primary"
             disabled={!uploadFile || uploading}
-            sx={{ px: 4 }}
+            sx={{ px: 4, bgcolor: "#2e7d32", "&:hover": { bgcolor: "#1b5e20" } }}
           >
             {uploading ? <CircularProgress size={20} color="inherit" /> : t("upload", language)}
           </Button>
@@ -246,6 +287,10 @@ const LabRequestDialogs = memo(({
 });
 
 LabRequestDialogs.propTypes = {
+  acceptDialog: PropTypes.shape({
+    open: PropTypes.bool,
+    request: PropTypes.object,
+  }),
   uploadDialog: PropTypes.shape({
     open: PropTypes.bool,
     request: PropTypes.object,
@@ -262,11 +307,13 @@ LabRequestDialogs.propTypes = {
   uploadFile: PropTypes.object,
   uploading: PropTypes.bool,
   enteredPrice: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onAcceptDialogClose: PropTypes.func,
   onUploadDialogClose: PropTypes.func.isRequired,
   onImageDialogClose: PropTypes.func.isRequired,
   onSnackbarClose: PropTypes.func.isRequired,
   onFileChange: PropTypes.func.isRequired,
   onPriceChange: PropTypes.func.isRequired,
+  onAcceptSubmit: PropTypes.func,
   onUploadSubmit: PropTypes.func.isRequired,
 };
 

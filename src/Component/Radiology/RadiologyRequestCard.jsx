@@ -20,6 +20,7 @@ import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import PersonIcon from "@mui/icons-material/Person";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
@@ -33,6 +34,7 @@ const RadiologyRequestCard = memo(({
   displayAge,
   displayGender,
   formatDate,
+  onOpenAcceptDialog,
   onOpenUploadDialog,
 }) => {
   const { language } = useLanguage();
@@ -195,8 +197,29 @@ const RadiologyRequestCard = memo(({
           </Stack>
         </CardContent>
 
-        {/* Action Buttons - Only for PENDING */}
-        {status.label === "Pending" && (
+        {/* Action Button - PENDING: Accept & Start */}
+        {request.status?.toLowerCase() === "pending" && (
+          <Box sx={{ p: 2, pt: 0 }}>
+            <Button
+              variant="contained"
+              size="medium"
+              fullWidth
+              startIcon={<PlayArrowIcon />}
+              onClick={() => onOpenAcceptDialog(request)}
+              sx={{
+                bgcolor: "#1976d2",
+                fontWeight: 600,
+                py: 1,
+                "&:hover": { bgcolor: "#1565c0" },
+              }}
+            >
+              {t("acceptAndStart", language)}
+            </Button>
+          </Box>
+        )}
+
+        {/* Action Button - IN_PROGRESS: Upload Results */}
+        {request.status?.toLowerCase() === "in_progress" && (
           <Box sx={{ p: 2, pt: 0 }}>
             <Button
               variant="contained"
@@ -205,22 +228,22 @@ const RadiologyRequestCard = memo(({
               startIcon={<FileUploadIcon />}
               onClick={() => onOpenUploadDialog(request)}
               sx={{
-                bgcolor: "#556B2F",
+                bgcolor: "#2e7d32",
                 fontWeight: 600,
                 py: 1,
-                "&:hover": { bgcolor: "#3D4F23" },
+                "&:hover": { bgcolor: "#1b5e20" },
               }}
             >
-              {language === "ar" ? "رفع النتيجة" : "Upload Result"}
+              {t("uploadResultsOnly", language)}
             </Button>
           </Box>
         )}
 
         {/* Completed Status */}
-        {request.resultFilePath && (
+        {request.status?.toLowerCase() === "completed" && (
           <Box sx={{ p: 2, pt: 0 }}>
             <Chip
-              label={language === "ar" ? "تم إرسال النتيجة" : "Results Submitted"}
+              label={t("resultsSubmitted", language)}
               color="success"
               variant="outlined"
               sx={{ width: "100%" }}
@@ -291,6 +314,7 @@ RadiologyRequestCard.propTypes = {
   displayAge: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   displayGender: PropTypes.string,
   formatDate: PropTypes.func.isRequired,
+  onOpenAcceptDialog: PropTypes.func.isRequired,
   onOpenUploadDialog: PropTypes.func.isRequired,
 };
 

@@ -103,6 +103,14 @@ const MyLabRequests = memo(function MyLabRequests({ labRequests = [] }) {
           textColor: "#E65100",
           icon: "⏳",
         };
+      case "in_progress":
+        return {
+          color: "info",
+          label: t("inProgress", language),
+          bgcolor: "#E3F2FD",
+          textColor: "#1565C0",
+          icon: "🔄",
+        };
       case "completed":
         return {
           color: "success",
@@ -297,6 +305,7 @@ const MyLabRequests = memo(function MyLabRequests({ labRequests = [] }) {
                 {[
                   { status: "ALL", label: t("all", language), count: labRequests.length },
                   { status: "PENDING", label: t("pending", language), count: labRequests.filter((r) => r.status?.toLowerCase() === "pending").length },
+                  { status: "IN_PROGRESS", label: t("inProgress", language), count: labRequests.filter((r) => r.status?.toLowerCase() === "in_progress").length },
                   { status: "COMPLETED", label: t("completed", language), count: labRequests.filter((r) => r.status?.toLowerCase() === "completed").length },
                 ].map(({ status, label, count }) => (
                   <Chip

@@ -48,6 +48,10 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
     severity: "success",
     icon: null,
   });
+  const [acceptDialog, setAcceptDialog] = useState({
+    open: false,
+    request: null,
+  });
   const [uploadDialog, setUploadDialog] = useState({
     open: false,
     request: null,
@@ -199,18 +203,144 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
     }
   };
 
+  // Open Accept dialog (Step 1: price only)
+  const handleOpenAcceptDialog = (request) => {
+    setAcceptDialog({ open: true, request });
+    setEnteredPrice("");
+    isSubmittingClaimRef.current = false;
+  };
+
+  // Open Upload dialog (Step 2: file only)
   const handleOpenUploadDialog = (request) => {
     setUploadDialog({ open: true, request });
     setUploadFile(null);
-    setEnteredPrice("");
-    // ✅ إعادة تعيين flag عند فتح حوار جديد
-    isSubmittingClaimRef.current = false;
   };
 
   const handleFileChange = (e) => {
     setUploadFile(e.target.files[0]);
   };
 
+  // Step 1: Accept request + enter price + submit claim
+  const handleAcceptSubmit = async () => {
+    if (!enteredPrice || parseFloat(enteredPrice) <= 0) {
+      setSnackbar({
+        open: true,
+        message: t("pleaseEnterValidPrice", language),
+        severity: "warning",
+        icon: <ErrorIcon fontSize="inherit" />,
+      });
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Call accept endpoint
+      const response = await api.patch(
+        API_ENDPOINTS.LABS.ACCEPT(acceptDialog.request.id),
+        { price: parseFloat(enteredPrice) }
+      );
+
+      const unionPrice = parseFloat(acceptDialog.request.unionPrice) || 0;
+      const enteredPriceNum = parseFloat(enteredPrice) || 0;
+      const finalAmount = unionPrice > 0 ? Math.min(unionPrice, enteredPriceNum) : enteredPriceNum;
+
+      // Extract diagnosis and treatment
+      let diagnosis = acceptDialog.request.diagnosis || acceptDialog.request.Diagnosis || "";
+      let treatment = acceptDialog.request.treatment || acceptDialog.request.Treatment || "";
+
+      if (!diagnosis && acceptDialog.request.notes) {
+        const notesMatch = acceptDialog.request.notes.match(/Diagnosis:\s*(.+?)(?:\n|$)/i);
+        if (notesMatch) {
+          diagnosis = notesMatch[1].trim();
+        } else if (acceptDialog.request.notes && !acceptDialog.request.notes.includes("Treatment:")) {
+          diagnosis = acceptDialog.request.notes.trim();
+        }
+      }
+
+      if (!treatment && acceptDialog.request.notes) {
+        const treatmentMatch = acceptDialog.request.notes.match(/Treatment:\s*(.+?)(?:\n|$)/i);
+        if (treatmentMatch) {
+          treatment = treatmentMatch[1].trim();
+        }
+      }
+
+      // Determine correct clientId
+      let clientIdToUse = acceptDialog.request.memberId;
+      let memberNameToUse = acceptDialog.request.memberName || "";
+
+      if (acceptDialog.request.isFamilyMember === true && acceptDialog.request.familyMemberId) {
+        clientIdToUse = acceptDialog.request.familyMemberId;
+        memberNameToUse = acceptDialog.request.familyMemberName || acceptDialog.request.memberName || "";
+      }
+
+      const claimData = {
+        clientId: clientIdToUse,
+        memberName: memberNameToUse,
+        description: `Lab test completed - ${acceptDialog.request.testName || "Lab Result"}`,
+        amount: finalAmount,
+        serviceDate: new Date().toISOString().split('T')[0],
+        diagnosis: diagnosis,
+        treatmentDetails: treatment,
+        roleSpecificData: JSON.stringify({
+          testId: acceptDialog.request.id,
+          testName: acceptDialog.request.testName,
+          patientName: acceptDialog.request.memberName,
+          unionPrice: unionPrice,
+          enteredPrice: enteredPriceNum,
+          finalPrice: finalAmount,
+          diagnosis: diagnosis,
+          treatment: treatment,
+          notes: `Test performed by ${userInfo?.fullName || "Lab Technician"}`
+        }),
+      };
+
+      onSetClaimData(JSON.parse(JSON.stringify(claimData)));
+      claimDataRef.current = JSON.parse(JSON.stringify(claimData));
+
+      setSnackbar({
+        open: true,
+        message: t("testAcceptedSuccess", language),
+        severity: "success",
+        icon: <CheckCircleIcon fontSize="inherit" />,
+      });
+
+      onUploaded?.(response);
+      setAcceptDialog({ open: false, request: null });
+      setEnteredPrice("");
+
+      // Submit claim
+      if (onSubmitClaim && !isSubmittingClaimRef.current) {
+        isSubmittingClaimRef.current = true;
+        try {
+          await onSubmitClaim(null, JSON.parse(JSON.stringify(claimData)));
+          isSubmittingClaimRef.current = false;
+          claimDataRef.current = null;
+        } catch (claimErr) {
+          console.error("Error submitting claim:", claimErr);
+          isSubmittingClaimRef.current = false;
+          setSnackbar({
+            open: true,
+            message: `${t("uploadSucceededButClaimFailed", language)}: ${claimErr.response?.data?.message || claimErr.message || t("unknownError", language)}`,
+            severity: "warning",
+            icon: <ErrorIcon fontSize="inherit" />,
+          });
+        }
+      }
+    } catch (err) {
+      isSubmittingClaimRef.current = false;
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || t("failedToUploadResult", language),
+        severity: "error",
+        icon: <ErrorIcon fontSize="inherit" />,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Step 2: Upload results file only (no price, no claim)
   const handleUploadSubmit = async () => {
     if (!uploadFile) {
       setSnackbar({
@@ -222,19 +352,8 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
       return;
     }
 
-    if (!enteredPrice || parseFloat(enteredPrice) <= 0) {
-      setSnackbar({
-        open: true,
-        message: t("pleaseEnterValidPrice", language),
-        severity: "warning",
-        icon: <ErrorIcon fontSize="inherit" />,
-      });
-      return;
-    }
-
     const formData = new FormData();
     formData.append("file", uploadFile);
-    formData.append("price", parseFloat(enteredPrice));
 
     try {
       setUploading(true);
@@ -248,258 +367,17 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
         }
       );
 
-     
-      const unionPrice = parseFloat(uploadDialog.request.unionPrice) || 0;
-      const enteredPriceNum = parseFloat(enteredPrice) || 0;
-      const finalAmount = unionPrice > 0 ? Math.min(unionPrice, enteredPriceNum) : enteredPriceNum;
-      
-    
-      // ✅ إنشاء unique key لهذا upload (لتجنب تضارب البيانات مع uploads أخرى)
-      const uploadId = `${uploadDialog.request.id}_${Date.now()}`;
-      
-      // ✅ Extract diagnosis and treatment - try multiple field name variations
-      // First try direct fields, then check notes field as fallback
-      let diagnosis = uploadDialog.request.diagnosis || uploadDialog.request.Diagnosis || "";
-      let treatment = uploadDialog.request.treatment || uploadDialog.request.Treatment || "";
-      
-      // ✅ Fallback: If diagnosis/treatment are empty, try to extract from notes
-      // Notes format might be: "Diagnosis: ...\nTreatment: ..." or just diagnosis
-      if (!diagnosis && uploadDialog.request.notes) {
-        const notesMatch = uploadDialog.request.notes.match(/Diagnosis:\s*(.+?)(?:\n|$)/i);
-        if (notesMatch) {
-          diagnosis = notesMatch[1].trim();
-        } else if (uploadDialog.request.notes && !uploadDialog.request.notes.includes("Treatment:")) {
-          // If notes doesn't have "Treatment:", it might just be diagnosis
-          diagnosis = uploadDialog.request.notes.trim();
-        }
-      }
-      
-      if (!treatment && uploadDialog.request.notes) {
-        const treatmentMatch = uploadDialog.request.notes.match(/Treatment:\s*(.+?)(?:\n|$)/i);
-        if (treatmentMatch) {
-          treatment = treatmentMatch[1].trim();
-        }
-      }
-      
-      // ✅ Debug: Log to ensure diagnosis and treatment are captured
-      console.log("🔍 Lab Request - Diagnosis:", diagnosis);
-      console.log("🔍 Lab Request - Treatment:", treatment);
-      console.log("🔍 Request Notes:", uploadDialog.request.notes);
-      console.log("🔍 Full Request Object:", uploadDialog.request);
-      
-      // ✅ Determine the correct clientId: use familyMemberId if lab request is for a family member
-      let clientIdToUse = uploadDialog.request.memberId; // Default to main client ID
-      let memberNameToUse = uploadDialog.request.memberName || "";
-      
-      if (uploadDialog.request.isFamilyMember === true && uploadDialog.request.familyMemberId) {
-        // Lab request is for a family member - use family member ID
-        clientIdToUse = uploadDialog.request.familyMemberId;
-        memberNameToUse = uploadDialog.request.familyMemberName || uploadDialog.request.memberName || "";
-        console.log("✅ Using family member ID for claim:", clientIdToUse, "Name:", memberNameToUse);
-      } else {
-        console.log("✅ Using main client ID for claim:", clientIdToUse, "Name:", memberNameToUse);
-      }
-      
-      const claimData = {
-        clientId: clientIdToUse, // ✅ Now correctly uses family member ID if applicable
-        memberName: memberNameToUse, // ✅ Use family member name if applicable
-        description: `Lab test completed - ${uploadDialog.request.testName || "Lab Result"}`,
-        amount: finalAmount,
-        serviceDate: new Date().toISOString().split('T')[0],
-        diagnosis: diagnosis, // ✅ Send diagnosis to medical admin
-        treatmentDetails: treatment, // ✅ Send treatment to medical admin
-        roleSpecificData: JSON.stringify({
-          testId: uploadDialog.request.id,
-          testName: uploadDialog.request.testName,
-          patientName: uploadDialog.request.memberName,
-          unionPrice: unionPrice,
-          enteredPrice: enteredPriceNum,
-          finalPrice: finalAmount,
-          diagnosis: diagnosis, // ✅ Include diagnosis in roleSpecificData
-          treatment: treatment, // ✅ Include treatment in roleSpecificData
-          notes: `Test performed by ${userInfo?.fullName || "Lab Technician"}`
-        }),
-        _uploadId: uploadId // ✅ حفظ uploadId للتمييز بين uploads
-      };
-     
-      
-      if (!claimData.clientId) {
-        console.error("❌ ERROR: clientId is missing!");
-      }
-      
-      
-      onSetClaimData(JSON.parse(JSON.stringify(claimData))); // Deep copy
-      
-      
-      // ✅ تأخير بسيط بعد تحديث state للتأكد من اكتمال العملية
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // ✅ حفظ الـ claim data في useRef (موثوق ولا يتأثر بـ re-renders)
-      claimDataRef.current = JSON.parse(JSON.stringify(claimData)); // Deep copy
-     
-      
-      // ✅ حفظ في window مع unique key لكل upload (لتجنب تضارب البيانات)
-      if (typeof window !== 'undefined') {
-        // ✅ حفظ في window.labClaimData (global fallback)
-        window.labClaimData = JSON.parse(JSON.stringify(claimData)); // Deep copy
-      
-        
-        // ✅ حفظ أيضاً مع unique key (محمي من interference)
-        if (!window.labClaimDataMap) {
-          window.labClaimDataMap = {};
-        }
-        window.labClaimDataMap[uploadId] = JSON.parse(JSON.stringify(claimData)); // Deep copy
-        
-      }
-
-      // حفظ الملف قبل إعادة التعيين (قبل أي state updates)
-      const fileToSubmit = uploadFile;
-      const claimDataToUse = JSON.parse(JSON.stringify(claimData)); // Deep copy محفوظ محلياً
-      const uploadIdForThisUpload = claimDataToUse._uploadId || claimData._uploadId;
-      
-     
-      
-      // ✅ حفظ window.labClaimData قبل أي state updates (لتجنب المسح)
-      if (typeof window !== 'undefined') {
-        window.labClaimData = JSON.parse(JSON.stringify(claimDataToUse)); // Deep copy
-      
-        
-        if (!window.labClaimDataMap) {
-          window.labClaimDataMap = {};
-        }
-        window.labClaimDataMap[uploadIdForThisUpload] = JSON.parse(JSON.stringify(claimDataToUse));
-       
-      }
-
-     
       setSnackbar({
         open: true,
-        message: t("labResultUploadedSuccess", language),
+        message: t("resultsUploadedSuccess", language),
         severity: "success",
         icon: <CheckCircleIcon fontSize="inherit" />,
       });
 
-      
-      onUploaded?.(response.data);
-      
-      
+      onUploaded?.(response);
       setUploadDialog({ open: false, request: null });
-      
       setUploadFile(null);
-      setEnteredPrice("");
-      
-      // ✅ إعادة تعيين flag عند إغلاق الحوار
-      isSubmittingClaimRef.current = false;
-      
-      // ✅ تأخير بسيط للتأكد من تحديث state قبل الاستدعاء
-      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
-      
-      // ✅ إعادة حفظ window.labClaimData بعد state updates (للتأكد)
-      if (typeof window !== 'undefined') {
-        window.labClaimData = JSON.parse(JSON.stringify(claimDataToUse)); // Deep copy
-      
-      }
-      
-    
-      // ✅ منع الاستدعاء المزدوج - التحقق من أن claim لم يتم إرساله بالفعل
-      if (isSubmittingClaimRef.current) {
-       
-        return;
-      }
-      
-      if (onSubmitClaim && fileToSubmit && claimDataToUse) {
-        // ✅ استخدام claimDataToUse المحفوظ محلياً (لا يتأثر بـ state updates)
-        const claimDataCopy = JSON.parse(JSON.stringify(claimDataToUse)); // Deep copy
-        
-      
-        
-        // ✅ التأكد من claimData موجود وبه clientId
-        if (!claimDataCopy || !claimDataCopy.clientId) {
-          console.error("❌ ERROR: Invalid claim data!", claimDataCopy);
-          setSnackbar({
-            open: true,
-            message: t("invalidClaimDataMissingClientId", language),
-            severity: "error",
-            icon: <ErrorIcon fontSize="inherit" />,
-          });
-          return;
-        }
-        
-        // ✅ تعيين flag لمنع الاستدعاء المزدوج
-        isSubmittingClaimRef.current = true;
-        
-        // ✅ حفظ claimData في window قبل الاستدعاء
-        if (typeof window !== 'undefined') {
-          window.labClaimData = JSON.parse(JSON.stringify(claimDataCopy));
-        
-        }
-        
-        // ✅ تحديث state قبل الاستدعاء
-        if (onSetClaimData) {
-          onSetClaimData(JSON.parse(JSON.stringify(claimDataCopy)));
-        
-        }
-        
-        // ✅ تأخير بسيط للتأكد من تحديث state
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // ✅ إرسال الـ claim تلقائياً مع الملف كـ document
-        try {
-       
-          const _claimResult = await onSubmitClaim(fileToSubmit, claimDataCopy);
-          
-         
-          
-          // ✅ إعادة تعيين flag بعد النجاح
-          isSubmittingClaimRef.current = false;
-          
-          // ✅ تنظيف بعد النجاح
-          claimDataRef.current = null;
-          if (typeof window !== 'undefined') {
-            delete window.labClaimData;
-          }
-          
-          // إظهار رسالة نجاح
-          setSnackbar({
-            open: true,
-            message: t("labResultAndClaimSubmittedSuccess", language),
-            severity: "success",
-            icon: <CheckCircleIcon fontSize="inherit" />,
-          });
-        } catch (claimErr) {
-          console.error("❌ Error submitting claim:", claimErr);
-          
-          // ✅ إعادة تعيين flag بعد الفشل
-          isSubmittingClaimRef.current = false;
-          
-          // إظهار رسالة خطأ واضحة (لكن الـ upload نجح)
-          setSnackbar({
-            open: true,
-            message: `${t("uploadSucceededButClaimFailed", language)}: ${claimErr.response?.data?.message || claimErr.message || t("unknownError", language)}`,
-            severity: "warning",
-            icon: <ErrorIcon fontSize="inherit" />,
-          });
-        }
-      } else {
-        if (!onSubmitClaim) {
-          console.error("❌ ERROR: onSubmitClaim callback not provided!");
-        } else if (!fileToSubmit) {
-          console.error("❌ ERROR: Upload file is missing!");
-        } else if (!claimDataToUse) {
-          console.error("❌ ERROR: Claim data is missing!");
-        }
-        
-        setSnackbar({
-          open: true,
-          message: t("uploadSucceededButClaimFailedMissingData", language),
-          severity: "warning",
-          icon: <ErrorIcon fontSize="inherit" />,
-        });
-      }
     } catch (err) {
-      // ✅ إعادة تعيين flag عند حدوث خطأ
-      isSubmittingClaimRef.current = false;
-      
       setSnackbar({
         open: true,
         message: err.response?.data?.message || t("failedToUploadResult", language),
@@ -508,10 +386,6 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
       });
     } finally {
       setUploading(false);
-      // ✅ التأكد من إعادة تعيين flag في finally (في حالة الخطأ)
-      if (isSubmittingClaimRef.current) {
-        isSubmittingClaimRef.current = false;
-      }
     }
   };
 
@@ -659,12 +533,11 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
     setFamilyMemberFilter("all");
   };
 
-  // ✅ Sorting and filtering - Only show PENDING requests
+  // ✅ Sorting and filtering - Show PENDING and IN_PROGRESS requests
   const activeRequests = requests.filter(
     (r) => {
       const status = r.status?.toLowerCase();
-      // Only show PENDING requests on this page
-      return status === "pending";
+      return status === "pending" || status === "in_progress";
     }
   );
 
@@ -956,6 +829,7 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
                 displayAge={displayAge}
                 displayGender={displayGender}
                 formatDate={formatDate}
+                onOpenAcceptDialog={handleOpenAcceptDialog}
                 onOpenUploadDialog={handleOpenUploadDialog}
               />
             );
@@ -986,20 +860,25 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
 
       {/* Dialogs */}
       <LabRequestDialogs
+        acceptDialog={acceptDialog}
         uploadDialog={uploadDialog}
         imageDialog={imageDialog}
         snackbar={snackbar}
         uploadFile={uploadFile}
         uploading={uploading}
         enteredPrice={enteredPrice}
+        onAcceptDialogClose={() => {
+          setAcceptDialog({ open: false, request: null });
+          setEnteredPrice("");
+        }}
         onUploadDialogClose={() => {
           setUploadDialog({ open: false, request: null });
-          setEnteredPrice("");
         }}
         onImageDialogClose={() => setImageDialog({ open: false, imageUrl: null })}
         onSnackbarClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         onFileChange={handleFileChange}
         onPriceChange={(e) => setEnteredPrice(e.target.value)}
+        onAcceptSubmit={handleAcceptSubmit}
         onUploadSubmit={handleUploadSubmit}
       />
     </Box>

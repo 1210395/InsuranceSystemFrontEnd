@@ -48,6 +48,10 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
     severity: "success",
     icon: null,
   });
+  const [acceptDialog, setAcceptDialog] = useState({
+    open: false,
+    request: null,
+  });
   const [uploadDialog, setUploadDialog] = useState({
     open: false,
     request: null,
@@ -187,12 +191,17 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
     }
   };
 
+  // Open Accept dialog (Step 1: price only)
+  const handleOpenAcceptDialog = (request) => {
+    setAcceptDialog({ open: true, request });
+    setEnteredPrice("");
+    isSubmittingClaimRef.current = false;
+  };
+
+  // Open Upload dialog (Step 2: file only)
   const handleOpenUploadDialog = (request) => {
     setUploadDialog({ open: true, request });
     setUploadFile(null);
-    setEnteredPrice("");
-    // ✅ إعادة تعيين flag عند فتح حوار جديد
-    isSubmittingClaimRef.current = false;
   };
 
   const handleImageClick = (imageUrl) => {
@@ -203,6 +212,128 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
     setUploadFile(e.target.files[0]);
   };
 
+  // Step 1: Accept request + enter price + submit claim
+  const handleAcceptSubmit = async () => {
+    if (!enteredPrice || parseFloat(enteredPrice) <= 0) {
+      setSnackbar({
+        open: true,
+        message: t("pleaseEnterValidPrice", language),
+        severity: "warning",
+        icon: <ErrorIcon fontSize="inherit" />,
+      });
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Call accept endpoint
+      const response = await api.patch(
+        API_ENDPOINTS.RADIOLOGY.ACCEPT(acceptDialog.request.id),
+        { price: parseFloat(enteredPrice) }
+      );
+
+      const unionPrice = parseFloat(acceptDialog.request.unionPrice) || 0;
+      const enteredPriceNum = parseFloat(enteredPrice) || 0;
+      const approvedPrice = response?.approvedPrice || (unionPrice > 0 ? Math.min(unionPrice, enteredPriceNum) : enteredPriceNum);
+      const finalAmount = approvedPrice;
+
+      // Extract diagnosis and treatment
+      let diagnosis = acceptDialog.request.diagnosis || acceptDialog.request.Diagnosis || "";
+      let treatment = acceptDialog.request.treatment || acceptDialog.request.Treatment || "";
+
+      if (!diagnosis && acceptDialog.request.notes) {
+        const notesMatch = acceptDialog.request.notes.match(/Diagnosis:\s*(.+?)(?:\n|$)/i);
+        if (notesMatch) {
+          diagnosis = notesMatch[1].trim();
+        } else if (acceptDialog.request.notes && !acceptDialog.request.notes.includes("Treatment:")) {
+          diagnosis = acceptDialog.request.notes.trim();
+        }
+      }
+
+      if (!treatment && acceptDialog.request.notes) {
+        const treatmentMatch = acceptDialog.request.notes.match(/Treatment:\s*(.+?)(?:\n|$)/i);
+        if (treatmentMatch) {
+          treatment = treatmentMatch[1].trim();
+        }
+      }
+
+      // Determine correct clientId
+      let clientIdToUse = acceptDialog.request.memberId;
+      let memberNameToUse = acceptDialog.request.memberName || "";
+
+      if (acceptDialog.request.isFamilyMember === true && acceptDialog.request.familyMemberId) {
+        clientIdToUse = acceptDialog.request.familyMemberId;
+        memberNameToUse = acceptDialog.request.familyMemberName || acceptDialog.request.memberName || "";
+      }
+
+      const claimData = {
+        clientId: clientIdToUse,
+        memberName: memberNameToUse,
+        description: `Radiology examination completed - ${acceptDialog.request.testName || "Radiology Result"}`,
+        amount: finalAmount,
+        serviceDate: new Date().toISOString().split('T')[0],
+        diagnosis: diagnosis,
+        treatmentDetails: treatment,
+        roleSpecificData: JSON.stringify({
+          testId: acceptDialog.request.id,
+          testName: acceptDialog.request.testName,
+          patientName: acceptDialog.request.memberName,
+          enteredPrice: enteredPriceNum,
+          approvedPrice: approvedPrice,
+          finalPrice: finalAmount,
+          diagnosis: diagnosis,
+          treatment: treatment,
+          notes: `Examination performed by ${userInfo?.fullName || "Radiologist"}`
+        }),
+      };
+
+      onSetClaimData(JSON.parse(JSON.stringify(claimData)));
+      claimDataRef.current = JSON.parse(JSON.stringify(claimData));
+
+      setSnackbar({
+        open: true,
+        message: t("testAcceptedSuccess", language),
+        severity: "success",
+        icon: <CheckCircleIcon fontSize="inherit" />,
+      });
+
+      onUploaded?.(response);
+      setAcceptDialog({ open: false, request: null });
+      setEnteredPrice("");
+
+      // Submit claim
+      if (onSubmitClaim && !isSubmittingClaimRef.current) {
+        isSubmittingClaimRef.current = true;
+        try {
+          await onSubmitClaim(null, JSON.parse(JSON.stringify(claimData)));
+          isSubmittingClaimRef.current = false;
+          claimDataRef.current = null;
+        } catch (claimErr) {
+          console.error("Error submitting claim:", claimErr);
+          isSubmittingClaimRef.current = false;
+          setSnackbar({
+            open: true,
+            message: `${t("uploadSucceededButClaimFailed", language)}: ${claimErr.response?.data?.message || claimErr.message || t("unknownError", language)}`,
+            severity: "warning",
+            icon: <ErrorIcon fontSize="inherit" />,
+          });
+        }
+      }
+    } catch (err) {
+      isSubmittingClaimRef.current = false;
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || t("failedToUploadResult", language),
+        severity: "error",
+        icon: <ErrorIcon fontSize="inherit" />,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Step 2: Upload results file only (no price, no claim)
   const handleUploadSubmit = async () => {
     if (!uploadFile) {
       setSnackbar({
@@ -214,20 +345,8 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
       return;
     }
 
-    if (!enteredPrice || parseFloat(enteredPrice) <= 0) {
-      setSnackbar({
-        open: true,
-        message: t("pleaseEnterValidPrice", language),
-        severity: "warning",
-        icon: <ErrorIcon fontSize="inherit" />,
-      });
-      return;
-    }
-
     const formData = new FormData();
     formData.append("file", uploadFile);
-    formData.append("price", parseFloat(enteredPrice));
-    formData.append("testName", uploadDialog.request.testName || "");
 
     try {
       setUploading(true);
@@ -241,224 +360,17 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
         }
       );
 
-      // ✅ استخدام approvedPrice من response (الأقل بين enteredPrice و unionPrice)
-      const responseData = response.data;
-      const enteredPriceNum = parseFloat(enteredPrice) || 0;
-      const approvedPrice = responseData?.approvedPrice || enteredPriceNum; // ✅ السعر المعتمد من Backend
-      const finalAmount = approvedPrice; // ✅ نستخدم approvedPrice (الأقل)
-      
-      console.log("💰 Price Comparison:", {
-        enteredPrice: enteredPriceNum,
-        approvedPrice: approvedPrice,
-        finalAmount: finalAmount
+      setSnackbar({
+        open: true,
+        message: t("resultsUploadedSuccess", language),
+        severity: "success",
+        icon: <CheckCircleIcon fontSize="inherit" />,
       });
-      
-      // ✅ التحقق من وجود memberId قبل المتابعة
-      if (!uploadDialog.request?.memberId) {
-        console.error("❌ ERROR: memberId is missing from request!");
-        console.error("❌ Full request object:", uploadDialog.request);
-        setSnackbar({
-          open: true,
-          message: t("errorPatientIdMissing", language),
-          severity: "error",
-        });
-        setUploading(false);
-        return;
-      }
-      
-    
-      
-      const uploadId = `${uploadDialog.request.id}_${Date.now()}`;
-     
-      // ✅ Extract diagnosis and treatment - try multiple field name variations
-      // First try direct fields, then check notes field as fallback
-      let diagnosis = uploadDialog.request.diagnosis || uploadDialog.request.Diagnosis || "";
-      let treatment = uploadDialog.request.treatment || uploadDialog.request.Treatment || "";
-      
-      // ✅ Fallback: If diagnosis/treatment are empty, try to extract from notes
-      // Notes format might be: "Diagnosis: ...\nTreatment: ..." or just diagnosis
-      if (!diagnosis && uploadDialog.request.notes) {
-        const notesMatch = uploadDialog.request.notes.match(/Diagnosis:\s*(.+?)(?:\n|$)/i);
-        if (notesMatch) {
-          diagnosis = notesMatch[1].trim();
-        } else if (uploadDialog.request.notes && !uploadDialog.request.notes.includes("Treatment:")) {
-          // If notes doesn't have "Treatment:", it might just be diagnosis
-          diagnosis = uploadDialog.request.notes.trim();
-        }
-      }
-      
-      if (!treatment && uploadDialog.request.notes) {
-        const treatmentMatch = uploadDialog.request.notes.match(/Treatment:\s*(.+?)(?:\n|$)/i);
-        if (treatmentMatch) {
-          treatment = treatmentMatch[1].trim();
-        }
-      }
-      
-      // ✅ Debug: Log to ensure diagnosis and treatment are captured
-      console.log("🔍 Radiology Request - Diagnosis:", diagnosis);
-      console.log("🔍 Radiology Request - Treatment:", treatment);
-      console.log("🔍 Request Notes:", uploadDialog.request.notes);
-      console.log("🔍 Full Request Object:", uploadDialog.request);
-      
-      // ✅ Determine the correct clientId: use familyMemberId if radiology request is for a family member
-      let clientIdToUse = uploadDialog.request.memberId; // Default to main client ID
-      let memberNameToUse = uploadDialog.request.memberName || "";
-      
-      if (uploadDialog.request.isFamilyMember === true && uploadDialog.request.familyMemberId) {
-        // Radiology request is for a family member - use family member ID
-        clientIdToUse = uploadDialog.request.familyMemberId;
-        memberNameToUse = uploadDialog.request.familyMemberName || uploadDialog.request.memberName || "";
-        console.log("✅ Using family member ID for radiology claim:", clientIdToUse, "Name:", memberNameToUse);
-      } else {
-        console.log("✅ Using main client ID for radiology claim:", clientIdToUse, "Name:", memberNameToUse);
-      }
-      
-      const claimData = {
-        clientId: clientIdToUse, // ✅ Now correctly uses family member ID if applicable
-        memberName: memberNameToUse, // ✅ Use family member name if applicable
-        description: `Radiology examination completed - ${uploadDialog.request.testName || "Radiology Result"}`,
-        amount: finalAmount,
-        serviceDate: new Date().toISOString().split('T')[0],
-        diagnosis: diagnosis, // ✅ Send diagnosis to medical admin
-        treatmentDetails: treatment, // ✅ Send treatment to medical admin
-        roleSpecificData: JSON.stringify({
-          testId: uploadDialog.request.id,
-          testName: uploadDialog.request.testName,
-          patientName: uploadDialog.request.memberName,
-          enteredPrice: enteredPriceNum,
-          approvedPrice: approvedPrice, // ✅ السعر المعتمد (الأقل)
-          finalPrice: finalAmount, // ✅ نفس approvedPrice
-          diagnosis: diagnosis, // ✅ Include diagnosis in roleSpecificData
-          treatment: treatment, // ✅ Include treatment in roleSpecificData
-          notes: `Examination performed by ${userInfo?.fullName || "Radiologist"}`
-        }),
-        _uploadId: uploadId
-      };
-      
-     
-      
-      // ✅ تحديث state قبل أي شيء
-      if (onSetClaimData) {
-        onSetClaimData(JSON.parse(JSON.stringify(claimData)));
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // ✅ حفظ الـ claim data في useRef
-      claimDataRef.current = JSON.parse(JSON.stringify(claimData));
-      
-      // ✅ حفظ في window
-      if (typeof window !== 'undefined') {
-        window.radiologyClaimData = JSON.parse(JSON.stringify(claimData));
-      }
 
-      // حفظ الملف قبل إعادة التعيين
-      const fileToSubmit = uploadFile;
-      const claimDataToUse = JSON.parse(JSON.stringify(claimData));
-      
-      onUploaded?.(response.data);
-      
-      // ✅ تأخير بسيط للتأكد من تحديث state قبل الاستدعاء
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      
-      
-      // ✅ منع الاستدعاء المزدوج
-      if (isSubmittingClaimRef.current) {
-
-        setSnackbar({
-          open: true,
-          message: t("radiologyResultUploadedSuccessfully", language),
-          severity: "success",
-        });
-        return;
-      }
-      
+      onUploaded?.(response);
       setUploadDialog({ open: false, request: null });
       setUploadFile(null);
-      setEnteredPrice("");
-      
-    
-      
-      if (onSubmitClaim && fileToSubmit && claimDataToUse && claimDataToUse.clientId) {
-    
-        isSubmittingClaimRef.current = true;
-        
-        const claimDataCopy = JSON.parse(JSON.stringify(claimDataToUse));
-        
-        // ✅ حفظ claimData في window قبل الاستدعاء
-        if (typeof window !== 'undefined') {
-          window.radiologyClaimData = JSON.parse(JSON.stringify(claimDataCopy));
-        }
-        
-        // ✅ تحديث state قبل الاستدعاء
-        if (onSetClaimData) {
-          onSetClaimData(JSON.parse(JSON.stringify(claimDataCopy)));
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // ✅ إرسال الـ claim تلقائياً مع الملف كـ document
-        try {
-        
-          await onSubmitClaim(fileToSubmit, claimDataCopy);
-          
-       
-          
-          isSubmittingClaimRef.current = false;
-          claimDataRef.current = null;
-          
-          if (typeof window !== 'undefined') {
-            delete window.radiologyClaimData;
-          }
-          
-          // ✅ إظهار رسالة نجاح شاملة (الرفع وإنشاء الـ claim)
-          setSnackbar({
-            open: true,
-            message: t("radiologyResultAndClaimSubmittedSuccessfully", language),
-            severity: "success",
-            icon: <CheckCircleIcon fontSize="inherit" />,
-          });
-        } catch (claimErr) {
-          isSubmittingClaimRef.current = false;
-          
-          setSnackbar({
-            open: true,
-            message: `${t("radiologyResultUploadedSuccessfully", language)}, ${t("butFailedToCreateClaim", language)}: ${claimErr.response?.data?.message || claimErr.message || t("unknownError", language)}`,
-            severity: "warning",
-            icon: <ErrorIcon fontSize="inherit" />,
-          });
-        }
-      } else {
-        
-        if (!onSubmitClaim) {
-          console.error("❌ onSubmitClaim callback not provided!");
-          setSnackbar({
-            open: true,
-            message: `${t("radiologyResultUploadedSuccessfully", language)}, ${t("butClaimSubmissionFailed", language)}`,
-            severity: "warning",
-          });
-        } else if (!fileToSubmit) {
-          console.error("❌ fileToSubmit is missing!");
-          setSnackbar({
-            open: true,
-            message: `${t("radiologyResultUploadedSuccessfully", language)}, ${t("butClaimSubmissionFailedFileMissing", language)}`,
-            severity: "warning",
-          });
-        } else if (!claimDataToUse || !claimDataToUse.clientId) {
-          console.error("❌ claimDataToUse is missing or invalid!");
-          console.error("  - claimDataToUse:", claimDataToUse);
-          console.error("  - claimDataToUse?.clientId:", claimDataToUse?.clientId);
-          setSnackbar({
-            open: true,
-            message: `${t("radiologyResultUploadedSuccessfully", language)}, ${t("butClaimSubmissionFailedDataMissing", language)}`,
-            severity: "warning",
-          });
-        }
-      }
     } catch (err) {
-      isSubmittingClaimRef.current = false;
-      
       setSnackbar({
         open: true,
         message: err.response?.data?.message || t("failedToUploadResult", language),
@@ -467,9 +379,6 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
       });
     } finally {
       setUploading(false);
-      if (isSubmittingClaimRef.current) {
-        isSubmittingClaimRef.current = false;
-      }
     }
   };
 
@@ -712,13 +621,11 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
     setFamilyMemberFilter("all");
   };
 
-  // ✅ Sorting and filtering - Show only PENDING (hide COMPLETED)
-  // Filter out COMPLETED, REJECTED and other statuses
+  // ✅ Sorting and filtering - Show PENDING and IN_PROGRESS
   const activeRequests = requests.filter(
     (r) => {
       const status = r.status?.toLowerCase();
-      // Show only PENDING - hide COMPLETED requests
-      return status === "pending";
+      return status === "pending" || status === "in_progress";
     }
   );
 
@@ -988,6 +895,7 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
                 displayAge={displayAge}
                 displayGender={displayGender}
                 formatDate={formatDate}
+                onOpenAcceptDialog={handleOpenAcceptDialog}
                 onOpenUploadDialog={handleOpenUploadDialog}
               />
             );
@@ -1017,18 +925,23 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
       </Box>
 
       <RadiologyRequestDialogs
+        acceptDialog={acceptDialog}
         uploadDialog={uploadDialog}
         imageDialog={imageDialog}
         snackbar={snackbar}
         uploadFile={uploadFile}
         uploading={uploading}
         enteredPrice={enteredPrice}
+        onAcceptDialogClose={() => {
+          setAcceptDialog({ open: false, request: null });
+          setEnteredPrice("");
+        }}
         onUploadDialogClose={() => {
           setUploadDialog({ open: false, request: null });
-          setEnteredPrice("");
         }}
         onFileChange={handleFileChange}
         onPriceChange={(e) => setEnteredPrice(e.target.value)}
+        onAcceptConfirm={handleAcceptSubmit}
         onUploadConfirm={handleUploadSubmit}
         onImageDialogClose={() => setImageDialog({ open: false, imageUrl: null })}
         onSnackbarClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
