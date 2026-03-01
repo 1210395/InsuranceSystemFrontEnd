@@ -298,7 +298,7 @@ const UnifiedCreateRequest = () => {
         scientificName: item.serviceDetails?.scientificName || "",
         quantity: item.serviceDetails?.quantity || 0,
         unionPrice: item.price,
-        form: item.serviceDetails?.form || "",
+        form: item.drugForm || item.serviceDetails?.form || "",
         coverageStatus: item.serviceDetails?.coverageStatus || "COVERED",
         coveragePercentage: item.serviceDetails?.coveragePercentage || 100,
         fullItem: item, // Keep full item for filtering
@@ -687,7 +687,7 @@ const UnifiedCreateRequest = () => {
     }
 
     // Add medicine if no active prescription or user confirmed
-    const medicineForm = medicine.form || medicine.fullItem?.serviceDetails?.form || "";
+    const medicineForm = medicine.form || medicine.fullItem?.drugForm || medicine.fullItem?.serviceDetails?.form || "";
     const updated = [
       ...selectedMedicines,
       { 
@@ -749,7 +749,7 @@ const UnifiedCreateRequest = () => {
     
     // If medicine is being changed, update the form as well
     if (field === "medicine" && value) {
-      const medicineForm = value.form || value.fullItem?.serviceDetails?.form || "";
+      const medicineForm = value.form || value.fullItem?.drugForm || value.fullItem?.serviceDetails?.form || "";
       updated[index].form = medicineForm;
     }
     

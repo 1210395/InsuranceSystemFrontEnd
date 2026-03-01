@@ -228,6 +228,9 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
     if (nameUpper.includes("INJECTION") || nameUpper.includes("حقن")) {
       return "Injection";
     }
+    if (nameUpper.includes("SPRAY") || nameUpper.includes("INHALER") || nameUpper.includes("بخاخ")) {
+      return "Spray";
+    }
     return null;
   };
 
@@ -247,6 +250,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
     if (formUpper === "CREAM") return { ar: "جم", en: "g" };
     if (formUpper === "DROPS") return { ar: "قطرة", en: "drops" };
     if (formUpper === "INJECTION") return { ar: "مل", en: "ml" };
+    if (formUpper === "SPRAY") return { ar: "بخة", en: "puff(s)" };
     return { ar: "وحدة", en: "unit(s)" };
   };
 
@@ -265,6 +269,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
     if (formUpper === "CREAM") return { ar: "جم/يوم", en: "g/day" };
     if (formUpper === "DROPS") return { ar: "قطرة/يوم", en: "drops/day" };
     if (formUpper === "INJECTION") return { ar: "مل/يوم", en: "ml/day" };
+    if (formUpper === "SPRAY") return { ar: "بخة/يوم", en: "puffs/day" };
     return { ar: "وحدة/يوم", en: "units/day" };
   };
 
@@ -283,6 +288,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
     if (formUpper === "SYRUP" || formUpper === "LIQUID PACKAGE") return { ar: "علبة", en: "bottle" };
     if (formUpper === "CREAM" || formUpper === "OINTMENT") return { ar: "علبة", en: "tube" };
     if (formUpper === "DROPS") return { ar: "علبة", en: "bottle" };
+    if (formUpper === "SPRAY") return { ar: "بخاخ", en: "spray" };
     // للحبوب/الحقن: حبة/حقنة
     if (formUpper === "TABLET" || formUpper === "CAPSULE") return { ar: "حبة", en: "pill" };
     if (formUpper === "INJECTION") return { ar: "حقنة", en: "injection" };
@@ -299,7 +305,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
     }
     if (!form) return false;
     const formUpper = form.toUpperCase();
-    return formUpper === "SYRUP" || formUpper === "LIQUID PACKAGE";
+    return formUpper === "SYRUP" || formUpper === "LIQUID PACKAGE" || formUpper === "SPRAY";
   };
 
   const openVerifyDialog = (prescription) => {

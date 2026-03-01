@@ -51,6 +51,7 @@ const MedicineList = ({
     { value: "Cream", label: language === "ar" ? "كريم" : "Cream" },
     { value: "Drops", label: language === "ar" ? "قطرة" : "Drops" },
     { value: "Injection", label: language === "ar" ? "حقن" : "Injection" },
+    { value: "Spray", label: language === "ar" ? "بخاخ" : "Spray" },
   ];
 
   // Handle adding custom medicine
@@ -96,6 +97,9 @@ const MedicineList = ({
     if (nameUpper.includes("INJECTION") || nameUpper.includes("حقن")) {
       return "Injection";
     }
+    if (nameUpper.includes("SPRAY") || nameUpper.includes("INHALER") || nameUpper.includes("بخاخ")) {
+      return "Spray";
+    }
     return null;
   };
 
@@ -118,7 +122,8 @@ const MedicineList = ({
     if (formUpper === "INJECTION") return "How many injections";
     if (formUpper === "CREAM") return "How many grams";
     if (formUpper === "DROPS") return "How many drops";
-    
+    if (formUpper === "SPRAY") return "How many puffs";
+
     return "Dosage";
   };
 
@@ -136,6 +141,7 @@ const MedicineList = ({
     if (formUpper === "INJECTION") return "Number of injections";
     if (formUpper === "CREAM") return "Grams per dose";
     if (formUpper === "DROPS") return "Drops per dose";
+    if (formUpper === "SPRAY") return "Puffs per dose";
     return "Enter dosage";
   };
 
@@ -153,6 +159,7 @@ const MedicineList = ({
     if (formUpper === "INJECTION") return "e.g., 1 or 2 injections";
     if (formUpper === "CREAM") return "e.g., 5 or 10 grams";
     if (formUpper === "DROPS") return "e.g., 2 or 3 drops";
+    if (formUpper === "SPRAY") return "e.g., 2 or 4 puffs";
     return "Enter dosage";
   };
 

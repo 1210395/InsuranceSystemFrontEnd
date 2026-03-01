@@ -188,6 +188,7 @@ const ProviderPriceList = () => {
     { value: "Injection", label: "Injection", strengthUnit: "ml" },
     { value: "Cream", label: "Cream", strengthUnit: "g" },
     { value: "Drops", label: "Drops", strengthUnit: "ml" },
+    { value: "Spray", label: "Spray", strengthUnit: "puffs" },
   ], []);
 
   // Memoized field configuration
@@ -297,6 +298,12 @@ const ProviderPriceList = () => {
     const allowedGendersData = item.allowedGenders || [];
     const hasGenderRestrictions = allowedGendersData.length > 0;
 
+    // Ensure serviceDetails.form is populated from drugForm if available
+    const serviceDetails = item.serviceDetails || {};
+    if (item.drugForm && !serviceDetails.form) {
+      serviceDetails.form = item.drugForm;
+    }
+
     setForm({
       id: item.id,
       serviceName: item.serviceName,
@@ -304,7 +311,7 @@ const ProviderPriceList = () => {
       price: item.price,
       quantity: item.quantity || "",
       notes: item.notes,
-      serviceDetails: item.serviceDetails || {},
+      serviceDetails: serviceDetails,
       allowedSpecializationIds: allowedIds,
       allowedGenders: allowedGendersData,
       minAge: item.minAge || "",
@@ -329,6 +336,7 @@ const ProviderPriceList = () => {
         quantity: form.quantity ? Number(form.quantity) : null,
         notes: form.notes,
         serviceDetails: JSON.stringify(form.serviceDetails),
+        drugForm: currentType === "PHARMACY" ? (form.serviceDetails?.form || null) : null,
       };
 
       // Add restrictions for LAB, PHARMACY, and RADIOLOGY
@@ -946,12 +954,13 @@ const ProviderPriceList = () => {
                         <TableCell sx={{ py: 1 }}>
                           {item.quantity ? (
                             (() => {
-                              const form = item.serviceDetails?.form || "";
-                              if (form === "Tablet") return `${item.quantity} pills`;
+                              const form = item.drugForm || item.serviceDetails?.form || "";
+                              if (form === "Tablet" || form === "Capsule") return `${item.quantity} pills`;
                               if (form === "Syrup") return `${item.quantity} ml`;
                               if (form === "Injection") return `${item.quantity} injections`;
-                              if (form === "Cream") return `${item.quantity} g`;
+                              if (form === "Cream" || form === "Ointment") return `${item.quantity} g`;
                               if (form === "Drops") return `${item.quantity} ml`;
+                              if (form === "Spray") return `${item.quantity} spray(s)`;
                               return item.quantity;
                             })()
                           ) : "-"}

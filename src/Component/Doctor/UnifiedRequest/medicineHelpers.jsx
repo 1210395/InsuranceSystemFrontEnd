@@ -19,6 +19,9 @@ export const detectFormFromName = (medicineName) => {
   if (nameUpper.includes("INJECTION") || nameUpper.includes("حقن")) {
     return "Injection";
   }
+  if (nameUpper.includes("SPRAY") || nameUpper.includes("INHALER") || nameUpper.includes("بخاخ")) {
+    return "Spray";
+  }
   return null;
 };
 
@@ -44,6 +47,7 @@ export const getDosageLabel = (form, medicineName = null) => {
   if (formUpper === "INJECTION") return "How many injections";
   if (formUpper === "CREAM") return "How many grams";
   if (formUpper === "DROPS") return "How many drops";
+  if (formUpper === "SPRAY") return "How many puffs";
   
   return "Dosage";
 };
@@ -69,6 +73,7 @@ export const getDosageHelperText = (form, medicineName = null) => {
   if (formUpper === "INJECTION") return "Number of injections";
   if (formUpper === "CREAM") return "Grams per dose";
   if (formUpper === "DROPS") return "Drops per dose";
+  if (formUpper === "SPRAY") return "Puffs per dose";
   return "Enter dosage";
 };
 
@@ -87,6 +92,7 @@ export const getDosagePlaceholder = (form, medicineName = null) => {
   if (formUpper === "INJECTION") return "e.g., 1 or 2 injections";
   if (formUpper === "CREAM") return "e.g., 5 or 10 grams";
   if (formUpper === "DROPS") return "e.g., 2 or 3 drops";
+  if (formUpper === "SPRAY") return "e.g., 2 or 4 puffs";
   return "Enter dosage";
 };
 
@@ -100,7 +106,7 @@ export const isLiquidMedicine = (form, medicineName = null) => {
   }
   if (!form) return false;
   const formUpper = form.toUpperCase();
-  return formUpper === "SYRUP" || formUpper === "LIQUID PACKAGE" || formUpper === "LIQUID";
+  return formUpper === "SYRUP" || formUpper === "LIQUID PACKAGE" || formUpper === "LIQUID" || formUpper === "SPRAY";
 };
 
 export const calculateDuration = (medicine, dosage, timesPerDay) => {
@@ -141,10 +147,11 @@ export const calculateRequiredQuantity = (form, dosage, timesPerDay, duration, _
       if (!dosage || !duration || dosage <= 0 || duration <= 0) return null;
       return dosage * duration;
       
+    case "SPRAY":
     case "SYRUP":
     case "DROPS":
-      // For liquids: System calculates based on duration
-      // Frontend just shows duration, backend calculates bottles needed
+      // For liquids/sprays: System calculates based on duration
+      // Frontend just shows duration, backend calculates bottles/cans needed
       return duration; // Return duration as indicator
       
     case "CREAM":

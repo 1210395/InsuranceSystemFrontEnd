@@ -111,10 +111,11 @@ const PrescriptionDialogs = memo(({
                       const isChronicPrescription = verifyDialog.prescription?.isChronic === true;
                       if (isChronicPrescription && item.calculatedQuantity != null && item.calculatedQuantity > 0) {
                         const formUpper = (item.form || "").toUpperCase();
-                        const unit = formUpper === "TABLET" || formUpper === "CAPSULE" ? "pill(s)" 
+                        const unit = formUpper === "TABLET" || formUpper === "CAPSULE" ? "pill(s)"
                                    : formUpper === "INJECTION" ? "injection(s)"
                                    : formUpper === "SYRUP" || formUpper === "DROPS" ? "bottle(s)"
                                    : formUpper === "CREAM" || formUpper === "OINTMENT" ? "tube(s)"
+                                   : formUpper === "SPRAY" ? "spray(s)"
                                    : "unit(s)";
                         return (
                           <Grid item xs={12}>
@@ -144,7 +145,7 @@ const PrescriptionDialogs = memo(({
                         <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: '0.7rem', mt: 0.5, display: 'block' }}>
                           {(() => {
                             const formUpper = item.form ? item.form.toUpperCase() : "";
-                            if (formUpper === "SYRUP" || formUpper === "DROPS" || formUpper === "CREAM" || formUpper === "OINTMENT") {
+                            if (formUpper === "SYRUP" || formUpper === "SPRAY" || formUpper === "DROPS" || formUpper === "CREAM" || formUpper === "OINTMENT") {
                               return `Number of packages needed`;
                             } else {
                               return `Number of pills/injections needed`;
@@ -170,7 +171,7 @@ const PrescriptionDialogs = memo(({
                       (() => {
                         const unit = getQuantityUnit(item.form, item.medicineName);
                         const formUpper = item.form ? item.form.toUpperCase() : "";
-                        const isLiquidOrCream = formUpper === "SYRUP" || formUpper === "DROPS" || formUpper === "CREAM" || formUpper === "OINTMENT";
+                        const isLiquidOrCream = formUpper === "SYRUP" || formUpper === "SPRAY" || formUpper === "DROPS" || formUpper === "CREAM" || formUpper === "OINTMENT";
 
                         if (item.calculatedQuantity === 1) {
                           if (isLiquidOrCream) {
