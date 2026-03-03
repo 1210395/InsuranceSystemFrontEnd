@@ -214,6 +214,11 @@ export const API_ENDPOINTS = {
     BY_TYPE: (type) => `/api/pricelist/${type}`,
     BY_ID: (id) => `/api/pricelist/${id}`,
   },
+
+  // Medical Diagnoses
+  DIAGNOSES: {
+    ALL_ACTIVE: '/api/coverage-management/diagnoses/all',
+  },
 };
 
 // Claim Status Constants

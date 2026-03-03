@@ -14,6 +14,9 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Switch,
+  FormControlLabel,
+  Alert,
   createFilterOptions,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -69,6 +72,8 @@ const TestsSection = ({
   selectedRadiologyTests,
   availableLabTests,
   availableRadiologyTests,
+  allLabTests,
+  allRadiologyTests,
   selectedLabTestValue,
   selectedRadiologyTestValue,
   setSelectedLabTestValue,
@@ -79,6 +84,11 @@ const TestsSection = ({
   onRemoveLabTest,
   onRemoveRadiologyTest,
   activeSubTab,
+  showAllLab = false,
+  onShowAllLabChange,
+  showAllRadiology = false,
+  onShowAllRadiologyChange,
+  isDiagnosisFiltered = false,
 }) => {
   const { language, isRTL } = useLanguage();
 
@@ -140,6 +150,26 @@ const TestsSection = ({
                 </Typography>
               )}
             </Typography>
+            {isDiagnosisFiltered && (
+              <Box sx={{ mb: 1 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showAllLab}
+                      onChange={(e) => onShowAllLabChange && onShowAllLabChange(e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label={t("showAllLabTests", language)}
+                  sx={{ "& .MuiTypography-root": { fontSize: "0.85rem" } }}
+                />
+                {showAllLab && (
+                  <Alert severity="warning" sx={{ mt: 0.5, py: 0, fontSize: "0.8rem" }}>
+                    {t("warningUnlinkedService", language)}
+                  </Alert>
+                )}
+              </Box>
+            )}
             <Autocomplete
               value={selectedLabTestValue}
               options={availableLabTests}
@@ -334,6 +364,26 @@ const TestsSection = ({
             <Typography variant="subtitle2" fontWeight={600} mb={1}>
               {t("addRadiologyTest", language)}
             </Typography>
+            {isDiagnosisFiltered && (
+              <Box sx={{ mb: 1 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showAllRadiology}
+                      onChange={(e) => onShowAllRadiologyChange && onShowAllRadiologyChange(e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label={t("showAllRadiologyTests", language)}
+                  sx={{ "& .MuiTypography-root": { fontSize: "0.85rem" } }}
+                />
+                {showAllRadiology && (
+                  <Alert severity="warning" sx={{ mt: 0.5, py: 0, fontSize: "0.8rem" }}>
+                    {t("warningUnlinkedService", language)}
+                  </Alert>
+                )}
+              </Box>
+            )}
             <Autocomplete
               value={selectedRadiologyTestValue}
               options={availableRadiologyTests}

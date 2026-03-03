@@ -79,6 +79,12 @@ const ProviderPriceList = () => {
   const [allowAllSpecializations, setAllowAllSpecializations] = useState(true);
   const [selectOpen, setSelectOpen] = useState(false);
 
+  // Diagnoses state
+  const [diagnosisOptions, setDiagnosisOptions] = useState([]);
+  const [selectedDiagnosisIds, setSelectedDiagnosisIds] = useState([]);
+  const [allowAllDiagnoses, setAllowAllDiagnoses] = useState(true);
+  const [diagnosisSelectOpen, setDiagnosisSelectOpen] = useState(false);
+
   // Gender and Age restrictions state
   const [selectedGenders, setSelectedGenders] = useState([]);
   const [allowAllGenders, setAllowAllGenders] = useState(true);
@@ -111,7 +117,7 @@ const ProviderPriceList = () => {
     { value: "FEMALE", label: "Female" },
   ], []);
 
-  // Fetch specializations on component mount
+  // Fetch specializations and diagnoses on component mount
   useEffect(() => {
     const fetchSpecializations = async () => {
       try {
@@ -121,7 +127,16 @@ const ProviderPriceList = () => {
         console.error("Error fetching specializations:", err);
       }
     };
+    const fetchDiagnoses = async () => {
+      try {
+        const res = await api.get(API_ENDPOINTS.DIAGNOSES.ALL_ACTIVE);
+        setDiagnosisOptions(Array.isArray(res) ? res : []);
+      } catch (err) {
+        console.error("Error fetching diagnoses:", err);
+      }
+    };
     fetchSpecializations();
+    fetchDiagnoses();
   }, []);
 
   // Memoized fetch doctor specializations
@@ -285,6 +300,8 @@ const ProviderPriceList = () => {
     });
     setSelectedSpecializationIds([]);
     setAllowAllSpecializations(true);
+    setSelectedDiagnosisIds([]);
+    setAllowAllDiagnoses(true);
     setSelectedGenders([]);
     setAllowAllGenders(true);
     setOpen(true);
@@ -321,6 +338,10 @@ const ProviderPriceList = () => {
     setAllowAllSpecializations(!hasRestrictions);
     setSelectedGenders(allowedGendersData);
     setAllowAllGenders(!hasGenderRestrictions);
+    // Load diagnosis IDs from item
+    const allowedDiagIds = (item.allowedDiagnoses || []).map(d => d.id);
+    setSelectedDiagnosisIds(allowedDiagIds);
+    setAllowAllDiagnoses(allowedDiagIds.length === 0);
     setOpen(true);
   }, []);
 
@@ -341,14 +362,8 @@ const ProviderPriceList = () => {
 
       // Add restrictions for LAB, PHARMACY, and RADIOLOGY
       if (currentType === "LAB" || currentType === "PHARMACY" || currentType === "RADIOLOGY") {
-        // If "Allow All" is checked, send empty array (or null) to indicate no restrictions
-        // If specific specializations are selected, send those IDs
         payload.allowedSpecializationIds = allowAllSpecializations ? [] : selectedSpecializationIds;
-        
-        // Debug: log what we're sending
-        console.log("Saving with allowedSpecializationIds:", payload.allowedSpecializationIds);
-        console.log("allowAllSpecializations:", allowAllSpecializations);
-        console.log("selectedSpecializationIds:", selectedSpecializationIds);
+        payload.allowedDiagnosisIds = allowAllDiagnoses ? [] : selectedDiagnosisIds;
       }
 
       // Add gender restrictions (for all provider types)
@@ -909,6 +924,9 @@ const ProviderPriceList = () => {
                   {(providerTypes[tab].type === "LAB" || providerTypes[tab].type === "PHARMACY" || providerTypes[tab].type === "RADIOLOGY") && (
                     <TableCell sx={{ fontWeight: 700, fontSize: "0.9rem", py: 1.5, color: "#2d3748" }}>{t("allowedSpecializations", language)}</TableCell>
                   )}
+                  {(providerTypes[tab].type === "LAB" || providerTypes[tab].type === "PHARMACY" || providerTypes[tab].type === "RADIOLOGY") && (
+                    <TableCell sx={{ fontWeight: 700, fontSize: "0.9rem", py: 1.5, color: "#2d3748" }}>{t("linkedDiagnoses", language)}</TableCell>
+                  )}
                   <TableCell sx={{ fontWeight: 700, fontSize: "0.9rem", py: 1.5, color: "#2d3748" }}>{t("allowedGenders", language)}</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: "0.9rem", py: 1.5, color: "#2d3748" }}>{t("ageRange", language)}</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: "0.9rem", py: 1.5, color: "#2d3748" }}>{t("details", language)}</TableCell>
@@ -995,6 +1013,45 @@ const ProviderPriceList = () => {
                           ) : (
                             <Chip
                               label={t("allSpecializations", language)}
+                              size="small"
+                              sx={{
+                                fontSize: "0.75rem",
+                                height: "24px",
+                                backgroundColor: "#e8f5e9",
+                                color: "#2e7d32",
+                                border: "1px solid #81c784",
+                                fontWeight: 500
+                              }}
+                            />
+                          )}
+                        </TableCell>
+                      )}
+
+                      {(providerTypes[tab].type === "LAB" || providerTypes[tab].type === "PHARMACY" || providerTypes[tab].type === "RADIOLOGY") && (
+                        <TableCell sx={{ py: 1.5 }}>
+                          {item.allowedDiagnoses && item.allowedDiagnoses.length > 0 ? (
+                            <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                              {item.allowedDiagnoses.map((diag) => (
+                                <Chip
+                                  key={diag.id}
+                                  label={(language === "ar" ? diag.arabicName : diag.englishName)?.length > 25
+                                    ? (language === "ar" ? diag.arabicName : diag.englishName).substring(0, 25) + "..."
+                                    : (language === "ar" ? diag.arabicName : diag.englishName)}
+                                  size="small"
+                                  sx={{
+                                    fontSize: "0.75rem",
+                                    height: "24px",
+                                    backgroundColor: "#fce4ec",
+                                    color: "#c62828",
+                                    border: "1px solid #ef9a9a",
+                                    fontWeight: 500
+                                  }}
+                                />
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Chip
+                              label={t("allowAllDiagnoses", language)}
                               size="small"
                               sx={{
                                 fontSize: "0.75rem",
@@ -1403,6 +1460,110 @@ const ProviderPriceList = () => {
                       : selectedSpecializationIds.length > 0
                       ? `${t("selected", language)}: ${selectedSpecializationIds.length} ${t("specializationsCount", language)}`
                       : t("pleaseSelectSpecializationOrAllowAll", language)}
+                  </Typography>
+                </FormControl>
+              </Box>
+            )}
+
+            {/* Diagnosis Restrictions - For LAB, PHARMACY, and RADIOLOGY */}
+            {(providerTypes[tab].type === "LAB" || providerTypes[tab].type === "PHARMACY" || providerTypes[tab].type === "RADIOLOGY") && (
+              <Box>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={allowAllDiagnoses}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setAllowAllDiagnoses(checked);
+                        if (checked) {
+                          setSelectedDiagnosisIds([]);
+                        }
+                      }}
+                    />
+                  }
+                  label={t("allowAllDiagnoses", language)}
+                />
+
+                <FormControl fullWidth sx={{ mt: 2 }} disabled={allowAllDiagnoses}>
+                  <InputLabel>{t("linkedDiagnoses", language)}</InputLabel>
+                  <Select
+                    multiple
+                    open={diagnosisSelectOpen}
+                    onOpen={() => setDiagnosisSelectOpen(true)}
+                    onClose={() => setDiagnosisSelectOpen(false)}
+                    value={selectedDiagnosisIds}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const filteredValue = Array.isArray(value)
+                        ? value.filter(v => v !== "DONE_BUTTON")
+                        : (typeof value === "string" ? value.split(",").filter(v => v !== "DONE_BUTTON") : value);
+                      const newIds = typeof filteredValue === "string" ? filteredValue.split(",") : filteredValue;
+                      setSelectedDiagnosisIds(newIds);
+                      if (newIds.length > 0) {
+                        setAllowAllDiagnoses(false);
+                      }
+                      if (Array.isArray(value) && value.includes("DONE_BUTTON")) {
+                        setDiagnosisSelectOpen(false);
+                      }
+                    }}
+                    input={<OutlinedInput label={t("linkedDiagnoses", language)} />}
+                    renderValue={(selected) => {
+                      if (selected.length === 0) {
+                        return <Typography sx={{ color: "text.secondary" }}>{t("selectDiagnosis", language)}</Typography>;
+                      }
+                      return (
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                          {(selected || []).map((id) => {
+                            const diag = diagnosisOptions.find((d) => d.id === id);
+                            return (
+                              <Chip
+                                key={id}
+                                label={language === "ar" ? (diag?.arabicName || diag?.englishName || id) : (diag?.englishName || id)}
+                                size="small"
+                                color="secondary"
+                                variant="outlined"
+                              />
+                            );
+                          })}
+                        </Box>
+                      );
+                    }}
+                    MenuProps={{
+                      PaperProps: {
+                        style: {
+                          maxHeight: 300,
+                        },
+                      },
+                    }}
+                  >
+                    {(diagnosisOptions || []).map((diag) => (
+                      <MenuItem key={diag.id} value={diag.id}>
+                        <Checkbox checked={selectedDiagnosisIds.includes(diag.id)} />
+                        {language === "ar" ? `${diag.arabicName} (${diag.englishName})` : `${diag.englishName} (${diag.arabicName})`}
+                      </MenuItem>
+                    ))}
+                    <MenuItem
+                      value="DONE_BUTTON"
+                      sx={{
+                        borderTop: "1px solid #E8EDE0",
+                        bgcolor: "#f5f5f5",
+                        justifyContent: "flex-end",
+                        "&:hover": { bgcolor: "#E8EDE0" },
+                        "& .MuiCheckbox-root": { display: "none" },
+                      }}
+                    >
+                      <Button variant="contained" size="small" sx={{ minWidth: 80 }}>
+                        {t("done", language)}
+                      </Button>
+                    </MenuItem>
+                  </Select>
+
+                  <Typography variant="caption" sx={{ mt: 0.5, color: "text.secondary", display: "block" }}>
+                    {allowAllDiagnoses
+                      ? t("allowAllDiagnoses", language)
+                      : selectedDiagnosisIds.length > 0
+                      ? `${t("selected", language)}: ${selectedDiagnosisIds.length}`
+                      : t("selectDiagnosis", language)}
                   </Typography>
                 </FormControl>
               </Box>

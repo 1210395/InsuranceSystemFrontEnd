@@ -6,10 +6,12 @@ import { API_ENDPOINTS } from "../../../config/api";
 export const useDataFetching = (doctorId, showError) => {
   const [specializations, setSpecializations] = useState([]);
   const [loadingSpecializations, setLoadingSpecializations] = useState(true);
+  const [medicalDiagnosisList, setMedicalDiagnosisList] = useState([]);
 
-  // Fetch specializations on mount
+  // Fetch specializations and diagnoses on mount
   useEffect(() => {
     fetchSpecializations();
+    fetchMedicalDiagnoses();
   }, []);
 
   // Fetch specializations
@@ -27,6 +29,17 @@ export const useDataFetching = (doctorId, showError) => {
       setSpecializations([]);
     } finally {
       setLoadingSpecializations(false);
+    }
+  };
+
+  // Fetch all active medical diagnoses
+  const fetchMedicalDiagnoses = async () => {
+    try {
+      const data = await api.get(API_ENDPOINTS.DIAGNOSES.ALL_ACTIVE);
+      setMedicalDiagnosisList(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching medical diagnoses:", err);
+      setMedicalDiagnosisList([]);
     }
   };
 
@@ -100,6 +113,7 @@ export const useDataFetching = (doctorId, showError) => {
   return {
     specializations,
     loadingSpecializations,
+    medicalDiagnosisList,
     fetchSpecializations,
     fetchAvailableOptions,
     checkFollowUpVisit,

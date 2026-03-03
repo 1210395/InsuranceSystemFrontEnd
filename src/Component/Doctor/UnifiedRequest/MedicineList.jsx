@@ -15,6 +15,9 @@ import {
   DialogActions,
   Button,
   MenuItem,
+  Switch,
+  FormControlLabel,
+  Alert,
   createFilterOptions,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -27,6 +30,7 @@ const filter = createFilterOptions();
 const MedicineList = ({
   selectedMedicines,
   availableMedicines,
+  allMedicines,
   selectedMedicineValue,
   selectedMedicineInput,
   setSelectedMedicineValue,
@@ -35,6 +39,9 @@ const MedicineList = ({
   onAddMedicine,
   onRemoveMedicine,
   onUpdateMedicine,
+  showAll = false,
+  onShowAllChange,
+  isDiagnosisFiltered = false,
 }) => {
   const { language, isRTL } = useLanguage();
 
@@ -213,6 +220,26 @@ const MedicineList = ({
             </Typography>
           )}
         </Typography>
+        {isDiagnosisFiltered && (
+          <Box sx={{ mb: 1 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showAll}
+                  onChange={(e) => onShowAllChange && onShowAllChange(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={t("showAllMedicines", language)}
+              sx={{ "& .MuiTypography-root": { fontSize: "0.85rem" } }}
+            />
+            {showAll && (
+              <Alert severity="warning" sx={{ mt: 0.5, py: 0, fontSize: "0.8rem" }}>
+                {t("warningUnlinkedService", language)}
+              </Alert>
+            )}
+          </Box>
+        )}
         <Autocomplete
           freeSolo
           value={selectedMedicineValue}

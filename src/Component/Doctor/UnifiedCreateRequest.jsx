@@ -128,10 +128,11 @@ const UnifiedCreateRequest = () => {
     showError
   );
 
-  // Use data fetching hook for specializations
+  // Use data fetching hook for specializations and diagnoses
   const {
     specializations: specializationsFromHook,
     loadingSpecializations: _loadingSpecializations,
+    medicalDiagnosisList,
     fetchSpecializations: fetchSpecializationsFromHook,
     checkFollowUpVisit: _checkFollowUpVisitFromHook,
     checkSameSpecializationSameDay: _checkSameSpecializationSameDayFromHook,
@@ -198,6 +199,12 @@ const UnifiedCreateRequest = () => {
     amount: "",
     document: null,
   });
+
+  // Diagnosis-based filtering state
+  const [selectedDiagnosisIds, setSelectedDiagnosisIds] = useState([]);
+  const [showAllMedicines, setShowAllMedicines] = useState(false);
+  const [showAllLabTests, setShowAllLabTests] = useState(false);
+  const [showAllRadiologyTests, setShowAllRadiologyTests] = useState(false);
 
   // calculateAge is now provided by usePatientLookup hook
 
@@ -278,6 +285,26 @@ const UnifiedCreateRequest = () => {
       setRestrictionFailureReason,
       calculateAge
     );
+  };
+
+  // Filter items by selected diagnosis IDs using allowedDiagnoses from PriceListResponseDTO
+  const filterByDiagnosis = (items, diagIds) => {
+    if (!diagIds || diagIds.length === 0) return items;
+    return items.filter((item) => {
+      const allowed = item.fullItem?.allowedDiagnoses;
+      // No restriction = available for all diagnoses
+      if (!allowed || allowed.length === 0) return true;
+      return allowed.some((d) => diagIds.includes(d.id));
+    });
+  };
+
+  // Handle diagnosis change from DiagnosisTreatmentSection
+  const handleDiagnosisChange = (diagIds) => {
+    setSelectedDiagnosisIds(diagIds);
+    // Reset show-all toggles when diagnosis changes
+    setShowAllMedicines(false);
+    setShowAllLabTests(false);
+    setShowAllRadiologyTests(false);
   };
 
   const fetchAvailableOptions = async () => {
@@ -923,13 +950,11 @@ const UnifiedCreateRequest = () => {
               setPatientForm={setPatientForm}
               selectedSpecialization={selectedSpecialization}
               specializations={specializations}
-              availableDiagnoses={availableDiagnoses}
-              availableTreatments={availableTreatments}
-              diagnosisTreatmentMappings={diagnosisTreatmentMappings}
+              medicalDiagnosisList={medicalDiagnosisList}
+              onDiagnosisChange={handleDiagnosisChange}
               hasSameSpecializationRestriction={hasSameSpecializationRestriction}
               specializationRestrictionFailed={specializationRestrictionFailed}
               restrictionFailureReason={restrictionFailureReason}
-              selectedFamilyMember={selectedFamilyMember}
             />
 
             {/* Tabs for Adding Items */}
@@ -978,7 +1003,8 @@ const UnifiedCreateRequest = () => {
                 {activeTab === 0 && (
                   <MedicineList
                     selectedMedicines={selectedMedicines}
-                    availableMedicines={availableMedicines}
+                    availableMedicines={showAllMedicines ? availableMedicines : filterByDiagnosis(availableMedicines, selectedDiagnosisIds)}
+                    allMedicines={availableMedicines}
                     selectedMedicineValue={selectedMedicineValue}
                     selectedMedicineInput={selectedMedicineInput}
                     setSelectedMedicineValue={setSelectedMedicineValue}
@@ -987,6 +1013,9 @@ const UnifiedCreateRequest = () => {
                     onAddMedicine={handleAddMedicine}
                     onRemoveMedicine={handleRemoveMedicine}
                     onUpdateMedicine={handleUpdateMedicine}
+                    showAll={showAllMedicines}
+                    onShowAllChange={setShowAllMedicines}
+                    isDiagnosisFiltered={selectedDiagnosisIds.length > 0}
                   />
                 )}
 
@@ -995,8 +1024,10 @@ const UnifiedCreateRequest = () => {
                   <TestsSection
                     selectedLabTests={selectedLabTests}
                     selectedRadiologyTests={selectedRadiologyTests}
-                    availableLabTests={availableLabTests}
-                    availableRadiologyTests={availableRadiologyTests}
+                    availableLabTests={showAllLabTests ? availableLabTests : filterByDiagnosis(availableLabTests, selectedDiagnosisIds)}
+                    availableRadiologyTests={showAllRadiologyTests ? availableRadiologyTests : filterByDiagnosis(availableRadiologyTests, selectedDiagnosisIds)}
+                    allLabTests={availableLabTests}
+                    allRadiologyTests={availableRadiologyTests}
                     selectedLabTestValue={selectedLabTestValue}
                     selectedRadiologyTestValue={selectedRadiologyTestValue}
                     setSelectedLabTestValue={setSelectedLabTestValue}
@@ -1007,6 +1038,11 @@ const UnifiedCreateRequest = () => {
                     onRemoveLabTest={handleRemoveLabTest}
                     onRemoveRadiologyTest={handleRemoveRadiologyTest}
                     activeSubTab={activeTab === 1 ? 0 : 1}
+                    showAllLab={showAllLabTests}
+                    onShowAllLabChange={setShowAllLabTests}
+                    showAllRadiology={showAllRadiologyTests}
+                    onShowAllRadiologyChange={setShowAllRadiologyTests}
+                    isDiagnosisFiltered={selectedDiagnosisIds.length > 0}
                   />
                 )}
               </Box>
