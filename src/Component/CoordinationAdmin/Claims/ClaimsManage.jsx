@@ -29,6 +29,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 import { api } from "../../../utils/apiService";
 import { API_ENDPOINTS, CURRENCY } from "../../../config/api";
@@ -53,6 +54,17 @@ const ClaimsManage = () => {
   const [finalRejectReason, setFinalRejectReason] = useState("");
 const [openImageDialog, setOpenImageDialog] = useState(false);
 const [selectedImage, setSelectedImage] = useState(null);
+
+  // Check if claim has price override from pharmacist
+  const hasPriceOverride = (claim) => {
+    if (claim.providerRole !== "PHARMACIST") return false;
+    try {
+      const roleData = claim.roleSpecificData ? JSON.parse(claim.roleSpecificData) : null;
+      if (!roleData) return false;
+      if (roleData.hasPriceOverride === true) return true;
+      return roleData.items?.some(item => item.priceDifference > 0) || false;
+    } catch { return false; }
+  };
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -334,6 +346,14 @@ const [selectedImage, setSelectedImage] = useState(null);
                           <b>{t("provider", language)}:</b> {claim.providerName} (
                           {claim.providerRole})
                         </Typography>
+                        {hasPriceOverride(claim) && (
+                          <Chip
+                            icon={<WarningAmberIcon sx={{ fontSize: 14 }} />}
+                            label={t("priceOverride", language) || "Price Override"}
+                            size="small"
+                            sx={{ bgcolor: "#FFF3E0", color: "#E65100", fontWeight: 600, fontSize: "0.7rem" }}
+                          />
+                        )}
                         {claim.providerRole === ROLES.INSURANCE_CLIENT && (
                           <Chip
                             label={t("outOfInsuranceNetwork", language)}
