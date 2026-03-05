@@ -417,6 +417,20 @@ const DoctorDashboard = () => {
                   >
                     {t("welcomeBackDr", language)} {userInfo?.fullName || t("doctor", language)}!
                   </Typography>
+                  {userInfo?.specialization && (
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: "inherit",
+                        opacity: 0.9,
+                        fontSize: { xs: "0.9rem", md: "1.1rem" },
+                        mt: 0.5,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {t("specialization", language) || "Specialization"}: {userInfo.specialization}
+                    </Typography>
+                  )}
                   <Typography
                     variant="body1"
                     sx={{

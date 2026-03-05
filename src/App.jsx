@@ -63,10 +63,7 @@ const AdminRegisterAccounts = lazy(() => import("./Component/Manager/Accounts/Ad
 const ProviderPriceList = lazy(() => import("./Component/Manager/ProviderPriceList"));
 
 // Manager Admin Functions Components (lazy loaded) - Uses Manager sidebar for admin functions
-const ManagerMedicalClaimsReview = lazy(() => import("./Component/Manager/AdminFunctions/ManagerMedicalClaimsReview"));
-const ManagerMedicalDecisionsList = lazy(() => import("./Component/Manager/AdminFunctions/ManagerMedicalDecisionsList"));
-const ManagerClaimsManage = lazy(() => import("./Component/Manager/AdminFunctions/ManagerClaimsManage"));
-const ManagerEmergencyRequests = lazy(() => import("./Component/Manager/AdminFunctions/ManagerEmergencyRequests"));
+// Medical Admin functions removed from Insurance Manager - they belong to Medical Admin role only
 
 // Manager Data Import Components (lazy loaded)
 const DataImport = lazy(() => import("./Component/Manager/DataImport/DataImport"));
@@ -218,39 +215,7 @@ function App() {
           }
         />
 
-        {/* Manager Admin Functions Routes - Uses Manager Sidebar */}
-        <Route
-          path="/Manager/MedicalClaimsReview"
-          element={
-            <PrivateRoute role={ROLES.INSURANCE_MANAGER}>
-              <ManagerMedicalClaimsReview />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Manager/MedicalDecisionsList"
-          element={
-            <PrivateRoute role={ROLES.INSURANCE_MANAGER}>
-              <ManagerMedicalDecisionsList />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Manager/ClaimsManage"
-          element={
-            <PrivateRoute role={ROLES.INSURANCE_MANAGER}>
-              <ManagerClaimsManage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Manager/EmergencyRequests"
-          element={
-            <PrivateRoute role={ROLES.INSURANCE_MANAGER}>
-              <ManagerEmergencyRequests />
-            </PrivateRoute>
-          }
-        />
+        {/* Medical Admin functions removed from Insurance Manager - they belong to Medical Admin role only */}
         <Route
           path="/Manager/ConsultationPrices"
           element={

@@ -50,6 +50,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
   const [searchType, setSearchType] = useState("employeeId"); // "employeeId" or "nationalId"
   const [searchInput, setSearchInput] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const [originalSearchInput, setOriginalSearchInput] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -619,8 +620,8 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
   const activePrescriptions = prescriptions.filter(
     (p) => {
       const status = p.status?.toLowerCase();
-      // Only show PENDING prescriptions
-      return status === "pending";
+      // Show PENDING, VERIFIED, and BILLED prescriptions so providers can see updated status after fulfillment
+      return status === "pending" || status === "verified" || status === "billed";
     }
   );
 
@@ -711,8 +712,10 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
       const clientData = await api.get(endpoint);
 
       if (clientData) {
-        // Use client's full name for exact matching in filter
+        // Store both client name AND original search input for filtering
+        // The filter needs to match by name AND by the original ID the user entered
         setSearchTerm(clientData.fullName || searchInput.trim());
+        setOriginalSearchInput(searchInput.trim());
         setHasSearched(true);
         setSnackbar({
           open: true,
@@ -736,6 +739,7 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
   const handleClearSearch = () => {
     setSearchInput("");
     setSearchTerm("");
+    setOriginalSearchInput("");
     setHasSearched(false);
     setFamilyMemberFilter("all"); // Reset family member filter when clearing search
   };
@@ -747,21 +751,25 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
       if (!hasSearched || !searchTerm.trim()) return false;
 
       const searchLower = searchTerm.toLowerCase();
+      const originalInputLower = originalSearchInput?.toLowerCase() || "";
 
       // Exact match by patient name (main client)
       const matchesName = p.memberName?.toLowerCase() === searchLower;
 
       // Exact match by Employee ID (main client)
-      const matchesEmployeeId = p.employeeId?.toLowerCase() === searchLower;
+      const matchesEmployeeId = p.employeeId?.toLowerCase() === searchLower ||
+        (originalInputLower && p.employeeId?.toLowerCase() === originalInputLower);
 
       // Exact match by National ID (main client)
-      const matchesNationalId = p.nationalId?.toLowerCase() === searchLower;
+      const matchesNationalId = p.nationalId?.toLowerCase() === searchLower ||
+        (originalInputLower && p.nationalId?.toLowerCase() === originalInputLower);
 
       // Exact match by family member info if exists
       const familyMemberInfo = getFamilyMemberInfo(p);
       const matchesFamilyMemberName = familyMemberInfo?.name?.toLowerCase() === searchLower;
       const matchesFamilyMemberInsuranceNumber = familyMemberInfo?.insuranceNumber?.toLowerCase() === searchLower;
-      const matchesFamilyMemberNationalId = familyMemberInfo?.nationalId?.toLowerCase() === searchLower;
+      const matchesFamilyMemberNationalId = familyMemberInfo?.nationalId?.toLowerCase() === searchLower ||
+        (originalInputLower && familyMemberInfo?.nationalId?.toLowerCase() === originalInputLower);
 
       return matchesName || matchesEmployeeId || matchesNationalId || matchesFamilyMemberName || matchesFamilyMemberInsuranceNumber || matchesFamilyMemberNationalId;
     }

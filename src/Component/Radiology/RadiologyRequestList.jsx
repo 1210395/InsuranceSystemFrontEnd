@@ -39,6 +39,7 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
   const [searchInput, setSearchInput] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [originalSearchInput, setOriginalSearchInput] = useState("");
   const [, setEmployeeIdToNameMap] = useState({});
   const [nameToEmployeeIdMap, setNameToEmployeeIdMap] = useState({}); // Map patient names to employee IDs
   const [clientInfoMap, setClientInfoMap] = useState({}); // Map member names to client info (age, gender)
@@ -595,8 +596,9 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
       const clientData = await api.get(endpoint);
 
       if (clientData) {
-        // Use client's full name for exact matching in filter
+        // Store both client name AND original search input for filtering
         setSearchTerm(clientData.fullName || searchInput.trim());
+        setOriginalSearchInput(searchInput.trim());
         setHasSearched(true);
 
         if (clientData.fullName && clientData.employeeId) {
@@ -608,6 +610,7 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
       }
     } catch {
       setSearchTerm("");
+      setOriginalSearchInput("");
       setHasSearched(false);
     } finally {
       setSearchLoading(false);
@@ -617,6 +620,7 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
   const handleClearSearch = () => {
     setSearchInput("");
     setSearchTerm("");
+    setOriginalSearchInput("");
     setHasSearched(false);
     setFamilyMemberFilter("all");
   };
@@ -625,7 +629,8 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
   const activeRequests = requests.filter(
     (r) => {
       const status = r.status?.toLowerCase();
-      return status === "pending" || status === "in_progress";
+      // Include COMPLETED so providers can see updated status after fulfillment
+      return status === "pending" || status === "in_progress" || status === "completed";
     }
   );
 
@@ -643,21 +648,25 @@ const RadiologyRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClai
       if (!hasSearched || !searchTerm.trim()) return false;
 
       const searchLower = searchTerm.toLowerCase();
+      const originalInputLower = originalSearchInput?.toLowerCase() || "";
 
       // Exact match by patient name (main client)
       const matchesName = r.memberName?.toLowerCase() === searchLower;
 
       // Exact match by Employee ID (main client)
-      const matchesEmployeeId = r.employeeId?.toLowerCase() === searchLower;
+      const matchesEmployeeId = r.employeeId?.toLowerCase() === searchLower ||
+        (originalInputLower && r.employeeId?.toLowerCase() === originalInputLower);
 
       // Exact match by National ID (main client)
-      const matchesNationalId = r.memberNationalId?.toLowerCase() === searchLower;
+      const matchesNationalId = r.memberNationalId?.toLowerCase() === searchLower ||
+        (originalInputLower && r.memberNationalId?.toLowerCase() === originalInputLower);
 
       // Exact match by family member info if exists
       const familyInfo = getFamilyMemberInfo(r);
       const matchesFamilyMemberName = familyInfo?.name?.toLowerCase() === searchLower;
       const matchesFamilyMemberInsuranceNumber = familyInfo?.insuranceNumber?.toLowerCase() === searchLower;
-      const matchesFamilyMemberNationalId = familyInfo?.nationalId?.toLowerCase() === searchLower;
+      const matchesFamilyMemberNationalId = familyInfo?.nationalId?.toLowerCase() === searchLower ||
+        (originalInputLower && familyInfo?.nationalId?.toLowerCase() === originalInputLower);
 
       return matchesName || matchesEmployeeId || matchesNationalId || matchesFamilyMemberName || matchesFamilyMemberInsuranceNumber || matchesFamilyMemberNationalId;
     }

@@ -347,17 +347,7 @@ const [selectedImage, setSelectedImage] = useState(null);
                         )}
                       </Box>
 
-                      <Typography>
-                        <PersonIcon sx={{ mr: 1 }} />
-                        <b>{t("patient", language)}:</b> {claim.clientName}
-                      </Typography>
-
-                  {claim.employeeId !== null && claim.employeeId !== undefined && (
-  <Typography>
-    <PersonIcon sx={{ mr: 1 }} />
-    <b>{t("employeeId", language)}:</b> {claim.employeeId}
-  </Typography>
-)}
+                      {/* Patient PII removed from Coordination Admin view */}
 
 
                       {claim.diagnosis && (
@@ -405,6 +395,31 @@ const [selectedImage, setSelectedImage] = useState(null);
                         <MonetizationOnIcon sx={{ mr: 1, color: "green" }} />
                         <b>{t("amount", language)}:</b> {claim.amount} {CURRENCY.CODE}
                       </Typography>
+
+                      {/* Coverage Breakdown */}
+                      <Box sx={{ mt: 1, p: 1.5, bgcolor: claim.isCovered === false ? "#fee2e210" : "#f0fdf410", borderRadius: 1, border: `1px solid ${claim.isCovered === false ? "#fca5a5" : "#86efac"}` }}>
+                        <Stack direction="row" spacing={2} flexWrap="wrap">
+                          <Typography variant="body2">
+                            <b>{t("coverageType", language) || "Coverage"}:</b>{" "}
+                            {claim.isCovered === false
+                              ? (t("notCovered", language) || "Not Covered")
+                              : parseFloat(claim.coveragePercentUsed || 0) >= 100
+                                ? (t("fullyCovered", language) || "Full Coverage")
+                                : `${parseFloat(claim.coveragePercentUsed || 0).toFixed(0)}%`}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: "#10b981" }}>
+                            <b>{t("insurerShare", language) || "Insurer"}:</b> {parseFloat(claim.insuranceCoveredAmount || 0).toFixed(2)} {CURRENCY.CODE}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: parseFloat(claim.clientPayAmount || 0) > 0 ? "#ef4444" : "#10b981" }}>
+                            <b>{t("patientShare", language) || "Patient"}:</b> {parseFloat(claim.clientPayAmount || 0).toFixed(2)} {CURRENCY.CODE}
+                          </Typography>
+                        </Stack>
+                        {claim.coverageMessage && (
+                          <Typography variant="caption" sx={{ color: "#64748b", fontStyle: "italic", mt: 0.5 }}>
+                            {claim.coverageMessage}
+                          </Typography>
+                        )}
+                      </Box>
 
                     {claim.invoiceImagePath && (
   <Box sx={{ mt: 2 }}>

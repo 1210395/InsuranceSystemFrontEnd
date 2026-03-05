@@ -498,6 +498,58 @@ const MedicalClaimsReview = () => {
     }
   }, [rejectReason, selectedClaim, isSubmitting, language, openDetailsModal]);
 
+  // Return to Provider states
+  const [openReturnDialog, setOpenReturnDialog] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
+
+  // Handle return to provider
+  const handleOpenReturn = useCallback((claim) => {
+    setSelectedClaim(claim);
+    setReturnReason("");
+    setOpenReturnDialog(true);
+  }, []);
+
+  const handleConfirmReturn = useCallback(async () => {
+    const sanitizedReason = sanitizeString(returnReason);
+
+    if (!sanitizedReason.trim()) {
+      setSnackbar({
+        open: true,
+        message: t("pleaseEnterReturnReason", language) || "Please enter a reason for returning",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      await api.patch(
+        `/api/healthcare-provider-claims/${selectedClaim.id}/return-to-provider`,
+        { reason: sanitizedReason }
+      );
+
+      setClaims((prev) => prev.filter((c) => c.id !== selectedClaim.id));
+      setSnackbar({
+        open: true,
+        message: t("claimReturnedSuccess", language) || "Claim returned to provider successfully",
+        severity: "info",
+      });
+      setOpenReturnDialog(false);
+      if (openDetailsModal) setOpenDetailsModal(false);
+    } catch (err) {
+      logger.error("Return failed:", err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || t("failedToReturnClaim", language) || "Failed to return claim",
+        severity: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [returnReason, selectedClaim, isSubmitting, language, openDetailsModal]);
+
   // Open details modal
   const handleViewDetails = useCallback((claim) => {
     setSelectedClaim(claim);
@@ -1010,6 +1062,16 @@ const MedicalClaimsReview = () => {
                                   <CancelIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
+                              <Tooltip title={t("returnToProvider", language) || "Return to Provider"}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenReturn(claim)}
+                                  disabled={isSubmitting}
+                                  sx={{ color: "#FF9800" }}
+                                >
+                                  <WarningAmberIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
                             </Stack>
                           </TableCell>
                         </TableRow>
@@ -1144,6 +1206,16 @@ const MedicalClaimsReview = () => {
                               sx={{ textTransform: "none", borderColor: "#F44336", color: "#F44336" }}
                             >
                               Reject
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<WarningAmberIcon />}
+                              onClick={() => handleOpenReturn(claim)}
+                              disabled={isSubmitting}
+                              sx={{ textTransform: "none", borderColor: "#FF9800", color: "#FF9800" }}
+                            >
+                              {t("returnToProvider", language) || "Return"}
                             </Button>
                           </Stack>
                         </CardContent>
@@ -1527,6 +1599,49 @@ const MedicalClaimsReview = () => {
                       <Chip label={getStatusChipProps(selectedClaim.status).label} color={getStatusChipProps(selectedClaim.status).color} size="small" />
                     </Grid>
                   </Grid>
+
+                  {/* Coverage Breakdown */}
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid size={{ xs: 6, md: 3 }}>
+                      <Typography variant="body2" color="text.secondary">{t("coverageType", language) || "Coverage"}</Typography>
+                      <Chip
+                        size="small"
+                        label={
+                          selectedClaim.isCovered === false
+                            ? (t("notCovered", language) || "Not Covered")
+                            : parseFloat(selectedClaim.coveragePercentUsed || 0) >= 100
+                              ? (t("fullyCovered", language) || "Full Coverage")
+                              : `${parseFloat(selectedClaim.coveragePercentUsed || 0).toFixed(0)}% ${t("covered", language) || "Covered"}`
+                        }
+                        sx={{
+                          mt: 0.5,
+                          bgcolor: selectedClaim.isCovered === false ? "#fee2e2" : parseFloat(selectedClaim.coveragePercentUsed || 0) >= 100 ? "#d1fae5" : "#fef3c7",
+                          color: selectedClaim.isCovered === false ? "#ef4444" : parseFloat(selectedClaim.coveragePercentUsed || 0) >= 100 ? "#10b981" : "#f59e0b",
+                          fontWeight: 700,
+                        }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 6, md: 3 }}>
+                      <Typography variant="body2" color="text.secondary">{t("insurerShare", language) || "Insurer Share"}</Typography>
+                      <Typography fontWeight="bold" sx={{ color: "#10b981" }}>
+                        {parseFloat(selectedClaim.insuranceCoveredAmount || 0).toFixed(2)} {CURRENCY.SYMBOL}
+                      </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6, md: 3 }}>
+                      <Typography variant="body2" color="text.secondary">{t("patientShare", language) || "Patient Share"}</Typography>
+                      <Typography fontWeight="bold" sx={{ color: parseFloat(selectedClaim.clientPayAmount || 0) > 0 ? "#ef4444" : "#10b981" }}>
+                        {parseFloat(selectedClaim.clientPayAmount || 0).toFixed(2)} {CURRENCY.SYMBOL}
+                      </Typography>
+                    </Grid>
+                    {selectedClaim.coverageMessage && (
+                      <Grid size={{ xs: 6, md: 3 }}>
+                        <Typography variant="body2" color="text.secondary">{t("coverageNote", language) || "Coverage Note"}</Typography>
+                        <Typography variant="body2" sx={{ fontStyle: "italic", color: "#64748b" }}>
+                          {selectedClaim.coverageMessage}
+                        </Typography>
+                      </Grid>
+                    )}
+                  </Grid>
                 </Grid>
 
                 {/* Attachments */}
@@ -1573,6 +1688,42 @@ const MedicalClaimsReview = () => {
             sx={{ textTransform: "none" }}
           >
             Reject
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<WarningAmberIcon />}
+            onClick={() => selectedClaim && handleOpenReturn(selectedClaim)}
+            disabled={isSubmitting}
+            sx={{ textTransform: "none", bgcolor: "#FF9800", "&:hover": { bgcolor: "#F57C00" } }}
+          >
+            {t("returnToProvider", language) || "Return"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* RETURN TO PROVIDER DIALOG */}
+      <Dialog open={openReturnDialog} onClose={() => setOpenReturnDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{t("returnToProvider", language) || "Return to Provider"}</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label={t("returnReason", language) || "Reason for returning"}
+            value={returnReason}
+            onChange={(e) => setReturnReason(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenReturnDialog(false)}>{t("cancel", language) || "Cancel"}</Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmReturn}
+            disabled={isSubmitting}
+            sx={{ bgcolor: "#FF9800", "&:hover": { bgcolor: "#F57C00" } }}
+          >
+            {isSubmitting ? <CircularProgress size={20} /> : (t("confirmReturn", language) || "Confirm Return")}
           </Button>
         </DialogActions>
       </Dialog>

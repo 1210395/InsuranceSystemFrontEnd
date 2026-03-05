@@ -219,35 +219,7 @@ const CoordinationSidebar = () => {
 
         <Divider sx={{ my: 1, borderColor: "rgba(255,255,255,0.2)" }} />
 
-        {/* CLIENTS MANAGEMENT */}
-        {(open || isDrawer) && (
-          <Typography
-            variant="body2"
-            sx={{ ml: 1, mb: 0.7, color: "rgba(255,255,255,0.7)", fontSize: { xs: "0.9rem", sm: "0.8rem" } }}
-          >
-            {t("clientManagement", language)}
-          </Typography>
-        )}
-
-        <Tooltip title={t("clientList", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton component={Link} to="/ClientList">
-            <ListItemIcon>
-              <PeopleIcon sx={{ color: "#4DD0E1", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("clientList", language)} />}
-          </ListItemButton>
-        </Tooltip>
-
-        <Tooltip title={t("pendingRequests", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton component={Link} to="/PendingRequests">
-            <ListItemIcon>
-              <PendingActionsIcon sx={{ color: "#FFB300", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("pendingRequests", language)} />}
-          </ListItemButton>
-        </Tooltip>
-
-        <Divider sx={{ my: 1, borderColor: "rgba(255,255,255,0.2)" }} />
+        {/* Client Management removed - Coordination Admin should not access client PII */}
 
         {/* LOGOUT */}
         <Tooltip title={t("logout", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>

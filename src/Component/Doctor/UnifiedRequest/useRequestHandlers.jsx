@@ -389,7 +389,10 @@ export const useRequestSubmitHandler = ({
             "Content-Type": "multipart/form-data",
           },
         });
-        showSuccess("✅ Claim submitted successfully!");
+        const remainingMsg = visitResponse?.remainingVisits != null
+          ? ` | Remaining visits this year: ${visitResponse.remainingVisits}`
+          : "";
+        showSuccess(`✅ Claim submitted successfully!${remainingMsg}`);
 
         // Redirect to dashboard
         setTimeout(() => {

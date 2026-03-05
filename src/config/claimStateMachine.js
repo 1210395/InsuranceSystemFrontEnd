@@ -104,7 +104,7 @@ export const STATUS_CONFIG = {
   // PENDING_MEDICAL - Yellow/Orange for pending status
   'PENDING_MEDICAL': {
     label: 'Pending Medical Review',
-    shortLabel: 'Pending',
+    shortLabel: 'Pending Medical',
     color: 'warning',
     bgColor: '#FFF3E0',
     textColor: '#E65100',
@@ -245,7 +245,7 @@ export const STATUS_CONFIG = {
   // Legacy statuses (for backward compatibility)
   'PENDING': {
     label: 'Pending Medical Review',
-    shortLabel: 'Pending',
+    shortLabel: 'Pending Medical',
     color: 'warning',
     bgColor: '#FFF3E0',
     textColor: '#E65100',

@@ -760,9 +760,24 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                     count: claims.filter(c => c.status === CLAIM_STATUS.APPROVED_FINAL).length
                   },
                   {
+                    status: CLAIM_STATUS.RETURNED_TO_PROVIDER,
+                    label: t("returnedToProvider", language) || "Returned",
+                    count: claims.filter(c => c.status === CLAIM_STATUS.RETURNED_TO_PROVIDER).length
+                  },
+                  {
+                    status: CLAIM_STATUS.AWAITING_COORDINATION_REVIEW,
+                    label: t("awaitingCoordination", language) || "Coord Review",
+                    count: claims.filter(c => c.status === CLAIM_STATUS.AWAITING_COORDINATION_REVIEW).length
+                  },
+                  {
                     status: CLAIM_STATUS.REJECTED_FINAL,
                     label: t("rejected", language),
                     count: claims.filter(c => c.status === CLAIM_STATUS.REJECTED_FINAL).length
+                  },
+                  {
+                    status: CLAIM_STATUS.PAID,
+                    label: t("paid", language) || "Paid",
+                    count: claims.filter(c => c.status === CLAIM_STATUS.PAID).length
                   },
                 ].map(({ status, label, count }) => (
                   <Chip
@@ -774,8 +789,11 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                       status === "ALL"
                         ? filterStatus === "ALL" ? "primary" : "default"
                         : status === CLAIM_STATUS.APPROVED_FINAL ? "success"
+                        : status === CLAIM_STATUS.PAID ? "success"
                         : status === CLAIM_STATUS.REJECTED_FINAL ? "error"
-                        : status === CLAIM_STATUS.RETURNED_FOR_REVIEW ? "info"
+                        : status === CLAIM_STATUS.RETURNED_FOR_REVIEW ? "warning"
+                        : status === CLAIM_STATUS.RETURNED_TO_PROVIDER ? "warning"
+                        : status === CLAIM_STATUS.AWAITING_COORDINATION_REVIEW ? "info"
                         : "warning"
                     }
                     sx={{
@@ -862,9 +880,14 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" fontWeight={600} color={roleConfig.color}>
-                            {parseFloat(claim.amount || 0).toFixed(2)} {CURRENCY.SYMBOL}
-                          </Typography>
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <Typography variant="body2" fontWeight={600} color={roleConfig.color}>
+                              {(claim.isFollowUp || claim.followUp) ? `0.00 ${CURRENCY.SYMBOL}` : `${parseFloat(claim.amount || 0).toFixed(2)} ${CURRENCY.SYMBOL}`}
+                            </Typography>
+                            {(claim.isFollowUp || claim.followUp) && (
+                              <Chip label={t("followUp", language) || "Follow-up"} size="small" sx={{ bgcolor: "#fef3c7", color: "#92400e", fontWeight: 600, fontSize: "0.6rem", height: 20 }} />
+                            )}
+                          </Stack>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">
@@ -1120,7 +1143,7 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                                   {t("gender", language) || "Gender"}: {claim.familyMemberGender}
                                 </Typography>
                               )}
-                              {claim.clientEmployeeId && (
+                              {claim.clientEmployeeId && normalizedRole !== ROLES.PHARMACIST && (
                                 <Typography variant="caption" sx={{ color: "#556B2F", fontSize: "0.7rem" }}>
                                   {t("employeeId", language) || "Emp ID"}: {claim.clientEmployeeId}
                                 </Typography>
@@ -1170,7 +1193,7 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                                   {t("gender", language) || "Gender"}: {claim.clientGender}
                                 </Typography>
                               )}
-                              {claim.clientEmployeeId && (
+                              {claim.clientEmployeeId && normalizedRole !== ROLES.PHARMACIST && (
                                 <Typography variant="caption" sx={{ color: "#556B2F", fontSize: "0.7rem" }}>
                                   {t("employeeId", language) || "Emp ID"}: {claim.clientEmployeeId}
                                 </Typography>
@@ -2303,10 +2326,14 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                                   <TableRow sx={{ bgcolor: "#d1fae5" }}>
                                     <TableCell sx={{ fontWeight: 700 }}>{t("medicineName", language) || "Medicine Name"}</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>{t("form", language) || "Form"}</TableCell>
-                                    <TableCell sx={{ fontWeight: 700 }}>{t("quantity", language) || "Quantity"}</TableCell>
+                                    {normalizedRole !== ROLES.DOCTOR && (
+                                      <TableCell sx={{ fontWeight: 700 }}>{t("quantity", language) || "Quantity"}</TableCell>
+                                    )}
                                     <TableCell sx={{ fontWeight: 700 }}>{t("dosage", language) || "Dosage"}</TableCell>
                                     <TableCell sx={{ fontWeight: 700 }}>{t("duration", language) || "Duration"}</TableCell>
-                                    <TableCell sx={{ fontWeight: 700 }}>{t("price", language) || "Price"}</TableCell>
+                                    {normalizedRole !== ROLES.DOCTOR && (
+                                      <TableCell sx={{ fontWeight: 700 }}>{t("price", language) || "Price"}</TableCell>
+                                    )}
                                   </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -2314,12 +2341,16 @@ const HealthcareProviderMyClaims = ({ userRole = "DOCTOR", refreshTrigger = null
                                     <TableRow key={idx}>
                                       <TableCell sx={{ fontWeight: 600 }}>{med.name || med.medicineName || med.medicine?.serviceName || "N/A"}</TableCell>
                                       <TableCell>{med.form || "-"}</TableCell>
-                                      <TableCell>{med.calculatedQuantity || med.quantity || "-"}</TableCell>
+                                      {normalizedRole !== ROLES.DOCTOR && (
+                                        <TableCell>{med.calculatedQuantity || med.quantity || "-"}</TableCell>
+                                      )}
                                       <TableCell>{med.dosage ? `${med.dosage} x ${med.timesPerDay || 1}/day` : "-"}</TableCell>
                                       <TableCell>{med.duration ? `${med.duration} days` : "-"}</TableCell>
-                                      <TableCell sx={{ fontWeight: 600, color: roleConfig.color }}>
-                                        {med.price || med.medicine?.basePrice ? `${parseFloat(med.price || med.medicine?.basePrice || 0).toFixed(2)} ${CURRENCY.SYMBOL}` : "-"}
-                                      </TableCell>
+                                      {normalizedRole !== ROLES.DOCTOR && (
+                                        <TableCell sx={{ fontWeight: 600, color: roleConfig.color }}>
+                                          {med.price || med.medicine?.basePrice ? `${parseFloat(med.price || med.medicine?.basePrice || 0).toFixed(2)} ${CURRENCY.SYMBOL}` : "-"}
+                                        </TableCell>
+                                      )}
                                     </TableRow>
                                   ))}
                                 </TableBody>

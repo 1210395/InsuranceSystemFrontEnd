@@ -28,12 +28,6 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-// Admin Functions icons
-import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
-import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
-import EmergencyIcon from "@mui/icons-material/Emergency";
-import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
-import GavelIcon from "@mui/icons-material/Gavel";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 // Data Import icons
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -363,54 +357,6 @@ const Sidebar = () => {
               <PaidIcon sx={{ color: "#4DB6AC", fontSize: { xs: 26, sm: 22 } }} />
             </ListItemIcon>
             {(open || isDrawer) && <ListItemText primary={t("consultationPrices", language)} />}
-          </ListItemButton>
-        </Tooltip>
-
-        <Divider sx={{ my: 1, borderColor: "rgba(255,255,255,0.15)" }} />
-
-        {/* Admin Functions Section - God Mode Access */}
-        {(open || isDrawer) && (
-          <Typography
-            variant="body2"
-            sx={{ ml: 1, mb: 0.7, color: "rgba(255,255,255,0.7)", fontSize: { xs: "0.9rem", sm: "0.8rem" } }}
-          >
-            {t("adminFunctions", language)}
-          </Typography>
-        )}
-
-        <Tooltip title={t("medicalClaimsReview", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton component={Link} to="/Manager/MedicalClaimsReview">
-            <ListItemIcon>
-              <LocalHospitalIcon sx={{ color: "#FF6B6B", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("medicalClaimsReview", language)} />}
-          </ListItemButton>
-        </Tooltip>
-
-        <Tooltip title={t("medicalDecisionsList", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton component={Link} to="/Manager/MedicalDecisionsList">
-            <ListItemIcon>
-              <GavelIcon sx={{ color: "#9C27B0", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("medicalDecisionsList", language)} />}
-          </ListItemButton>
-        </Tooltip>
-
-        <Tooltip title={t("coordinationClaimsManage", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton component={Link} to="/Manager/ClaimsManage">
-            <ListItemIcon>
-              <AssignmentTurnedInIcon sx={{ color: "#4CAF50", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("coordinationClaimsManage", language)} />}
-          </ListItemButton>
-        </Tooltip>
-
-        <Tooltip title={t("emergencyRequests", language)} placement={isRTL ? "left" : "right"} disableHoverListener={open || isDrawer}>
-          <ListItemButton component={Link} to="/Manager/EmergencyRequests">
-            <ListItemIcon>
-              <EmergencyIcon sx={{ color: "#F44336", fontSize: { xs: 26, sm: 22 } }} />
-            </ListItemIcon>
-            {(open || isDrawer) && <ListItemText primary={t("emergencyRequests", language)} />}
           </ListItemButton>
         </Tooltip>
 

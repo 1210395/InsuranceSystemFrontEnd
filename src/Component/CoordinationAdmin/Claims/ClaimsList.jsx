@@ -104,9 +104,11 @@ const handleOpenImageDialog = (imagePath) => {
   const filteredClaims = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return claims.filter((claim) => {
+      // Search by provider info only (no client PII)
       const matchesSearch =
-        claim.clientName?.toLowerCase().includes(q) ||
-        claim.employeeId?.toLowerCase().includes(q);
+        claim.providerName?.toLowerCase().includes(q) ||
+        claim.description?.toLowerCase().includes(q) ||
+        claim.id?.toLowerCase().includes(q);
 
       const matchesStatus =
         statusFilter === "ALL" || claim.status === statusFilter;
@@ -229,7 +231,7 @@ const handleOpenImageDialog = (imagePath) => {
             }}
           >
             <TextField
-              label={t("searchByPatientNameOrInsuranceId", language)}
+              label={t("searchByProviderOrDescription", language) || "Search by provider or description"}
               size="small"
               sx={{ minWidth: 280 }}
               value={searchQuery}
@@ -314,9 +316,8 @@ setToDate("");
               const statusInfo = getStatusInfo(claim.status);
 
 
-              const hideClientInfo =
-  reportType &&
-  reportType !== "CLIENT";
+              // Always hide client PII in Coordination Admin view
+              const hideClientInfo = true;
 
               return (
                 <Paper
@@ -433,6 +434,26 @@ setToDate("");
                           />
                           <b>{t("amount", language)}:</b> {claim.amount} {CURRENCY.CODE}
                         </Typography>
+
+                        {/* Coverage Breakdown */}
+                        <Box sx={{ p: 1, bgcolor: claim.isCovered === false ? "#fee2e210" : "#f0fdf410", borderRadius: 1, border: `1px solid ${claim.isCovered === false ? "#fca5a5" : "#86efac"}` }}>
+                          <Typography variant="body2">
+                            <b>{t("coverageType", language) || "Coverage"}:</b>{" "}
+                            {claim.isCovered === false
+                              ? (t("notCovered", language) || "Not Covered")
+                              : parseFloat(claim.coveragePercentUsed || 0) >= 100
+                                ? (t("fullyCovered", language) || "Full Coverage")
+                                : `${parseFloat(claim.coveragePercentUsed || 0).toFixed(0)}%`}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: "#10b981" }}>
+                            <b>{t("insurerShare", language) || "Insurer"}:</b> {parseFloat(claim.insuranceCoveredAmount || 0).toFixed(2)} {CURRENCY.CODE}
+                          </Typography>
+                          {parseFloat(claim.clientPayAmount || 0) > 0 && (
+                            <Typography variant="body2" sx={{ color: "#ef4444" }}>
+                              <b>{t("patientShare", language) || "Patient"}:</b> {parseFloat(claim.clientPayAmount || 0).toFixed(2)} {CURRENCY.CODE}
+                            </Typography>
+                          )}
+                        </Box>
 
                         <Typography>
                           <EventIcon sx={{ mr: 1, color: "#FB8C00" }} />

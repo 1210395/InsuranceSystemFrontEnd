@@ -39,6 +39,7 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
   const [searchInput, setSearchInput] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [originalSearchInput, setOriginalSearchInput] = useState("");
   const [_employeeIdToNameMap, setEmployeeIdToNameMap] = useState({});
   const [nameToEmployeeIdMap, setNameToEmployeeIdMap] = useState({}); // Map patient names to employee IDs
   const [_clientInfoMap, _setClientInfoMap] = useState({}); // Map member names to client info (age, gender)
@@ -507,8 +508,9 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
       const clientData = await api.get(endpoint);
 
       if (clientData) {
-        // Use client's full name for exact matching in filter
+        // Store both client name AND original search input for filtering
         setSearchTerm(clientData.fullName || searchInput.trim());
+        setOriginalSearchInput(searchInput.trim());
         setHasSearched(true);
 
         if (clientData.fullName && clientData.employeeId) {
@@ -520,6 +522,7 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
       }
     } catch {
       setSearchTerm("");
+      setOriginalSearchInput("");
       setHasSearched(false);
     } finally {
       setSearchLoading(false);
@@ -529,6 +532,7 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
   const handleClearSearch = () => {
     setSearchInput("");
     setSearchTerm("");
+    setOriginalSearchInput("");
     setHasSearched(false);
     setFamilyMemberFilter("all");
   };
@@ -537,7 +541,8 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
   const activeRequests = requests.filter(
     (r) => {
       const status = r.status?.toLowerCase();
-      return status === "pending" || status === "in_progress";
+      // Include COMPLETED so providers can see updated status after fulfillment
+      return status === "pending" || status === "in_progress" || status === "completed";
     }
   );
 
@@ -560,21 +565,25 @@ const LabRequestList = ({ requests, userInfo, onSetClaimData, onSubmitClaim, onU
       if (!hasSearched || !searchTerm.trim()) return false;
 
       const searchLower = searchTerm.toLowerCase();
+      const originalInputLower = originalSearchInput?.toLowerCase() || "";
 
       // Exact match by patient name (main client)
       const matchesName = r.memberName?.toLowerCase() === searchLower;
 
       // Exact match by Employee ID (main client)
-      const matchesEmployeeId = r.employeeId?.toLowerCase() === searchLower;
+      const matchesEmployeeId = r.employeeId?.toLowerCase() === searchLower ||
+        (originalInputLower && r.employeeId?.toLowerCase() === originalInputLower);
 
       // Exact match by National ID (main client)
-      const matchesNationalId = r.memberNationalId?.toLowerCase() === searchLower;
+      const matchesNationalId = r.memberNationalId?.toLowerCase() === searchLower ||
+        (originalInputLower && r.memberNationalId?.toLowerCase() === originalInputLower);
 
       // Exact match by family member info if exists
       const familyMemberInfo = getFamilyMemberInfo(r);
       const matchesFamilyMemberName = familyMemberInfo?.name?.toLowerCase() === searchLower;
       const matchesFamilyMemberInsuranceNumber = familyMemberInfo?.insuranceNumber?.toLowerCase() === searchLower;
-      const matchesFamilyMemberNationalId = familyMemberInfo?.nationalId?.toLowerCase() === searchLower;
+      const matchesFamilyMemberNationalId = familyMemberInfo?.nationalId?.toLowerCase() === searchLower ||
+        (originalInputLower && familyMemberInfo?.nationalId?.toLowerCase() === originalInputLower);
 
       return matchesName || matchesEmployeeId || matchesNationalId || matchesFamilyMemberName || matchesFamilyMemberInsuranceNumber || matchesFamilyMemberNationalId;
     }

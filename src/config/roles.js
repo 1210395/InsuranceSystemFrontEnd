@@ -111,36 +111,20 @@ export const PERMISSIONS = {
 // Permissions assigned to each role
 export const ROLE_PERMISSIONS = {
   [ROLES.INSURANCE_MANAGER]: [
-    // God mode - INSURANCE_MANAGER has access to ALL permissions
-    // Claim operations
-    PERMISSIONS.SUBMIT_CLAIM,
-    PERMISSIONS.VIEW_OWN_CLAIMS,
+    // Insurance Manager (Super Admin) - management and oversight only
+    // Does NOT have Medical Admin or Coordination Admin claim review permissions
     PERMISSIONS.VIEW_ALL_CLAIMS,
-    PERMISSIONS.REVIEW_CLAIMS_MEDICAL,
-    PERMISSIONS.REVIEW_CLAIMS_COORDINATION,
-    PERMISSIONS.APPROVE_CLAIM_MEDICAL,
-    PERMISSIONS.REJECT_CLAIM_MEDICAL,
-    PERMISSIONS.APPROVE_CLAIM_FINAL,
-    PERMISSIONS.REJECT_CLAIM_FINAL,
-    PERMISSIONS.RETURN_CLAIM,
     // Client operations
     PERMISSIONS.VIEW_CLIENTS,
     PERMISSIONS.APPROVE_CLIENTS,
     PERMISSIONS.MANAGE_CLIENTS,
-    // Provider operations
-    PERMISSIONS.CREATE_PRESCRIPTION,
-    PERMISSIONS.CREATE_LAB_REQUEST,
-    PERMISSIONS.CREATE_RADIOLOGY_REQUEST,
-    PERMISSIONS.VIEW_MEDICAL_RECORDS,
-    PERMISSIONS.CREATE_MEDICAL_RECORD,
     // Admin operations
     PERMISSIONS.MANAGE_POLICIES,
     PERMISSIONS.MANAGE_ACCOUNTS,
     PERMISSIONS.VIEW_REPORTS,
     PERMISSIONS.MANAGE_PROVIDERS,
-    // Emergency operations
-    PERMISSIONS.MANAGE_EMERGENCIES,
-    PERMISSIONS.VIEW_EMERGENCIES,
+    // View medical records for oversight
+    PERMISSIONS.VIEW_MEDICAL_RECORDS,
   ],
   [ROLES.MEDICAL_ADMIN]: [
     PERMISSIONS.REVIEW_CLAIMS_MEDICAL,
@@ -214,28 +198,28 @@ export const ROUTE_ACCESS = {
   '/AdminRegisterAccounts': { roles: [ROLES.INSURANCE_MANAGER] },
   '/ProviderPriceList': { roles: [ROLES.INSURANCE_MANAGER] },
 
-  // Medical Admin routes - INSURANCE_MANAGER has god mode access
-  '/MedicalAdminDashboard': { roles: [ROLES.MEDICAL_ADMIN, ROLES.INSURANCE_MANAGER] },
-  '/MedicalClaimsReview': { roles: [ROLES.MEDICAL_ADMIN, ROLES.INSURANCE_MANAGER] },
-  '/MedicalDecisionsList': { roles: [ROLES.MEDICAL_ADMIN, ROLES.INSURANCE_MANAGER] },
-  '/ChronicPatientsManagement': { roles: [ROLES.MEDICAL_ADMIN, ROLES.INSURANCE_MANAGER] },
-  '/MedicalAdminEmergencyRequests': { roles: [ROLES.MEDICAL_ADMIN, ROLES.INSURANCE_MANAGER] },
+  // Medical Admin routes - separate from Insurance Manager
+  '/MedicalAdminDashboard': { roles: [ROLES.MEDICAL_ADMIN] },
+  '/MedicalClaimsReview': { roles: [ROLES.MEDICAL_ADMIN] },
+  '/MedicalDecisionsList': { roles: [ROLES.MEDICAL_ADMIN] },
+  '/ChronicPatientsManagement': { roles: [ROLES.MEDICAL_ADMIN] },
+  '/MedicalAdminEmergencyRequests': { roles: [ROLES.MEDICAL_ADMIN] },
 
-  // Coordination Admin routes - INSURANCE_MANAGER has god mode access
-  '/CoordinationDashboard': { roles: [ROLES.COORDINATION_ADMIN, ROLES.INSURANCE_MANAGER] },
-  '/CoordinationClaimsList': { roles: [ROLES.COORDINATION_ADMIN, ROLES.INSURANCE_MANAGER] },
-  '/CoordinationClaimsManage': { roles: [ROLES.COORDINATION_ADMIN, ROLES.INSURANCE_MANAGER] },
-  '/ClaimsManage': { roles: [ROLES.COORDINATION_ADMIN, ROLES.INSURANCE_MANAGER] },
+  // Coordination Admin routes - separate from Insurance Manager
+  '/CoordinationDashboard': { roles: [ROLES.COORDINATION_ADMIN] },
+  '/CoordinationClaimsList': { roles: [ROLES.COORDINATION_ADMIN] },
+  '/CoordinationClaimsManage': { roles: [ROLES.COORDINATION_ADMIN] },
+  '/ClaimsManage': { roles: [ROLES.COORDINATION_ADMIN] },
 
-  // Client routes - INSURANCE_MANAGER has god mode access
-  '/ClientDashboard': { roles: [ROLES.INSURANCE_CLIENT, ROLES.INSURANCE_MANAGER] },
-  '/AddClaim': { roles: [ROLES.INSURANCE_CLIENT, ROLES.COORDINATION_ADMIN, ROLES.INSURANCE_MANAGER] },
+  // Client routes
+  '/ClientDashboard': { roles: [ROLES.INSURANCE_CLIENT] },
+  '/AddClaim': { roles: [ROLES.INSURANCE_CLIENT, ROLES.COORDINATION_ADMIN] },
 
-  // Healthcare Provider routes - INSURANCE_MANAGER has god mode access
-  '/DoctorDashboard': { roles: [ROLES.DOCTOR, ROLES.INSURANCE_MANAGER] },
-  '/PharmacistDashboard': { roles: [ROLES.PHARMACIST, ROLES.INSURANCE_MANAGER] },
-  '/LabDashboard': { roles: [ROLES.LAB_TECH, ROLES.INSURANCE_MANAGER] },
-  '/RadiologyDashboard': { roles: [ROLES.RADIOLOGIST, ROLES.INSURANCE_MANAGER] },
+  // Healthcare Provider routes
+  '/DoctorDashboard': { roles: [ROLES.DOCTOR] },
+  '/PharmacistDashboard': { roles: [ROLES.PHARMACIST] },
+  '/LabDashboard': { roles: [ROLES.LAB_TECH] },
+  '/RadiologyDashboard': { roles: [ROLES.RADIOLOGIST] },
 };
 
 /**

@@ -230,10 +230,10 @@ const PrescriptionDialogs = memo(({
                   />
                 </Box>
 
-                {/* Price Override Warning - shown when pharmacist price > union price */}
+                {/* Price Override Warning - shown when pharmacist price > 20% above union price */}
                 {item.pharmacistPrice > 0 &&
                  item.unionPriceTotal > 0 &&
-                 parseFloat(item.pharmacistPrice) > item.unionPriceTotal && (
+                 parseFloat(item.pharmacistPrice) > item.unionPriceTotal * 1.2 && (
                   <Box sx={{ mt: 2, ml: 4, p: 2, bgcolor: "#FFF3E0", borderRadius: 2, border: "1px solid #FF9800" }}>
                     <Stack direction="row" alignItems="center" spacing={1} mb={1}>
                       <WarningAmberIcon sx={{ color: "#E65100" }} />
