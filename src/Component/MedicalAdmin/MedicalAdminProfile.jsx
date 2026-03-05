@@ -98,13 +98,7 @@ const MedicalAdminProfile = () => {
         new Blob(
           [
             JSON.stringify({
-              fullName: formData.fullName,
-              email: formData.email,
               phone: formData.phone,
-              employeeId: formData.employeeId, // ⭐ NEW
-              nationalId: formData.nationalId, // Added National ID
-              gender: formData.gender,         // Added Gender
-              dateOfBirth: formData.dateOfBirth, // Added Date of Birth
             }),
           ],
           { type: "application/json" }
@@ -222,9 +216,8 @@ const MedicalAdminProfile = () => {
                       label={t("fullName", language)}
                       name="fullName"
                       value={formData.fullName || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -240,9 +233,8 @@ const MedicalAdminProfile = () => {
                       label={t("email", language)}
                       name="email"
                       value={formData.email || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -271,15 +263,13 @@ const MedicalAdminProfile = () => {
                     />
                   </Grid>
 
-                  {/* ⭐ NEW EMPLOYEE ID FIELD ⭐ */}
                   <Grid item xs={12} md={6}>
                     <TextField
                       label={t("employeeId", language)}
                       name="employeeId"
                       value={formData.employeeId || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -290,15 +280,13 @@ const MedicalAdminProfile = () => {
                     />
                   </Grid>
 
-                  {/* NEW NATIONAL ID FIELD */}
                   <Grid item xs={12} md={6}>
                     <TextField
                       label={t("nationalId", language)}
                       name="nationalId"
                       value={formData.nationalId || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -309,28 +297,24 @@ const MedicalAdminProfile = () => {
                     />
                   </Grid>
 
-                  {/* NEW GENDER FIELD */}
                   <Grid item xs={12} md={6}>
                     <TextField
                       label={t("gender", language)}
                       name="gender"
                       value={formData.gender || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                     />
                   </Grid>
 
-                  {/* NEW DATE OF BIRTH FIELD */}
                   <Grid item xs={12} md={6}>
                     <TextField
                       label={t("dateOfBirth", language)}
                       name="dateOfBirth"
                       type="date"
                       value={formData.dateOfBirth || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputLabelProps={{
                         shrink: true,
                       }}

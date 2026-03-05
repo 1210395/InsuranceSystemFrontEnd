@@ -88,13 +88,7 @@ const handleSave = async () => {
       new Blob(
         [
           JSON.stringify({
-            fullName: formData.fullName,
-            email: formData.email,
             phone: formData.phone,
-            employeeId: formData.employeeId,
-            dateOfBirth: formData.dateOfBirth,  // تم تفعيله للتعديل
-            nationalId: formData.nationalId,    // تم تفعيله للتعديل
-            gender: formData.gender,            // تم تعطيله من التعديل
           }),
         ],
         { type: "application/json" }
@@ -211,9 +205,8 @@ const handleSave = async () => {
           label={t("fullName", language)}
           name="fullName"
           value={formData.fullName || ""}
-          onChange={handleChange}
           fullWidth
-          disabled={!editMode}
+          disabled
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -230,9 +223,8 @@ const handleSave = async () => {
           label={t("email", language)}
           name="email"
           value={formData.email || ""}
-          onChange={handleChange}
           fullWidth
-          disabled={!editMode}
+          disabled
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -268,9 +260,8 @@ const handleSave = async () => {
           label={t("employeeId", language)}
           name="employeeId"
           value={formData.employeeId || ""}
-          onChange={handleChange}
           fullWidth
-          disabled={!editMode}
+          disabled
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -281,14 +272,13 @@ const handleSave = async () => {
         />
       </Grid>
 
-      {/* Date of Birth - Disabled */}
+      {/* Date of Birth */}
       <Grid item xs={12} md={6}>
         <TextField
           label={t("dateOfBirth", language)}
           name="dateOfBirth"
           type="date"
           value={formData.dateOfBirth || ""}
-          onChange={handleChange}
           fullWidth
           disabled
           InputProps={{
@@ -304,25 +294,23 @@ const handleSave = async () => {
         />
       </Grid>
 
-      {/* Gender - Disabled */}
+      {/* Gender */}
       <Grid item xs={12} md={6}>
         <TextField
           label={t("gender", language)}
           name="gender"
           value={formData.gender || ""}
-          onChange={handleChange}
           fullWidth
           disabled
         />
       </Grid>
 
-      {/* National ID - Disabled */}
+      {/* National ID */}
       <Grid item xs={12} md={6}>
         <TextField
           label={t("nationalId", language)}
           name="nationalId"
           value={formData.nationalId || ""}
-          onChange={handleChange}
           fullWidth
           disabled
         />

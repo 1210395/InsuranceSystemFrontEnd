@@ -88,8 +88,6 @@ const EmergencyProfile = () => {
         new Blob(
           [
             JSON.stringify({
-              fullName: formData.fullName,
-              email: formData.email,
               phone: formData.phone,
             }),
           ],
@@ -218,9 +216,8 @@ const EmergencyProfile = () => {
                       label={t("fullName", language)}
                       name="fullName"
                       value={formData.fullName || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -236,9 +233,8 @@ const EmergencyProfile = () => {
                       label={t("email", language)}
                       name="email"
                       value={formData.email || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">

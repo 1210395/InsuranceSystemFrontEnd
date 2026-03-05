@@ -85,13 +85,7 @@ const Profile = () => {
       multipartData.append(
         "data",
         new Blob([JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
           phone: formData.phone,
-          employeeId: formData.employeeId,
-          nationalId: formData.nationalId,
-          gender: formData.gender,
-          dateOfBirth: formData.dateOfBirth
         })], { type: "application/json" })
       );
 
@@ -221,9 +215,8 @@ const Profile = () => {
                       label={t("fullName", language)}
                       name="fullName"
                       value={formData.fullName || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -239,9 +232,8 @@ const Profile = () => {
                       label={t("email", language)}
                       name="email"
                       value={formData.email || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -276,9 +268,8 @@ const Profile = () => {
                       label={t("employeeId", language)}
                       name="employeeId"
                       value={formData.employeeId || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -295,9 +286,8 @@ const Profile = () => {
                       label={t("nationalId", language)}
                       name="nationalId"
                       value={formData.nationalId || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -314,9 +304,8 @@ const Profile = () => {
                       label={t("gender", language)}
                       name="gender"
                       value={formData.gender || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                     />
                   </Grid>
 
@@ -327,9 +316,8 @@ const Profile = () => {
                       name="dateOfBirth"
                       type="date"
                       value={formData.dateOfBirth || ""}
-                      onChange={handleChange}
                       fullWidth
-                      disabled={!editMode}
+                      disabled
                       InputLabelProps={{
                         shrink: true,
                       }}
