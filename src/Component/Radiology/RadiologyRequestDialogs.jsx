@@ -12,6 +12,9 @@ import {
   Snackbar,
   Alert,
   IconButton,
+  Chip,
+  Grid,
+  Stack,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
@@ -73,6 +76,26 @@ const RadiologyRequestDialogs = memo(({
             {acceptDialog?.request?.memberName} — {acceptDialog?.request?.testName}
           </Typography>
 
+          {/* Coverage Info */}
+          {(() => {
+            const req = acceptDialog?.request;
+            const covStatus = req?.coverageStatus || "COVERED";
+            const covPercent = req?.coveragePercentage ?? 100;
+            const covColor = covStatus === "NOT_COVERED" ? "#ef4444" : covStatus === "REQUIRES_APPROVAL" ? "#f59e0b" : "#10b981";
+            const covBg = covStatus === "NOT_COVERED" ? "#fee2e2" : covStatus === "REQUIRES_APPROVAL" ? "#fef3c7" : "#d1fae5";
+            const covLabel = covStatus === "NOT_COVERED" ? (t("notCovered", language) || "Not Covered") : covStatus === "REQUIRES_APPROVAL" ? (t("requiresApproval", language) || "Requires Approval") : covPercent < 100 ? `${t("covered", language) || "Covered"} (${covPercent}%)` : (t("fullyCovered", language) || "Fully Covered");
+            return (
+              <Box sx={{ mb: 2, p: 1.5, borderRadius: 1.5, bgcolor: covBg + "30", border: `1px solid ${covColor}40` }}>
+                <Chip label={covLabel} size="small" sx={{ bgcolor: covBg, color: covColor, fontWeight: 700, fontSize: "0.7rem", mb: 1 }} />
+                {req?.unionPrice > 0 && (
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    {t("definedPrice", language) || "Defined Price"}: {parseFloat(req.unionPrice).toFixed(2)} ₪
+                  </Typography>
+                )}
+              </Box>
+            );
+          })()}
+
           <Box>
             <TextField
               fullWidth
@@ -91,6 +114,36 @@ const RadiologyRequestDialogs = memo(({
               }}
             />
           </Box>
+
+          {/* Coverage Breakdown */}
+          {enteredPrice > 0 && (() => {
+            const req = acceptDialog?.request;
+            const covStatus = req?.coverageStatus || "COVERED";
+            const covPercent = req?.coveragePercentage ?? 100;
+            const priceNum = parseFloat(enteredPrice) || 0;
+            const unionPrice = parseFloat(req?.unionPrice) || 0;
+            const approvedPrice = unionPrice > 0 ? Math.min(priceNum, unionPrice) : priceNum;
+            const insurancePays = covStatus === "NOT_COVERED" ? 0 : (approvedPrice * covPercent / 100);
+            const patientPays = priceNum - insurancePays;
+            return (
+              <Box sx={{ mt: 2, p: 1.5, borderRadius: 1.5, bgcolor: covStatus === "NOT_COVERED" ? "#fee2e2" : covPercent < 100 ? "#fef3c7" : "#d1fae5", border: `1px solid ${covStatus === "NOT_COVERED" ? "#ef4444" : covPercent < 100 ? "#f59e0b" : "#10b981"}` }}>
+                <Grid container spacing={1}>
+                  <Grid item xs={4}>
+                    <Typography variant="caption" color="text.secondary">{t("totalPrice", language) || "Total"}</Typography>
+                    <Typography variant="body2" fontWeight={600}>{priceNum.toFixed(2)} ₪</Typography>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Typography variant="caption" sx={{ color: "#10b981", fontWeight: 600, fontSize: "0.65rem" }}>{t("insurancePaysAmount", language) || "Insurance Pays"}</Typography>
+                    <Typography variant="body2" fontWeight={700} color="#10b981">{insurancePays.toFixed(2)} ₪</Typography>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Typography variant="caption" sx={{ color: patientPays > 0 ? "#ef4444" : "#10b981", fontWeight: 600, fontSize: "0.65rem" }}>{t("clientPaysAmount", language) || "Patient Pays"}</Typography>
+                    <Typography variant="body2" fontWeight={700} color={patientPays > 0 ? "#ef4444" : "#10b981"}>{patientPays.toFixed(2)} ₪</Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+            );
+          })()}
         </DialogContent>
 
         <DialogActions sx={{ p: 3, pt: 0 }}>

@@ -19,7 +19,6 @@ import {
   FormControlLabel,
   Chip,
 } from "@mui/material";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { useLanguage } from "../../context/LanguageContext";
 import { t } from "../../config/translations";
 
@@ -230,56 +229,46 @@ const PrescriptionDialogs = memo(({
                   />
                 </Box>
 
-                {/* Price Override Warning - shown when pharmacist price > 20% above union price */}
-                {item.pharmacistPrice > 0 &&
-                 item.unionPriceTotal > 0 &&
-                 parseFloat(item.pharmacistPrice) > item.unionPriceTotal * 1.2 && (
-                  <Box sx={{ mt: 2, ml: 4, p: 2, bgcolor: "#FFF3E0", borderRadius: 2, border: "1px solid #FF9800" }}>
-                    <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                      <WarningAmberIcon sx={{ color: "#E65100" }} />
-                      <Typography variant="subtitle2" fontWeight={700} color="#E65100">
-                        {t("priceHigherWarning", language)}
-                      </Typography>
-                    </Stack>
-                    <Grid container spacing={1} sx={{ mb: 1.5 }}>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" color="text.secondary">{t("definedPrice", language)}</Typography>
-                        <Typography variant="body2" fontWeight={600} color="#2E7D32">
-                          {item.unionPriceTotal?.toFixed(2)} ₪
-                        </Typography>
+                {/* Coverage Breakdown */}
+                {item.pharmacistPrice > 0 && item.unionPriceTotal > 0 && (() => {
+                  const covStatus = item.coverageStatus || "COVERED";
+                  const covPercent = item.coveragePercentage ?? 100;
+                  const pharmacistPrice = parseFloat(item.pharmacistPrice) || 0;
+                  const approvedPrice = Math.min(pharmacistPrice, item.unionPriceTotal);
+                  const insurancePays = covStatus === "NOT_COVERED" ? 0 : (approvedPrice * covPercent / 100);
+                  const patientPays = pharmacistPrice - insurancePays;
+
+                  return (
+                    <Box sx={{ mt: 2, ml: 4, p: 2, bgcolor: covStatus === "NOT_COVERED" ? "#fee2e2" : covPercent < 100 ? "#fef3c7" : "#d1fae5", borderRadius: 2, border: `1px solid ${covStatus === "NOT_COVERED" ? "#ef4444" : covPercent < 100 ? "#f59e0b" : "#10b981"}` }}>
+                      <Grid container spacing={1}>
+                        <Grid item xs={3}>
+                          <Typography variant="caption" color="text.secondary">{t("definedPrice", language)}</Typography>
+                          <Typography variant="body2" fontWeight={600} color="text.primary">
+                            {item.unionPriceTotal?.toFixed(2)} ₪
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={3}>
+                          <Typography variant="caption" color="text.secondary">{t("coverageLabel", language) || "Coverage"}</Typography>
+                          <Typography variant="body2" fontWeight={600} color={covStatus === "NOT_COVERED" ? "#ef4444" : covPercent < 100 ? "#f59e0b" : "#10b981"}>
+                            {covStatus === "NOT_COVERED" ? (t("notCovered", language)) : `${covPercent}%`}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={3}>
+                          <Typography variant="caption" color="text.secondary">{t("insurancePaysAmount", language) || "Insurance Pays"}</Typography>
+                          <Typography variant="body2" fontWeight={700} color="#10b981">
+                            {insurancePays.toFixed(2)} ₪
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={3}>
+                          <Typography variant="caption" color="text.secondary">{t("patientPays", language)}</Typography>
+                          <Typography variant="body2" fontWeight={700} color={patientPays > 0 ? "#ef4444" : "#10b981"}>
+                            {patientPays.toFixed(2)} ₪
+                          </Typography>
+                        </Grid>
                       </Grid>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" color="text.secondary">{t("pharmacyPrice", language)}</Typography>
-                        <Typography variant="body2" fontWeight={600} color="#E65100">
-                          {parseFloat(item.pharmacistPrice)?.toFixed(2)} ₪
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" color="text.secondary">{t("patientPays", language)}</Typography>
-                        <Typography variant="body2" fontWeight={700} color="#C62828">
-                          {(parseFloat(item.pharmacistPrice) - item.unionPriceTotal).toFixed(2)} ₪
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                    <TextField
-                      label={t("whyPriceHigher", language)}
-                      value={item.priceHigherReason || ""}
-                      onChange={(e) => onReasonChange(item.id, e.target.value)}
-                      fullWidth
-                      required
-                      multiline
-                      rows={2}
-                      placeholder={language === "ar" ? "اشرح لماذا سعرك مختلف عن السعر المحدد..." : "Explain why your price differs from the defined price..."}
-                      error={!item.priceHigherReason || item.priceHigherReason.trim() === ""}
-                      helperText={!item.priceHigherReason ? (language === "ar" ? "هذا الحقل مطلوب عندما يكون سعرك أعلى" : "This field is required when your price is higher") : ""}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          bgcolor: "#fff",
-                        },
-                      }}
-                    />
-                  </Box>
-                )}
+                    </Box>
+                  );
+                })()}
                 </>
                 )}
 

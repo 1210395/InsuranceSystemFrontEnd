@@ -395,21 +395,6 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
       return;
     }
 
-    // Validate reason is provided when pharmacist price > union price
-    const missingReason = fulfilledItems.find(
-      (p) => parseFloat(p.pharmacistPrice) > p.unionPriceTotal && (!p.priceHigherReason || p.priceHigherReason.trim() === "")
-    );
-    if (missingReason) {
-      setSnackbar({
-        open: true,
-        message: language === "ar"
-          ? "يجب إدخال سبب عندما يكون سعرك أعلى من السعر المحدد"
-          : "You must provide a reason when your price is higher than the defined price",
-        severity: "warning",
-      });
-      return;
-    }
-
     // Prepare only fulfilled items with prices
     // Backend will use calculatedQuantity and calculate the final claim amount
     const itemsWithPrices = fulfilledItems.map((p) => {
@@ -417,9 +402,8 @@ const PrescriptionList = ({ prescriptions, onVerify, onReject, onSubmitClaim, on
 
       return {
         id: p.id,
-        pharmacistPrice: pharmacistPrice, // السعر الكلي للكمية المحسوبة
-        fulfilled: true, // Mark as fulfilled for backend
-        priceHigherReason: pharmacistPrice > p.unionPriceTotal ? p.priceHigherReason : null,
+        pharmacistPrice: pharmacistPrice,
+        fulfilled: true,
       };
     });
 
